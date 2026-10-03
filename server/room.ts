@@ -369,6 +369,7 @@ export class Room {
           ...p
         }) => ({
           ...p,
+          aim: input.aim,
           ...Object.fromEntries(
             ["yaw", "pitch", "protected", "reload"].map((key) => [
               key,

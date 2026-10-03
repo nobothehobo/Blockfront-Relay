@@ -23,6 +23,8 @@ import { stickInput, touchLookGain } from "./control-math.js";
 import { eliminationCamera } from "./elimination.js";
 import { Terrain } from "./mesh.js";
 import { Sound } from "./audio.js";
+import { Sky } from "./sky.js";
+import { playerPose } from "./animation.js";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const show = (id: string, on = true) => $(id).classList.toggle("hidden", !on);
@@ -128,12 +130,15 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: "high-performance",
 });
 renderer.setClearColor(0xa9c3bd);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.12;
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0xa9c3bd, 30, 100);
 scene.add(terrain.group);
-scene.add(new THREE.HemisphereLight(0xeaf4dc, 0x4d596c, 1.35));
-const sun = new THREE.DirectionalLight(0xffe8bf, 2.0);
-sun.position.set(-30, 70, 15);
+const ambient = new THREE.HemisphereLight(0xe4efff, 0x626349, 1.55);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xffe8bf, 2.5);
+sun.position.set(-48, 64, -60);
 scene.add(sun);
 const camera = new THREE.PerspectiveCamera(
   settings.fov,
@@ -155,48 +160,18 @@ const water = new THREE.Mesh(
 water.rotation.x = -Math.PI / 2;
 water.position.set(W / 2, 6.8, D / 2);
 scene.add(water);
-const skyMaterial = new THREE.ShaderMaterial({
-  side: THREE.BackSide,
-  depthWrite: false,
-  uniforms: {
-    top: { value: new THREE.Color() },
-    horizon: { value: new THREE.Color() },
-  },
-  vertexShader:
-    "varying vec3 skyDirection; void main(){ skyDirection=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
-  fragmentShader: `uniform vec3 top; uniform vec3 horizon; varying vec3 skyDirection;
-    void main(){vec3 d=normalize(skyDirection); float h=smoothstep(0.0,0.7,d.y);
-    vec3 color=mix(horizon,top,h);
-    vec2 tile=floor(d.xz*80.0)/80.0;
-    float cloud=smoothstep(0.53,0.87,sin(tile.x*21.0+sin(tile.y*13.0))*sin(tile.y*28.0));
-    cloud*=smoothstep(0.10,0.23,d.y)*(1.0-smoothstep(0.40,0.55,d.y));
-    gl_FragColor=vec4(mix(color,vec3(0.96,0.96,0.88),cloud*0.40),1.0);
-    #include <colorspace_fragment>
-    }`,
-});
-const skyDome = new THREE.Mesh(
-  new THREE.SphereGeometry(300, 20, 12),
-  skyMaterial,
-);
-skyDome.frustumCulled = false;
-skyDome.renderOrder = -100;
-scene.add(skyDome);
+const sky = new Sky();
+scene.add(sky.mesh);
 function applyTheme() {
   const theme = mapTheme(world.seed);
   scene.background = new THREE.Color(theme.sky);
-  skyMaterial.uniforms.top.value.setHex(theme.sky);
-  skyMaterial.uniforms.horizon.value.setHex(theme.fog);
-  (scene.fog as THREE.Fog).color.setHex(theme.fog);
+  sky.theme(world.seed);
+  (scene.fog as THREE.Fog).color.copy(sky.material.uniforms.horizon.value);
   (water.material as THREE.MeshLambertMaterial).color.setHex(theme.water);
   sun.color.setHex(theme.kind === 0 ? 0xffdfad : 0xfff0d5);
+  ambient.groundColor.setHex(theme.kind === 2 ? 0x8a9ba8 : 0x626349);
 }
 applyTheme();
-const sunDisc = new THREE.Mesh(
-  new THREE.SphereGeometry(4, 12, 8),
-  new THREE.MeshBasicMaterial({ color: 0xfff5cf, fog: false }),
-);
-sunDisc.position.set(-95, 155, -130);
-scene.add(sunDisc);
 const weaponGroup = new THREE.Group();
 camera.add(weaponGroup);
 const mat = (color: number) => new THREE.MeshLambertMaterial({ color });
@@ -322,6 +297,24 @@ function makePlayer(p: any) {
   }
   // Batch static anatomy into one draw call; gun and thrust stay independently animated.
   const parts = g.children.filter((c) => c !== g.userData.gun) as THREE.Mesh[];
+  const root = new THREE.Bone(),
+    torso = new THREE.Bone(),
+    head = new THREE.Bone();
+  torso.position.y = 0.95;
+  root.add(torso);
+  head.position.y = 0.5;
+  torso.add(head);
+  const leftLeg = new THREE.Bone(),
+    rightLeg = new THREE.Bone();
+  leftLeg.position.set(-0.18, 0.74, 0);
+  rightLeg.position.set(0.18, 0.74, 0);
+  root.add(leftLeg, rightLeg);
+  const leftArm = new THREE.Bone(),
+    rightArm = new THREE.Bone();
+  leftArm.position.set(-0.4, 0.4, -0.08);
+  rightArm.position.set(0.4, 0.4, -0.08);
+  torso.add(leftArm, rightArm);
+  const bones = [root, torso, head, leftLeg, rightLeg, leftArm, rightArm];
   const geometries = parts.map((m) => {
     const geometry = m.geometry.toNonIndexed();
     geometry.translate(m.position.x, m.position.y, m.position.z);
@@ -332,6 +325,33 @@ function makePlayer(p: any) {
     for (let i = 0; i < values.length; i += 3)
       values.set([color.r, color.g, color.b], i);
     geometry.setAttribute("color", new THREE.BufferAttribute(values, 3));
+    const boneIndex =
+      m.position.y < 0.75
+        ? m.position.x < 0
+          ? 3
+          : 4
+        : Math.abs(m.position.x) > 0.32
+          ? m.position.x < 0
+            ? 5
+            : 6
+          : m.position.y > 1.4
+            ? 2
+            : 1;
+    const count = geometry.getAttribute("position").count;
+    const skinIndex = new Uint16Array(count * 4),
+      skinWeight = new Float32Array(count * 4);
+    for (let i = 0; i < count; i++) {
+      skinIndex[i * 4] = boneIndex;
+      skinWeight[i * 4] = 1;
+    }
+    geometry.setAttribute(
+      "skinIndex",
+      new THREE.Uint16BufferAttribute(skinIndex, 4),
+    );
+    geometry.setAttribute(
+      "skinWeight",
+      new THREE.Float32BufferAttribute(skinWeight, 4),
+    );
     g.remove(m);
     m.geometry.dispose();
     (m.material as THREE.Material).dispose();
@@ -339,12 +359,32 @@ function makePlayer(p: any) {
   });
   const merged = mergeGeometries(geometries)!;
   geometries.forEach((g) => g.dispose());
-  g.add(
-    new THREE.Mesh(
-      merged,
-      new THREE.MeshLambertMaterial({ vertexColors: true }),
-    ),
+  const body = new THREE.SkinnedMesh(
+    merged,
+    new THREE.MeshLambertMaterial({ vertexColors: true }),
   );
+  body.add(root);
+  g.add(body);
+  g.updateMatrixWorld(true);
+  body.bind(new THREE.Skeleton(bones));
+  // Conservative bounds cover all animated limbs without per-frame bounds scans.
+  body.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 1, 0), 2);
+  if (g.userData.gun) {
+    const gun = g.userData.gun;
+    g.remove(gun);
+    gun.position.sub(new THREE.Vector3(0.4, 1.35, -0.08));
+    rightArm.add(gun);
+  }
+  g.userData.rig = {
+    root,
+    torso,
+    head,
+    leftLeg,
+    rightLeg,
+    leftArm,
+    rightArm,
+    phase: 0,
+  };
   g.userData.flames = [-0.13, 0.13].map((x) => {
     const flame = box(0.09, 0.35, 0.09, x, 0.7, 0.3, 0xffbe55, g);
     (flame.material as THREE.Material).dispose();
@@ -368,6 +408,7 @@ function disposePlayer(r: { group: THREE.Group; label: HTMLElement }) {
   scene.remove(r.group);
   r.group.traverse((c) => {
     if (c instanceof THREE.Mesh) {
+      if (c instanceof THREE.SkinnedMesh) c.skeleton.dispose();
       c.geometry.dispose();
       (c.material as THREE.Material).dispose();
     }
@@ -758,6 +799,8 @@ function handleState(next: any) {
 }
 function handleEvent(e: any) {
   if (e.kind === "shot") {
+    const shooter = remote.get(e.id);
+    if (shooter) shooter.group.userData.shotAt = performance.now();
     if (e.id === id) {
       predictedShotTimes = predictedShotTimes.filter(
         (at) => performance.now() - at < 1500,
@@ -1424,7 +1467,7 @@ let lastFrame = performance.now(),
   accumulator = 0;
 function frame(now: number) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, (now - lastFrame) / 1000);
+  const dt = Math.min(0.1, (now - lastFrame) / 1000);
   lastFrame = now;
   if (!connected || !local) simulationFrame = now;
   terrain.update(2);
@@ -1557,12 +1600,34 @@ function frame(now: number) {
       const diff = Math.atan2(Math.sin(b.yaw - a.yaw), Math.cos(b.yaw - a.yaw));
       r.group.rotation.y = a.yaw + diff * t;
       r.group.scale.y = r.target.crouch ? 0.68 : 1;
+      const rig = r.group.userData.rig;
+      const speed = Math.hypot(
+        THREE.MathUtils.lerp(a.vx ?? 0, b.vx ?? 0, t),
+        THREE.MathUtils.lerp(a.vz ?? 0, b.vz ?? 0, t),
+      );
+      rig.phase += dt * speed * 2.1;
+      const pose = playerPose(
+        rig.phase,
+        speed,
+        r.target.ground,
+        r.target.zombie,
+        r.target.aim,
+        r.target.reload > 0,
+        (now - (r.group.userData.shotAt ?? -10000)) / 1000,
+      );
+      rig.leftLeg.rotation.x = pose.leftLeg;
+      rig.rightLeg.rotation.x = pose.rightLeg;
+      rig.leftArm.rotation.x = pose.leftArm + r.target.pitch * 0.5;
+      rig.rightArm.rotation.x = pose.rightArm + r.target.pitch * 0.5;
+      rig.head.rotation.x = r.target.pitch * 0.5;
+      rig.root.position.y = pose.bob;
+      rig.torso.rotation.x = pose.lean;
       r.group.visible =
         r.target.dead <= 0 &&
         r.group.position.distanceTo(camera.position) < settings.distance;
       if (r.group.userData.gun) {
         r.group.userData.gun.visible = r.target.weapon < 4;
-        r.group.userData.gun.rotation.x = r.target.pitch;
+        r.group.userData.gun.rotation.x = r.target.pitch * 0.5 - 0.35;
       }
       for (const flame of r.group.userData.flames ?? [])
         flame.visible = r.target.jetpack && a.fuel > b.fuel && r.target.vy > 0;
@@ -1610,7 +1675,7 @@ function frame(now: number) {
     flagMeshes.forEach((f) => (f.visible = false));
     terrain.distance(W / 2, D / 2, 160);
   }
-  skyDome.position.copy(camera.position);
+  sky.update(camera, now / 1000);
   if (connected && local && state)
     minimap.update(now, state, { ...local, yaw });
   renderer.render(scene, camera);
@@ -1685,5 +1750,17 @@ setInterval(() => {
   },
   get remotes() {
     return remote.size;
+  },
+  get animation() {
+    return [...remote.values()].map((r) => ({
+      id: r.target.id,
+      bot: r.target.bot,
+      visible: r.group.visible,
+      phase: r.group.userData.rig.phase,
+      leftLeg: r.group.userData.rig.leftLeg.rotation.x,
+      rightLeg: r.group.userData.rig.rightLeg.rotation.x,
+      rightArm: r.group.userData.rig.rightArm.rotation.x,
+      skinned: r.group.children.some((c) => c instanceof THREE.SkinnedMesh),
+    }));
   },
 };

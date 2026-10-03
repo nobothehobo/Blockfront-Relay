@@ -48,8 +48,8 @@ sockets.on("connection", (ws, req) => {
   ws.on("message", (raw) => {
     const message = JSON.parse(String(raw));
     if (message.type === "input") {
-      if (message.inputs)
-        room.queueInputs(player.id, message.inputs, message.epoch);
+      if (message.commands)
+        room.queueInputs(player.id, message.commands, message.epoch);
       else room.input(player.id, message.input);
     }
   });

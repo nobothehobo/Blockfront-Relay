@@ -13,6 +13,7 @@
     "db:generate": "drizzle-kit generate",
     "test:browser": "node --import tsx tests/browser.ts",
     "test:elimination": "node --import tsx tests/elimination-browser.ts",
+    "test:polish": "node --import tsx tests/polish-browser.ts",
     "format": "prettier --write client server shared worker/index.ts worker/assets.generated.d.ts tests docs db scripts/*.mjs *.json *.md *.yaml"
   },
   "dependencies": {

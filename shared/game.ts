@@ -147,6 +147,13 @@ export type Player = Body & {
     stuck: number;
     target: string;
     acquired: number;
+    lastSeen?: Vec;
+    seenAt?: number;
+    nextPlan?: number;
+    route?: Vec[];
+    routeGoal?: Vec;
+    side?: number;
+    nextStrafe?: number;
   };
   pendingActions?: Partial<Input>;
   epoch?: number;

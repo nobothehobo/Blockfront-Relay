@@ -16,10 +16,13 @@ Automated checks are in `tests/`. Unit tests exercise the actual authoritative R
 - Thirty-two-player simulation and 32 real WebSocket-connection smoke tests.
 - Hosted session auth, common state and concurrent CAS joins.
 - NPC slot replacement, authority-driven movement/combat/reloading/respawning, occlusion, objectives, infection and shared hosted persistence.
+- Local obstacle routes, safe-drop rejection, visible-target prioritization, last-seen memory expiration, retreating reloads, relay-carrier navigation and articulated pose math.
 - Real WebSocket-client integration for movement, map edits/late joins, fuel, combat, death and respawn.
 - Touch deadzone, bounded diagonal movement, forward-only sprint and aimed-look gain; elimination camera occlusion and visible player position.
 
 `npm run test:elimination` starts an isolated authoritative Room/WebSocket fixture and applies real server damage to the browser player. It checks the third-person model, countdown, hidden crosshair and return to first person after server respawn. The controlled fixture exists only in `tests/` and adds no debug endpoints to production.
+
+`npm run test:polish` runs an actual server-controlled NPC in a shared test courtyard. It verifies the WebGL skinned model, gait progression from authoritative movement and alternating legs, checks browser and shader errors, and saves sky/character screenshots for visual review. Headless pointer-lock camera input uses a standard relative mouse event. This fixture is not deployed. CI runs both additional browser checks.
 
 Browser checks use real Chromium WebGL rendering, two browser pages and trusted emulated touch events. Desktop checks include pointer lock, keyboard movement, weapon selection, shooting, reload and jetpacks. Phone landscape (844 × 390), phone portrait (390 × 844), and tablet (1024 × 768) checks include joystick movement, touch camera, fire/build/dig/jump/reload/jet inputs, aim toggling, direct weapon selection, drag-to-fire aiming, simultaneous two-thumb movement/firing and control bounds. Minimap checks verify full terrain initialization, desktop M toggle, touch open/close, and compact/expanded map bounds in each viewport. iPad-sized checks launch an NPC practice match. Screenshots are inspected for layout defects. The same suite can run against the hosted HTTP adapter's local SQL-backed harness.
 

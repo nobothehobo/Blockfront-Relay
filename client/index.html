@@ -39,7 +39,7 @@
       <div class="brand">
         <span class="brand-mark">BR</span
         ><span>BLOCKFRONT<br /><b>RELAY</b></span
-        ><small>2.1 · FIELDWORK</small>
+        ><small>2.2 · FRONTLINES</small>
       </div>
       <p class="eyebrow">PROCEDURAL FRONTIERS</p>
       <h1>Dig in.<br />Build your advantage.</h1>
@@ -93,6 +93,9 @@
           id="mode"
         >
           <option value="tdm">Team deathmatch</option>
+          <option value="frontline">
+            Frontline Control — hold three sectors
+          </option>
           <option value="relay">Capture the relay</option>
           <option value="infection">Humans vs Zombies</option></select
         ><select id="arsenal" aria-label="Class loadout rules">
@@ -132,8 +135,9 @@
       </div>
       <div id="settings-fields"></div>
       <p>
-        Preferences save on this device. Lighting uses baked face shading;
-        dynamic shadows are not enabled.
+        Preferences save on this device. Lighting uses baked face shading and
+        optional lightweight character contact shadows. Reflection render
+        targets and dynamic shadow maps are not used.
       </p>
     </section>
     <section id="controls" class="modal hidden">
@@ -165,6 +169,19 @@
         has its own weapons; Skirmisher gets the jetpack when Class jetpacks is
         selected. Sappers dig twice as fast. Explosives can damage you as well
         as carve terrain.
+      </p>
+      <p>
+        <b>Frontline Control</b><br />Stand within a sector ring for eight
+        seconds to capture it. Teammates speed up capture; enemies contest it.
+        Each held sector earns one point per second. First to 300 wins, or the
+        higher score at the timer. Build approaches, cover and defenses around
+        the sectors.
+      </p>
+      <p>
+        <b>Supply stations</b><br />Return to your team's marked supply crate
+        and stay nearby for three seconds to replenish health, ammunition,
+        blocks and grenades. Recent damage interrupts resupply; each use has a
+        25-second cooldown. Zombies cannot use supplies.
       </p>
       <p>
         <b>Relay</b><br />Touch the enemy relay to collect it. Bring it to your

@@ -43,6 +43,8 @@ import {
 import { KITS } from "../shared/fortifications.js";
 import { FortificationView } from "./fortification-view.js";
 import { weaponPose } from "./weapon-pose.js";
+import { BattlefieldView, WaterSurface } from "./battlefield-view.js";
+import { ContactShadows } from "./contact-shadows.js";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const show = (id: string, on = true) => $(id).classList.toggle("hidden", !on);
@@ -65,6 +67,7 @@ type Settings = {
   preset: string;
   distance: number;
   effects: string;
+  shadows: boolean;
   fov: number;
   master: number;
   volume: number;
@@ -78,6 +81,7 @@ const defaults: Settings = {
   preset: touch ? "mobile" : "balanced",
   distance: touch ? 80 : 112,
   effects: touch ? "low" : "high",
+  shadows: !touch,
   fov: 80,
   master: 0.55,
   volume: 0.75,
@@ -163,9 +167,9 @@ const combatFX = new CombatFX(scene);
 const fortifications = new FortificationView(scene);
 scene.fog = new THREE.Fog(0xa9c3bd, 30, 100);
 scene.add(terrain.group);
-const ambient = new THREE.HemisphereLight(0xe4efff, 0x626349, 1.55);
+const ambient = new THREE.HemisphereLight(0xe4efff, 0x899a6c, 1.65);
 scene.add(ambient);
-const sun = new THREE.DirectionalLight(0xffe8bf, 2.5);
+const sun = new THREE.DirectionalLight(0xffe8bf, 2.2);
 sun.position.set(-48, 64, -60);
 scene.add(sun);
 const camera = new THREE.PerspectiveCamera(
@@ -176,18 +180,12 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.rotation.order = "YXZ";
 scene.add(camera);
-const water = new THREE.Mesh(
-  new THREE.PlaneGeometry(W * 0.5, 28),
-  new THREE.MeshLambertMaterial({
-    color: 0x398f9a,
-    transparent: true,
-    opacity: 0.76,
-    side: THREE.DoubleSide,
-  }),
-);
-water.rotation.x = -Math.PI / 2;
-water.position.set(W / 2, 6.8, D / 2);
-scene.add(water);
+const water = new WaterSurface();
+scene.add(water.mesh);
+const battlefield = new BattlefieldView();
+scene.add(battlefield.group);
+const contactShadows = new ContactShadows();
+scene.add(contactShadows.mesh);
 const sky = new Sky();
 scene.add(sky.mesh);
 function applyTheme() {
@@ -195,9 +193,11 @@ function applyTheme() {
   scene.background = new THREE.Color(theme.sky);
   sky.theme(world.seed);
   (scene.fog as THREE.Fog).color.copy(sky.material.uniforms.horizon.value);
-  (water.material as THREE.MeshLambertMaterial).color.setHex(theme.water);
+  water.theme(theme.water);
   sun.color.setHex(theme.kind === 0 ? 0xffdfad : 0xfff0d5);
-  ambient.groundColor.setHex(theme.kind === 2 ? 0x8a9ba8 : 0x626349);
+  ambient.groundColor.setHex(
+    theme.kind === 2 ? 0x9aa6bc : theme.kind === 0 ? 0x9f8666 : 0x899a6c,
+  );
 }
 applyTheme();
 const weaponGroup = new THREE.Group();
@@ -292,6 +292,17 @@ function setWeaponModel(n: number) {
   if (isFirearm(n)) {
     box(0.12, 0.12, 0.14, 0.2, -0.32, -0.66, 0xd6b183, weaponGroup);
     box(0.15, 0.14, 0.24, 0.14, -0.4, -0.55, 0x416b63, weaponGroup);
+    box(0.015, 0.04, 0.13, 0.3, -0.2, -0.55, 0x9baeb0, weaponGroup);
+    box(
+      0.14,
+      0.025,
+      0.06,
+      0.23,
+      -0.275,
+      -0.43,
+      local?.team === 1 ? 0xff9d59 : 0x57ded0,
+      weaponGroup,
+    );
     const flash = box(
       0.17,
       0.17,
@@ -311,6 +322,33 @@ function setWeaponModel(n: number) {
     flash.visible = false;
     weaponGroup.userData.flash = flash;
   }
+  // Batch all solid weapon/hand pieces; preserve the separately animated flash.
+  const parts = weaponGroup.children.filter(
+    (child) => child !== weaponGroup.userData.flash,
+  ) as THREE.Mesh[];
+  const geometries = parts.map((mesh) => {
+    mesh.updateMatrix();
+    const geometry = mesh.geometry.clone().applyMatrix4(mesh.matrix);
+    const color = (mesh.material as THREE.MeshLambertMaterial).color;
+    const colors = new Float32Array(geometry.attributes.position.count * 3);
+    for (let i = 0; i < colors.length; i += 3)
+      colors.set([color.r, color.g, color.b], i);
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    return geometry;
+  });
+  const geometry = mergeGeometries(geometries)!;
+  geometries.forEach((g) => g.dispose());
+  parts.forEach((mesh) => {
+    mesh.geometry.dispose();
+    (mesh.material as THREE.Material).dispose();
+    weaponGroup.remove(mesh);
+  });
+  weaponGroup.add(
+    new THREE.Mesh(
+      geometry,
+      new THREE.MeshLambertMaterial({ vertexColors: true }),
+    ),
+  );
 }
 setWeaponModel(0);
 let modelWeapon = 0;
@@ -559,6 +597,7 @@ function settingsUi() {
     ["preset", "Quality preset"],
     ["distance", "Render distance", 32, 192, 4],
     ["effects", "Effects quality"],
+    ["shadows", "Ground contact shadows"],
     ["fov", "Field of view", 60, 105, 1],
     ["master", "Master volume", 0, 1, 0.05],
     ["volume", "Effects volume", 0, 1, 0.05],
@@ -579,10 +618,10 @@ function settingsUi() {
       field.max = String(max);
       field.step = String(step);
       field.value = String(settings[key]);
-    } else if (key === "invert") {
+    } else if (key === "invert" || key === "shadows") {
       field = document.createElement("input");
       field.type = "checkbox";
-      field.checked = settings.invert;
+      field.checked = settings[key];
     } else {
       field = document.createElement("select");
       for (const value of key === "preset"
@@ -602,7 +641,7 @@ function settingsUi() {
     val.textContent = String(settings[key]);
     field.oninput = () => {
       (settings as any)[key] =
-        key === "invert"
+        key === "invert" || key === "shadows"
           ? (field as HTMLInputElement).checked
           : min !== undefined
             ? Number(field.value)
@@ -615,6 +654,7 @@ function settingsUi() {
               ? 112
               : 176;
         settings.effects = field.value === "mobile" ? "low" : "high";
+        settings.shadows = field.value !== "mobile";
       }
       val.textContent = String(settings[key]);
       applySettings();
@@ -648,7 +688,7 @@ async function refreshRooms() {
       const title = document.createElement("strong");
       title.textContent = r.name;
       const meta = document.createElement("small");
-      meta.textContent = `${r.bots ? `${r.bots} NPCs · ` : ""}${r.mode === "tdm" ? "Team deathmatch" : r.mode === "relay" ? "Capture the relay" : "Humans vs Zombies"} · ${r.players}/${r.max} players\n${r.map} · ${r.arsenal === "specialists" ? "Specialists" : "Sandbox"} · Jetpacks ${r.jet}`;
+      meta.textContent = `${r.bots ? `${r.bots} NPCs · ` : ""}${r.mode === "frontline" ? "Frontline Control" : r.mode === "tdm" ? "Team deathmatch" : r.mode === "relay" ? "Capture the relay" : "Humans vs Zombies"} · ${r.players}/${r.max} players\n${r.map} · ${r.arsenal === "specialists" ? "Specialists" : "Sandbox"} · Jetpacks ${r.jet}`;
       meta.style.whiteSpace = "pre-line";
       info.append(title, meta);
       const joinButton = document.createElement("button");
@@ -725,6 +765,7 @@ function message(msg: any) {
   } else if (msg.type === "error") disconnect(msg.message ?? "Server error");
 }
 function disconnect(reason = "Disconnected. Join a room to reconnect.") {
+  battlefield.group.visible = false;
   sound.stopJets();
   combatFX.clear();
   clearElimination();
@@ -998,7 +1039,9 @@ function updateHud() {
       ? "Team deathmatch"
       : mode === "relay"
         ? "Capture the relay"
-        : "Humans vs Zombies";
+        : mode === "frontline"
+          ? "Frontline Control"
+          : "Humans vs Zombies";
   $("scores").textContent =
     mode === "infection"
       ? `${state.humans} HUMANS`
@@ -1016,7 +1059,7 @@ function updateHud() {
         ? `${state.players.length - state.humans} infected · Round ${state.round}`
         : mode === "relay"
           ? "First to 3 relays"
-          : `Round ${state.round} · ${state.map} · First to 40`;
+          : `Round ${state.round} · ${state.map} · First to ${state.target ?? 40}`;
   $("team-label").textContent = p.zombie
     ? "ZOMBIE"
     : mode === "infection"
@@ -1077,20 +1120,30 @@ function updateHud() {
   show("banner", !!banner);
   $("banner").textContent = banner;
   $("objective-hud").textContent =
-    mode === "relay"
-      ? state.flags
+    mode === "frontline"
+      ? (state.controlPoints ?? [])
           .map(
-            (f: any) =>
-              `${f.team === 0 ? "Azure" : "Ember"} relay: ${f.carrier ? (f.carrier === id ? "YOU HAVE IT" : "carried") : f.dropped ? "dropped" : "home"}`,
+            (point: any) =>
+              `${point.name}: ${point.contested ? "CONTESTED" : point.progress > 0 ? `${Math.round(point.progress * 100)}%` : point.owner < 0 ? "neutral" : point.owner === 0 ? "Azure" : "Ember"}`,
           )
           .join(" · ")
-      : mode === "infection"
-        ? p.zombie
-          ? "Infect humans · Hold jump to climb"
-          : "Survive · Build defenses"
-        : state.jet === "pickup"
-          ? "Jetpack beacon at the central bridge"
-          : "";
+      : mode === "relay"
+        ? state.flags
+            .map(
+              (f: any) =>
+                `${f.team === 0 ? "Azure" : "Ember"} relay: ${f.carrier ? (f.carrier === id ? "YOU HAVE IT" : "carried") : f.dropped ? "dropped" : "home"}`,
+            )
+            .join(" · ")
+        : mode === "infection"
+          ? p.zombie
+            ? "Infect humans · Hold jump to climb"
+            : "Survive · Build defenses"
+          : state.jet === "pickup"
+            ? "Jetpack beacon at the central bridge"
+            : "";
+  if ((p.supplyProgress ?? 0) > 0)
+    $("objective-hud").textContent +=
+      ` · Resupplying ${Math.round(((p.supplyProgress ?? 0) / 3) * 100)}%`;
   if (touch) {
     $<HTMLButtonElement>("build-mode").disabled = p.zombie;
     const aimButton = document.querySelector<HTMLButtonElement>(
@@ -1936,6 +1989,14 @@ function frame(now: number) {
     camera.position.y += Math.cos(now * 0.053) * combatFX.shake;
   }
   sky.update(camera, now / 1000);
+  water.update(now / 1000, settings.effects !== "low");
+  contactShadows.update(
+    world,
+    connected ? (state?.players ?? []) : [],
+    settings.shadows,
+    id,
+  );
+  if (connected && state && local) battlefield.update(state, local, now / 1000);
   sound.updateJets(
     jetVoices(
       connected ? local : null,

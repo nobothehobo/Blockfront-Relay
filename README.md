@@ -1,6 +1,6 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.1 — Fieldwork.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.2 — Frontlines.**
 
 Source: [nobothehobo/Blockfront-Relay](https://github.com/nobothehobo/Blockfront-Relay).
 
@@ -13,6 +13,7 @@ Connection recovery now bounds input packet sizes and prediction, times out hung
 The browser client has a main menu, server browser, custom rooms, settings, and a field manual. Choose a callsign and press **Play multiplayer**. Matches start with two players after an eight-second warmup. A lone player can explore, practice shooting, build, and dig while waiting.
 
 - **Team deathmatch:** Azure vs Ember; 40 eliminations or five minutes.
+- **Frontline Control:** capture three sectors, defend them with builds, and earn points toward 300. Team supply stations replenish health, ammo, blocks and grenades after a safe three-second dwell. Sector-aware NPCs, supply crates, capture beacons, animated reflective water and optional soft contact shadows are included. See [2.2 release notes](docs/UPDATE-22.md).
 - **Capture the relay:** steal the enemy relay and bring it home while your own relay is home; three captures wins. Approach objectives to interact automatically. Dropped relays return after 25 seconds.
 - **Humans vs Zombies:** humans survive five minutes. One carrier per five players starts infected, with at least one carrier. Eliminated humans convert to zombies. Zombies have melee only, more health, regeneration, stronger jumps, wall scrambling, and faster digging.
 - **Jetpacks:** configurable off / everyone / central pickup / relay and outbreak modes / Skirmisher class only. Fuel, gravity, momentum, collisions and fall damage are server controlled.

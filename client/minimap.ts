@@ -8,10 +8,13 @@ import {
   mapTheme,
   basePosition,
 } from "../shared/game.js";
+import { Sector, SupplyStation } from "../shared/battlefield.js";
 type Dot = { id: string; x: number; z: number; team: number; dead: number };
 type MapState = {
   mode: string;
   jet: string;
+  controlPoints?: Sector[];
+  supplyStations?: SupplyStation[];
   players: Dot[];
   flags: {
     team: number;
@@ -151,6 +154,28 @@ export class MiniMap {
       ctx.fillRect(x - 4, z - 4, 8, 8);
     }
     const friends = friendlyDots(state.players, local);
+    for (const supply of state.supplyStations ?? []) {
+      if (supply.team !== local.team) continue;
+      const [x, z] = point(supply.pos);
+      ctx.fillStyle = "#fff1b1";
+      ctx.font = "bold 15px sans-serif";
+      ctx.fillText("+", x - 5, z + 5);
+    }
+    if (state.mode === "frontline")
+      for (const sector of state.controlPoints ?? []) {
+        const [x, z] = point(sector.pos);
+        ctx.beginPath();
+        ctx.arc(x, z, 8, 0, Math.PI * 2);
+        ctx.fillStyle = sector.contested
+          ? "#ffe28f"
+          : sector.owner < 0
+            ? "#a9bbc1"
+            : color(sector.owner);
+        ctx.fill();
+        ctx.fillStyle = "#122a33";
+        ctx.font = "bold 11px sans-serif";
+        ctx.fillText(sector.name, x - 4, z + 4);
+      }
     this.friendCount = friends.length;
     for (const p of friends) {
       const [x, z] = point(p);

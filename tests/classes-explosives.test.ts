@@ -197,3 +197,10 @@ test("explosions cannot remove protected objective foundations", () => {
     ),
   );
 });
+test("launcher swept collision hits a player before passing through their body", () => {
+  const { r, a, b } = fixture(2);
+  r.fire(a);
+  for (let n = 0; n < 10; n++) r.tick();
+  assert.ok(b.health < 40, "direct impact applies blast damage");
+  assert.equal(r.projectiles.length, 0);
+});

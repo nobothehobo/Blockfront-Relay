@@ -15,6 +15,7 @@ Automated checks are in `tests/`. Unit tests exercise the actual authoritative R
 - Exact movement replay at 200/500 ms round-trip latency plus jitter, bounded simulation time under flooding and brief batched fire taps.
 - Thirty-two-player simulation and 32 real WebSocket-connection smoke tests.
 - Hosted session auth, common state and concurrent CAS joins.
+- Four class loadouts and respawn-only changes, server abilities/cooldowns, grenade bounce/fuse/inventory, launcher impact/ammo/rate, cover-aware blast damage and replicated crater batches, protected foundations and late joins. Hosted persistence tests verify class selection, active ordnance and explosion feedback across requests.
 - NPC slot replacement, authority-driven movement/combat/reloading/respawning, occlusion, objectives, infection and shared hosted persistence.
 - Local obstacle routes, safe-drop rejection, visible-target prioritization, last-seen memory expiration, retreating reloads, relay-carrier navigation and articulated pose math.
 - Real WebSocket-client integration for movement, map edits/late joins, fuel, combat, death and respawn.

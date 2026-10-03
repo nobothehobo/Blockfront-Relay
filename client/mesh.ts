@@ -65,12 +65,32 @@ export function meshChunk(world: World, cx: number, cz: number) {
           color.setHex(palette[Math.abs(m)]);
           const shade =
             axis === 1 ? (m > 0 ? 1 : 0.52) : axis === 0 ? 0.78 : 0.88;
-          for (const pt of pts) {
+          for (let corner = 0; corner < pts.length; corner++) {
+            const pt = pts[corner],
+              sample = pt.map((a, k) => a + off[k]);
+            sample[axis] += m > 0 ? 0 : -1;
+            const su = corner === 1 || corner === 2 ? 1 : -1,
+              sv = corner >= 2 ? 1 : -1;
+            sample[u] += su > 0 ? -1 : 0;
+            sample[v] += sv > 0 ? -1 : 0;
+            const occupied = (a: number, b: number) => {
+              const cell = sample.slice();
+              cell[u] += a;
+              cell[v] += b;
+              return world.get(cell[0], cell[1], cell[2]) ? 1 : 0;
+            };
+            const occlusion =
+              occupied(su, 0) + occupied(0, sv) + occupied(su, sv);
+            const cornerShade = shade * (1 - occlusion * 0.085);
             positions.push(pt[0] + off[0], pt[1] + off[1], pt[2] + off[2]);
             const normal = [0, 0, 0];
             normal[axis] = m > 0 ? 1 : -1;
             normals.push(...normal);
-            colors.push(color.r * shade, color.g * shade, color.b * shade);
+            colors.push(
+              color.r * cornerShade,
+              color.g * cornerShade,
+              color.b * cornerShade,
+            );
           }
           if (m > 0)
             indices.push(
@@ -165,7 +185,7 @@ export class Terrain {
       [...this.dirty].sort((a, b) => distance(a) - distance(b)),
     );
   }
-  edit(x: number, y: number, z: number, value: number) {
+  edit(x: number, y: number, z: number, value: number, prioritize = true) {
     this.world.set(x, y, z, value);
     for (const [xx, zz] of [
       [x, z],
@@ -173,10 +193,14 @@ export class Terrain {
       [x + 1, z],
       [x, z - 1],
       [x, z + 1],
+      [x - 1, z - 1],
+      [x - 1, z + 1],
+      [x + 1, z - 1],
+      [x + 1, z + 1],
     ])
       if (xx >= 0 && xx < W && zz >= 0 && zz < D)
         this.dirty.add(`${Math.floor(xx / CHUNK)},${Math.floor(zz / CHUNK)}`);
-    this.prioritize(this.view.x, this.view.z);
+    if (prioritize) this.prioritize(this.view.x, this.view.z);
   }
   update(count = 2) {
     const start = performance.now();

@@ -218,7 +218,7 @@ try {
             4 && (window as any).BR.state.phase === "active",
       );
     const controls = await p
-      .locator("#touch-actions button")
+      .locator("#touch-actions button, #tactical-controls button")
       .evaluateAll((buttons) =>
         buttons.map((b) => {
           const r = b.getBoundingClientRect();
@@ -297,7 +297,16 @@ try {
     await p.locator("#switch-weapon").tap();
     await p.locator('[data-weapon="1"]').tap();
     await p.waitForFunction(() => (window as any).BR.player.weapon === 1);
-    for (const action of ["fire", "jump", "jet", "place", "dig", "reload"]) {
+    for (const action of [
+      "fire",
+      "jump",
+      "jet",
+      "place",
+      "dig",
+      "reload",
+      "grenade",
+      "ability",
+    ]) {
       if (action === "place") await p.locator("#build-mode").tap();
       const button = p.locator(`[data-action=${action}]`);
       const r = await button.boundingBox();

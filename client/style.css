@@ -991,3 +991,95 @@ body.touch #minimap.expanded {
     width: 56px;
   }
 }
+#class-hud {
+  position: absolute;
+  top: max(78px, calc(env(safe-area-inset-top) + 65px));
+  left: max(18px, env(safe-area-inset-left));
+  min-height: 44px;
+  padding: 10px 12px;
+  pointer-events: auto;
+  background: #142f3de6;
+  font-size: 11px;
+}
+#tactical-controls {
+  position: absolute;
+  bottom: 46px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+#tactical-controls button {
+  min-width: 72px;
+  min-height: 44px;
+  padding: 8px;
+  font-size: 11px;
+  touch-action: none;
+}
+#class-menu {
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+}
+#class-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+#class-cards button {
+  text-align: left;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #1b3945;
+}
+#class-cards button.selected {
+  border-color: #ffe29d;
+  background: #36524c;
+  box-shadow: inset 0 0 0 1px #ffe29d;
+}
+#class-cards strong {
+  color: #ffe29d;
+  font-size: 16px;
+}
+#class-cards small {
+  font-size: 11px;
+  color: #c8d9d1;
+  line-height: 1.5;
+}
+#class-choice-note {
+  font-size: 12px;
+  color: #bde5dc;
+}
+body.touch #tactical-controls {
+  bottom: max(60px, env(safe-area-inset-bottom));
+}
+body.touch #class-hud {
+  top: 155px;
+}
+@media (orientation: portrait) {
+  body.touch #class-hud {
+    top: 310px;
+  }
+  body.touch #tactical-controls {
+    left: 18px;
+    bottom: 195px;
+    transform: none;
+    flex-direction: column;
+    gap: 6px;
+  }
+  body.touch #tactical-controls button {
+    min-width: 84px;
+  }
+}
+@media (max-height: 520px) {
+  body.touch #tactical-controls {
+    bottom: 52px;
+  }
+  body.touch #class-hud {
+    top: 172px;
+    max-width: 146px;
+  }
+}

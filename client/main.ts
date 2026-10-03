@@ -17,6 +17,7 @@ import {
   W,
   D,
   mapTheme,
+  isFirearm,
 } from "../shared/game.js";
 import { MiniMap } from "./minimap.js";
 import { stickInput, touchLookGain } from "./control-math.js";
@@ -25,6 +26,8 @@ import { Terrain } from "./mesh.js";
 import { Sound } from "./audio.js";
 import { Sky } from "./sky.js";
 import { playerPose } from "./animation.js";
+import { CombatFX } from "./combat-fx.js";
+import { CLASSES, classInfo, validClass } from "../shared/classes.js";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const show = (id: string, on = true) => $(id).classList.toggle("hidden", !on);
@@ -66,6 +69,9 @@ try {
   };
 } catch {}
 const input = emptyInput();
+let selectedClass = Number(localStorage.getItem("br-class") ?? 0);
+if (!validClass(selectedClass)) selectedClass = 0;
+input.classId = selectedClass;
 const pulses: Partial<Record<keyof Input, boolean>> = {};
 let yaw = 0,
   pitch = 0,
@@ -133,6 +139,7 @@ renderer.setClearColor(0xa9c3bd);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.12;
 const scene = new THREE.Scene();
+const combatFX = new CombatFX(scene);
 scene.fog = new THREE.Fog(0xa9c3bd, 30, 100);
 scene.add(terrain.group);
 const ambient = new THREE.HemisphereLight(0xe4efff, 0x626349, 1.55);
@@ -191,13 +198,21 @@ function box(
   return m;
 }
 function setWeaponModel(n: number) {
+  weaponGroup.userData.flash = null;
   while (weaponGroup.children.length) {
     const child = weaponGroup.children[0] as THREE.Mesh;
     child.geometry.dispose();
     (child.material as THREE.Material).dispose();
     weaponGroup.remove(child);
   }
-  if (n < 4) {
+  if (n === 6) {
+    box(0.23, 0.23, 0.72, 0.23, -0.22, -0.58, 0x546458, weaponGroup);
+    box(0.28, 0.28, 0.08, 0.23, -0.22, -0.98, 0x223a3e, weaponGroup);
+    box(0.16, 0.16, 0.015, 0.23, -0.22, -1.025, 0x121f25, weaponGroup);
+    box(0.1, 0.22, 0.12, 0.23, -0.38, -0.37, 0x8a6848, weaponGroup);
+    box(0.27, 0.045, 0.12, 0.23, -0.22, -0.68, 0xdfb86b, weaponGroup);
+    box(0.06, 0.08, 0.09, 0.23, -0.07, -0.62, 0x172e34, weaponGroup);
+  } else if (isFirearm(n)) {
     box(
       0.12,
       0.12,
@@ -253,9 +268,27 @@ function setWeaponModel(n: number) {
   } else box(0.23, 0.23, 0.23, 0.26, -0.25, -0.55, 0x57caba, weaponGroup);
   box(0.13, 0.15, 0.25, 0.23, -0.39, -0.28, 0xd6b183, weaponGroup);
   box(0.15, 0.11, 0.18, 0.23, -0.4, -0.14, 0x416b63, weaponGroup);
-  if (n < 4) {
+  if (isFirearm(n)) {
     box(0.12, 0.12, 0.14, 0.2, -0.32, -0.66, 0xd6b183, weaponGroup);
     box(0.15, 0.14, 0.24, 0.14, -0.4, -0.55, 0x416b63, weaponGroup);
+    const flash = box(
+      0.17,
+      0.17,
+      0.12,
+      0.23,
+      n === 6 ? -0.22 : -0.185,
+      n === 3 ? -1.47 : n === 6 ? -1.1 : -1.12,
+      0xffdc80,
+      weaponGroup,
+    );
+    (flash.material as THREE.Material).dispose();
+    (flash as THREE.Mesh).material = new THREE.MeshBasicMaterial({
+      color: 0xffde88,
+      transparent: true,
+      opacity: 0.85,
+    });
+    flash.visible = false;
+    weaponGroup.userData.flash = flash;
   }
 }
 setWeaponModel(0);
@@ -268,6 +301,20 @@ const remote = new Map<
 function makePlayer(p: any) {
   const g = new THREE.Group();
   const color = p.zombie ? 0x80bd50 : p.team === 0 ? 0x4ab7b9 : 0xe77548;
+  if (!p.zombie) {
+    if (p.classId === 1)
+      for (const x of [-0.4, 0.4])
+        box(0.24, 0.18, 0.28, x, 1.3, 0, 0xe7d4a0, g);
+    if (p.classId === 2) {
+      box(0.52, 0.55, 0.24, 0, 1.1, 0.37, 0x60594d, g);
+      for (const x of [-0.15, 0.15])
+        box(0.1, 0.52, 0.1, x, 1.1, 0.52, 0xd9b26a, g);
+    }
+    if (p.classId === 3) {
+      box(0.48, 0.16, 0.48, 0, 1.95, 0, 0x415b4d, g);
+      box(0.22, 0.3, 0.42, 0, 1.15, 0.3, 0x415b4d, g);
+    }
+  }
   box(0.62, 0.65, 0.38, 0, 1.06, 0, color, g);
   box(0.43, 0.42, 0.4, 0, 1.61, 0, p.zombie ? 0xb2ce75 : 0xd7b38c, g);
   box(0.45, 0.12, 0.43, 0, 1.85, 0, color, g);
@@ -276,7 +323,16 @@ function makePlayer(p: any) {
   box(0.17, 0.58, 0.2, -0.4, 1.05, -0.08, color, g);
   box(0.17, 0.58, 0.2, 0.4, 1.05, -0.08, color, g);
   if (!p.zombie)
-    g.userData.gun = box(0.1, 0.1, 0.5, 0.36, 1.12, -0.33, 0x34434a, g);
+    g.userData.gun = box(
+      p.classId === 2 ? 0.23 : 0.1,
+      p.classId === 2 ? 0.23 : 0.1,
+      p.classId === 3 ? 0.75 : 0.5,
+      0.36,
+      1.12,
+      -0.33,
+      0x34434a,
+      g,
+    );
   box(0.4, 0.45, 0.16, 0, 1.05, 0.29, 0x46585d, g);
   box(0.44, 0.15, 0.42, 0, 1.69, -0.01, 0x243638, g);
   box(0.46, 0.08, 0.44, 0, 1.9, 0, color, g);
@@ -598,6 +654,7 @@ async function refreshRooms() {
 }
 function message(msg: any) {
   if (msg.type === "welcome") {
+    combatFX.clear();
     id = msg.id;
     roomId = msg.room.id;
     world.seed = msg.seed ?? msg.room?.seed ?? world.seed;
@@ -628,7 +685,14 @@ function message(msg: any) {
   } else if (msg.type === "edit") {
     terrain.edit(msg.x, msg.y, msg.z, msg.value);
     minimap.edit(msg.x, msg.z);
+  } else if (msg.type === "edits") {
+    for (const [x, y, z, value] of msg.edits) {
+      terrain.edit(x, y, z, value, false);
+      minimap.edit(x, z);
+    }
+    terrain.prioritize(local?.x ?? W / 2, local?.z ?? D / 2);
   } else if (msg.type === "map") {
+    combatFX.clear();
     world.seed = msg.seed ?? msg.room?.seed ?? world.seed;
     applyTheme();
     world.decode(msg.map);
@@ -640,6 +704,7 @@ function message(msg: any) {
   } else if (msg.type === "error") disconnect(msg.message ?? "Server error");
 }
 function disconnect(reason = "Disconnected. Join a room to reconnect.") {
+  combatFX.clear();
   clearElimination();
   connected = false;
   joining = false;
@@ -677,7 +742,11 @@ async function join(room: string) {
       const data = await api("/api/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ room, name: nameInput.value }),
+        body: JSON.stringify({
+          room,
+          name: nameInput.value,
+          classId: selectedClass,
+        }),
       });
       httpToken = data.token;
       httpCursor = data.cursor ?? 0;
@@ -692,7 +761,11 @@ async function join(room: string) {
   const url = new URL(base() || location.origin);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.pathname = "/ws";
-  url.search = new URLSearchParams({ room, name: nameInput.value }).toString();
+  url.search = new URLSearchParams({
+    room,
+    name: nameInput.value,
+    class: String(selectedClass),
+  }).toString();
   ws = new WebSocket(url);
   const socket = ws;
   socket.onmessage = (e) => {
@@ -727,6 +800,7 @@ async function join(room: string) {
 }
 function handleState(next: any) {
   state = next;
+  combatFX.sync(next.projectiles ?? [], performance.now());
   const p = next.players.find((p: any) => p.id === id);
   if (!p) return;
   if (p.dead > 0 && !eliminated) {
@@ -750,7 +824,7 @@ function handleState(next: any) {
     yaw = p.yaw;
     pitch = p.pitch;
     firstState = false;
-    if (touch) chooseWeapon(p.weapon);
+    chooseWeapon(p.weapon);
     terrain.prioritize(p.x, p.z);
     terrain.update(9);
   } else {
@@ -775,7 +849,10 @@ function handleState(next: any) {
     if (rp.id === id) continue;
     alive.add(rp.id);
     let r = remote.get(rp.id);
-    if (r && r.target.zombie !== rp.zombie) {
+    if (
+      r &&
+      (r.target.zombie !== rp.zombie || r.target.classId !== rp.classId)
+    ) {
       disposePlayer(r);
       remote.delete(rp.id);
       r = undefined;
@@ -816,29 +893,23 @@ function handleEvent(e: any) {
       Math.hypot(local.x - e.origin.x, local.z - e.origin.z) < 40
     )
       sound.play("shot", 0.25);
-    if (settings.effects === "high" && e.weapon < 4) {
-      const o = e.origin,
-        d = e.dir;
-      const geometry = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(o.x, o.y, o.z),
-        new THREE.Vector3(o.x + d.x * 15, o.y + d.y * 15, o.z + d.z * 15),
-      ]);
-      const line = new THREE.Line(
-        geometry,
-        new THREE.LineBasicMaterial({
-          color: 0xffdb93,
-          transparent: true,
-          opacity: 0.5,
-        }),
-      );
-      scene.add(line);
-      setTimeout(() => {
-        scene.remove(line);
-        geometry.dispose();
-        (line.material as THREE.Material).dispose();
-      }, 65);
-    }
+    if (isFirearm(e.weapon) && e.origin)
+      combatFX.shot(e.origin, e.traces ?? []);
   }
+  if (e.kind === "launch" && local) {
+    sound.play("shot", 0.6);
+    if (e.id === id) lastShot = performance.now();
+  }
+  if (e.kind === "explosion") {
+    combatFX.explosion(e.pos, camera.position);
+    const distance = camera.position.distanceTo(
+      new THREE.Vector3(e.pos.x, e.pos.y, e.pos.z),
+    );
+    if (distance < 100)
+      sound.play("explosion", Math.max(0.1, 1 - distance / 100));
+  }
+  if (e.kind === "ability" && e.pos)
+    combatFX.particle(e.pos, { x: 0, y: 0.7, z: 0 }, 0.35, 0.4, 0x68d3c7);
   if (e.kind === "hit") {
     if (e.id === id) {
       sound.play("hit");
@@ -907,24 +978,35 @@ function updateHud() {
       ? "#57ded0"
       : "#ff9d59";
   $("health").textContent = String(Math.ceil(p.health));
-  $("health-bar").style.width = `${(p.health / (p.zombie ? 150 : 100)) * 100}%`;
+  $("health-bar").style.width =
+    `${(p.health / (p.zombie ? 150 : classInfo(p.classId).health)) * 100}%`;
+  $("class-hud").textContent = p.zombie
+    ? "INFECTED"
+    : `${classInfo(p.classId).name.toUpperCase()} ▾`;
+  $("grenade-button").textContent = `FRAG ${p.grenades ?? 0}`;
+  $("ability-button").textContent =
+    (p.abilityCooldown ?? 0) > 0
+      ? `${Math.ceil(p.abilityCooldown ?? 0)}s`
+      : classInfo(p.classId).ability.toUpperCase();
+  $<HTMLButtonElement>("grenade-button").disabled =
+    p.zombie || p.dead > 0 || !(p.grenades ?? 0);
+  $<HTMLButtonElement>("ability-button").disabled =
+    p.zombie || p.dead > 0 || (p.abilityCooldown ?? 0) > 0;
   $("blocks").textContent = `${p.blocks} blocks`;
   $("fuel-label").style.opacity = p.jetpack ? "1" : ".45";
   $("fuel").textContent = p.jetpack ? `${Math.round(p.fuel)}%` : "NO PACK";
   $("fuel-bar").style.width = p.jetpack ? `${p.fuel}%` : "0%";
   $("weapon-name").textContent = WEAPONS[p.weapon].name.toUpperCase();
-  $("ammo").textContent =
-    p.weapon < 4
-      ? String(p.ammo[p.weapon])
-      : p.weapon === 5
-        ? String(p.blocks)
-        : "∞";
-  $("reserve").textContent =
-    p.weapon < 4
-      ? `/ ${p.reserve[p.weapon]}`
-      : p.weapon === 5
-        ? "BLOCKS"
-        : "TOOL";
+  $("ammo").textContent = isFirearm(p.weapon)
+    ? String(p.ammo[p.weapon])
+    : p.weapon === 5
+      ? String(p.blocks)
+      : "∞";
+  $("reserve").textContent = isFirearm(p.weapon)
+    ? `/ ${p.reserve[p.weapon]}`
+    : p.weapon === 5
+      ? "BLOCKS"
+      : "TOOL";
   $("reload-note").textContent =
     p.reload > 0
       ? `RELOADING ${p.reload.toFixed(1)}s`
@@ -1011,6 +1093,8 @@ function resetInput() {
     "reload",
     "place",
     "dig",
+    "grenade",
+    "ability",
   ])
     (input as any)[key] = false;
   input.forward = 0;
@@ -1062,6 +1146,8 @@ const binding: Record<string, keyof Input> = {
   KeyC: "crouch",
   KeyF: "jet",
   KeyR: "reload",
+  KeyG: "grenade",
+  KeyV: "ability",
   KeyE: "place",
   KeyQ: "dig",
 };
@@ -1092,7 +1178,7 @@ window.addEventListener("keydown", (e) => {
     (input as any)[binding[e.code]] = true;
     pulses[binding[e.code]] = true;
   }
-  if (/^Digit[1-6]$/.test(e.code)) input.weapon = Number(e.code.slice(-1)) - 1;
+  if (/^Digit[1-7]$/.test(e.code)) input.weapon = Number(e.code.slice(-1)) - 1;
 });
 window.addEventListener("keyup", (e) => {
   held.delete(e.code);
@@ -1118,7 +1204,7 @@ window.addEventListener(
   (e) => {
     if (connected && !paused && mouseLocked) {
       e.preventDefault();
-      input.weapon = (input.weapon + (e.deltaY > 0 ? 1 : 5)) % 6;
+      input.weapon = (input.weapon + (e.deltaY > 0 ? 1 : 6)) % 7;
     }
   },
   { passive: false },
@@ -1250,12 +1336,12 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
 let lastGun = 0;
 function chooseWeapon(weapon: number) {
   input.weapon = local?.zombie ? 4 : weapon;
-  if (input.weapon < 4) lastGun = input.weapon;
+  if (isFirearm(input.weapon)) lastGun = input.weapon;
   if (local) {
     local.weapon = input.weapon;
     updateHud();
   }
-  if (input.weapon >= 4) {
+  if (!isFirearm(input.weapon)) {
     input.aim = false;
     const button = document.querySelector<HTMLButtonElement>(
       '[data-action="aim"]',
@@ -1263,7 +1349,7 @@ function chooseWeapon(weapon: number) {
     button.classList.remove("held");
     button.setAttribute("aria-pressed", "false");
   }
-  const tools = input.weapon >= 4 && !local?.zombie;
+  const tools = !isFirearm(input.weapon) && !local?.zombie;
   show("touch-tools", tools);
   $("build-mode").classList.toggle("held", tools);
   $("build-mode").setAttribute("aria-pressed", String(tools));
@@ -1287,7 +1373,8 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
   "[data-weapon]",
 ))
   button.onclick = () => chooseWeapon(Number(button.dataset.weapon));
-$("build-mode").onclick = () => chooseWeapon(input.weapon >= 4 ? lastGun : 5);
+$("build-mode").onclick = () =>
+  chooseWeapon(!isFirearm(input.weapon) ? lastGun : 5);
 const fireButton = document.querySelector<HTMLButtonElement>(
   '[data-action="fire"]',
 )!;
@@ -1348,6 +1435,42 @@ $("browse").onclick = () => {
 $("settings-open").onclick = () => show("settings");
 $("controls-open").onclick = () => show("controls");
 $("pause-settings").onclick = () => show("settings");
+function openClasses() {
+  if (connected) setPause(true);
+  show("class-menu");
+}
+$("class-open").onclick = openClasses;
+$("class-hud").onclick = openClasses;
+$("pause-class").onclick = openClasses;
+for (let i = 0; i < CLASSES.length; i++) {
+  const role = CLASSES[i],
+    button = document.createElement("button");
+  button.dataset.classId = String(i);
+  button.innerHTML = `<strong>${role.name}</strong><span>${role.description}</span><small>${role.health} HP · ${role.blocks} blocks · ${role.grenades} grenades · ${role.ability}</small>`;
+  button.onclick = () => {
+    selectedClass = i;
+    input.classId = i;
+    localStorage.setItem("br-class", String(i));
+    $("class-open").textContent = `Class: ${role.name} ▾`;
+    $("class-choice-note").textContent = connected
+      ? `${role.name} queued for your next respawn.`
+      : `${role.name} selected.`;
+    for (const b of document.querySelectorAll("[data-class-id]"))
+      b.classList.toggle(
+        "selected",
+        (b as HTMLElement).dataset.classId === String(i),
+      );
+  };
+  $("class-cards").append(button);
+}
+$("class-open").textContent = `Class: ${classInfo(selectedClass).name} ▾`;
+document
+  .querySelector(`[data-class-id="${selectedClass}"]`)
+  ?.classList.add("selected");
+$("class-close").onclick = () => {
+  show("class-menu", false);
+  if (connected) setPause(false);
+};
 $("score-button").onclick = () => show("scoreboard");
 $("pause-button").onclick = () => setPause(true);
 $("resume").onclick = () => setPause(false);
@@ -1492,7 +1615,7 @@ function frame(now: number) {
       !paused &&
       local.dead <= 0 &&
       (input.fire || pulses.fire) &&
-      input.weapon < 4 &&
+      isFirearm(input.weapon) &&
       !local.reload &&
       local.ammo[input.weapon] > 0 &&
       now >= nextShotFeedback
@@ -1555,6 +1678,11 @@ function frame(now: number) {
       modelWeapon = local.weapon;
       setWeaponModel(modelWeapon);
     }
+    if (weaponGroup.userData.flash)
+      weaponGroup.userData.flash.visible =
+        now - lastShot < 65 && local.reload <= 0;
+    weaponGroup.rotation.z =
+      local.reload > 0 ? Math.sin(local.reload * 4) * 0.12 : 0;
     if (
       local.ground &&
       Math.hypot(local.vx, local.vz) > 1 &&
@@ -1626,7 +1754,7 @@ function frame(now: number) {
         r.target.dead <= 0 &&
         r.group.position.distanceTo(camera.position) < settings.distance;
       if (r.group.userData.gun) {
-        r.group.userData.gun.visible = r.target.weapon < 4;
+        r.group.userData.gun.visible = isFirearm(r.target.weapon);
         r.group.userData.gun.rotation.x = r.target.pitch * 0.5 - 0.35;
       }
       for (const flame of r.group.userData.flames ?? [])
@@ -1674,6 +1802,12 @@ function frame(now: number) {
     outline.visible = false;
     flagMeshes.forEach((f) => (f.visible = false));
     terrain.distance(W / 2, D / 2, 160);
+  }
+  combatFX.quality = settings.effects === "low" ? "low" : "high";
+  combatFX.update(now, dt);
+  if (connected && local && local.dead <= 0) {
+    camera.position.x += Math.sin(now * 0.049) * combatFX.shake;
+    camera.position.y += Math.cos(now * 0.053) * combatFX.shake;
   }
   sky.update(camera, now / 1000);
   if (connected && local && state)
@@ -1750,6 +1884,13 @@ setInterval(() => {
   },
   get remotes() {
     return remote.size;
+  },
+  get combat() {
+    return {
+      particles: combatFX.particles.length,
+      tracers: combatFX.tracers.length,
+      projectiles: combatFX.projectiles.length,
+    };
   },
   get animation() {
     return [...remote.values()].map((r) => ({

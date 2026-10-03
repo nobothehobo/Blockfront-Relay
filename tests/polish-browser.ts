@@ -54,16 +54,30 @@ const server = http.createServer(async (req, res) => {
   }
 });
 const sockets = new WebSocketServer({ server });
-sockets.on("connection", (ws) => {
-  const player = room.add("viewer", "Viewer", { send: (s) => ws.send(s) });
+let viewers = 0;
+sockets.on("connection", (ws, request) => {
+  const number = ++viewers;
+  const player = room.add(
+    number === 1 ? "viewer" : `viewer${number}`,
+    "Viewer",
+    { send: (s) => ws.send(s) },
+    false,
+    Number(
+      new URL(request.url!, "http://local").searchParams.get("class") ?? 0,
+    ),
+  );
   Object.assign(player, {
-    x: 160.5,
+    x: number === 1 ? 160.5 : 164.5,
     y: 13.01,
     z: 165.5,
+    yaw: 0,
+    pitch: 0,
     ground: true,
     protected: 999,
     epoch: player.epoch! + 1,
   });
+  player.input.yaw = 0;
+  player.input.pitch = 0;
   const bot = [...room.players.values()].find((p) => p.bot)!;
   Object.assign(bot, {
     x: 160.5,
@@ -111,8 +125,13 @@ try {
   await page.waitForFunction(() =>
     document.querySelector("#status")?.textContent?.includes("rooms available"),
   );
+  await page.locator("#class-open").click();
+  await page.locator('[data-class-id="2"]').click();
+  await page.locator("#class-close").click();
   await page.locator("#play").click();
   await page.waitForFunction(() => (window as any).BR.player?.x > 150);
+  assert.equal(room.players.get("viewer")!.classId, 2);
+  await page.waitForFunction(() => (window as any).BR.player.weapon === 6);
   if (!(await page.evaluate(() => document.pointerLockElement)))
     await page.locator("#game").click();
   await page.waitForFunction(() => document.pointerLockElement?.id === "game");
@@ -137,6 +156,81 @@ try {
   await page.waitForFunction(() => (window as any).BR.map.tilesLeft === 0);
   await mkdir("artifacts", { recursive: true });
   await page.screenshot({ path: "artifacts/sky-npc.png" });
+  const bot = [...room.players.values()].find((p) => p.bot)!;
+  bot.cooldown = 999;
+  const observer = await browser.newPage({
+    viewport: { width: 1024, height: 768 },
+  });
+  observer.on("pageerror", (e) => errors.push(e.message));
+  await observer.goto(`http://127.0.0.1:${(server.address() as any).port}`);
+  await observer.waitForFunction(() =>
+    document.querySelector("#status")?.textContent?.includes("rooms available"),
+  );
+  await observer.locator("#play").click();
+  await observer.waitForFunction(() => (window as any).BR.connected);
+  await page.bringToFront();
+  if (!(await page.evaluate(() => document.pointerLockElement)))
+    await page.locator("#game").click();
+  room.players.get("viewer")!.blocks = 100;
+  await page.keyboard.press("KeyV");
+  await page.waitForFunction(
+    () =>
+      (window as any).BR.state.players.find((p: any) => p.id === "viewer")
+        ?.abilityCooldown > 0,
+  );
+  assert.equal(room.players.get("viewer")!.blocks, 135);
+  await page.keyboard.press("KeyG");
+  await observer.waitForFunction(() =>
+    (window as any).BR.state.projectiles.some((p: any) => p.kind === "grenade"),
+  );
+  await observer.waitForFunction(
+    () => (window as any).BR.combat.projectiles > 0,
+  );
+  assert.equal(room.players.get("viewer")!.grenades, 2);
+  // A newly built barrier is replicated before a real launcher shot removes it.
+  for (let x = 158; x <= 162; x++)
+    for (let y = 13; y <= 16; y++) {
+      room.world.set(x, y, 158, 3);
+      room.broadcast({ type: "edit", x, y, z: 158, value: 3 });
+    }
+  const revision = room.revision;
+  await page.evaluate(() => {
+    const p = (window as any).BR.player;
+    document.dispatchEvent(
+      new MouseEvent("mousemove", {
+        movementX: p.yaw / 0.002,
+        movementY: p.pitch / 0.002,
+        bubbles: true,
+      }),
+    );
+  });
+  await page.waitForFunction(
+    () =>
+      Math.abs((window as any).BR.player.pitch) < 0.02 &&
+      Math.abs((window as any).BR.player.yaw) < 0.02,
+  );
+  // Headless pointer-lock cursor warps can inject look deltas; use ordinary mouse events for this fixed shot.
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new MouseEvent("mousedown", { button: 0, bubbles: true }),
+    ),
+  );
+  await page.waitForTimeout(140);
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new MouseEvent("mouseup", { button: 0, bubbles: true }),
+    ),
+  );
+  for (let n = 0; n < 100 && room.revision <= revision; n++)
+    await page.waitForTimeout(30);
+  assert.ok(room.revision > revision, "launcher crater is authoritative");
+  await page.waitForFunction(() => (window as any).BR.combat.particles > 15);
+  await observer.waitForFunction(
+    () => (window as any).BR.combat.particles > 15,
+  );
+  assert.equal(room.players.get("viewer")!.ammo[6], 1);
+  await page.screenshot({ path: "artifacts/v2-launcher-blast.png" });
+  await observer.close();
   // Dispatch a standard relative mouse event: headless OS cursors can remain clamped in pointer lock.
   await page.evaluate(() =>
     document.dispatchEvent(
@@ -152,7 +246,7 @@ try {
   await page.screenshot({ path: "artifacts/sky-upward.png" });
   assert.deepEqual(errors, []);
   console.log(
-    "PASS polish: real NPC gait, alternating limbs, skinned WebGL rendering, sky shader and lighting; no browser errors",
+    "PASS 2.0 polish: class selection, Sapper loadout, resupply, grenade replicated to two browsers, launcher crater/blast effects in both browsers, NPC gait and sky; no browser errors",
   );
 } finally {
   await browser.close();

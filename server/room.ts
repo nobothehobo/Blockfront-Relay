@@ -525,11 +525,51 @@ export class Room {
       }
       p.input = latestInput;
     }
-    for (const projectile of [...this.projectiles])
-      if (stepProjectile(projectile, this.world, dt)) {
+    for (const projectile of [...this.projectiles]) {
+      const old = { x: projectile.x, y: projectile.y, z: projectile.z };
+      let impact = stepProjectile(projectile, this.world, dt);
+      if (projectile.kind === "rocket" && !impact) {
+        const delta = {
+          x: projectile.x - old.x,
+          y: projectile.y - old.y,
+          z: projectile.z - old.z,
+        };
+        const length = Math.hypot(delta.x, delta.y, delta.z);
+        if (length > 0) {
+          const dir = {
+            x: delta.x / length,
+            y: delta.y / length,
+            z: delta.z / length,
+          };
+          let nearest = Infinity;
+          for (const v of this.players.values())
+            if (v.id !== projectile.owner && v.dead <= 0)
+              nearest = Math.min(
+                nearest,
+                rayBox(
+                  old,
+                  dir,
+                  { x: v.x - 0.47, y: v.y - 0.14, z: v.z - 0.47 },
+                  {
+                    x: v.x + 0.47,
+                    y: v.y + (v.crouch ? 1.15 : 1.75) + 0.14,
+                    z: v.z + 0.47,
+                  },
+                ),
+              );
+          if (nearest <= length) {
+            projectile.x = old.x + dir.x * nearest;
+            projectile.y = old.y + dir.y * nearest;
+            projectile.z = old.z + dir.z * nearest;
+            impact = true;
+          }
+        }
+      }
+      if (impact) {
         this.projectiles = this.projectiles.filter((p) => p !== projectile);
         this.explode(projectile);
       }
+    }
     if (this.phase === "active") {
       if (this.options.mode === "relay") this.objectives();
       if (this.options.mode === "infection") {
@@ -603,6 +643,7 @@ export class Room {
   fire(p: Player) {
     const w = WEAPONS[p.weapon];
     if (p.cooldown > 0 || p.reload > 0) return;
+    if (p.weapon === 6 && this.projectiles.length >= 128) return;
     if (isFirearm(p.weapon) && p.ammo[p.weapon] <= 0) return;
     p.cooldown = w.interval;
     if (isFirearm(p.weapon)) p.ammo[p.weapon]--;

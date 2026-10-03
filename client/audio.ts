@@ -22,16 +22,18 @@ export class Sound {
     g.connect(c.destination);
     const gain = this.master * this.effects * volume * 0.15;
     const duration =
-      kind === "jet"
-        ? 0.13
-        : kind === "infection"
-          ? 0.55
-          : kind === "reload"
-            ? 0.12
-            : 0.09;
+      kind === "explosion"
+        ? 0.6
+        : kind === "jet"
+          ? 0.13
+          : kind === "infection"
+            ? 0.55
+            : kind === "reload"
+              ? 0.12
+              : 0.09;
     g.gain.setValueAtTime(gain, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-    if (["shot", "dig", "step", "damage", "jet"].includes(kind)) {
+    if (["shot", "dig", "step", "damage", "jet", "explosion"].includes(kind)) {
       const buffer = c.createBuffer(
           1,
           Math.ceil(c.sampleRate * duration),
@@ -44,13 +46,15 @@ export class Sound {
         filter = c.createBiquadFilter();
       filter.type = "lowpass";
       filter.frequency.value =
-        kind === "shot"
-          ? 2200
-          : kind === "jet"
-            ? 600
-            : kind === "step"
-              ? 300
-              : 1100;
+        kind === "explosion"
+          ? 180
+          : kind === "shot"
+            ? 2200
+            : kind === "jet"
+              ? 600
+              : kind === "step"
+                ? 300
+                : 1100;
       s.buffer = buffer;
       s.connect(filter);
       filter.connect(g);

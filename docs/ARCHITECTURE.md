@@ -14,7 +14,7 @@ The world is 320 × 56 × 320, 2.78 times the alpha 0.3 footprint, with hills, a
 
 The client meshes up to 400 column chunks, each 16 × 56 × 16 voxels. Greedy meshing merges coplanar faces of the same material and removes interior faces. Chunk meshes share a material and use frustum/distance culling. Edits remesh the affected chunk and neighboring border chunks; up to two nearby dirty chunks are processed per frame with a six-millisecond work budget; distant dirty chunks wait until within render distance, with nearby chunks prioritized on join/respawn/round change. Geometry is disposed when replaced. There is no object per terrain voxel. Original player geometry has helmets, visors, equipment and boots. Static player parts merge into one vertex-colored mesh; only guns and thrust animate separately. Distant players are culled, and label-occlusion rays run only within label range.
 
-Render presets cap device pixel ratio and drawing distance. High effects add short-lived tracer lines; low effects suppress them. There are no dynamic shadows. The browser bundle is approximately 136 KB compressed, excluding HTTP protocol overhead. There are no remote asset/font requests.
+Render presets cap device pixel ratio and drawing distance. Instanced animated streaks follow authoritative hitscan endpoints; low effects reduce pellet streak and explosion particle counts. Terrain corner occlusion is baked during greedy meshing. There are no dynamic shadows. The 2.0 browser bundle is approximately 145 KB compressed, excluding HTTP protocol overhead. There are no remote asset/font requests.
 
 ## Hosted adapter
 
@@ -42,4 +42,10 @@ Optional scouts run in `server/bots.ts`, selecting ordinary movement, aim, fire,
 
 Mobile uses a floating left stick and a larger right fire pad that also captures look drags. Aim/crouch toggle on taps, a named weapon picker replaces cycling, and building opens contextual dig/place buttons with a return-to-gun toggle. Touch pointer capture permits looking/firing while moving independently. Existing local sensitivity and control-scale preferences remain available.
 
-The minimap caches a top-down 320 × 320 terrain image. A three-millisecond tile budget builds it incrementally; block edits dirty only one 16 × 16 tile. Player/objective overlays refresh at 10 Hz. The map uses authoritative terrain and predicted local heading; teammates only are shown. Hosted serialization format 3 resets older rooms on deployment because voxel indices changed with the larger dimensions; clients must reload and rejoin.
+The minimap caches a top-down 320 × 320 terrain image. A three-millisecond tile budget builds it incrementally; block edits dirty only one 16 × 16 tile. Player/objective overlays refresh at 10 Hz. The map uses authoritative terrain and predicted local heading; teammates only are shown. Hosted serialization format 5 resets older rooms on 2.0 deployment because class loadouts and persisted projectiles changed; clients must reload and rejoin.
+
+## 2.0 classes and ordnance
+
+`shared/classes.ts` owns validated role definitions. `Room.spawn` applies class stats and primary selection; mid-life requests queue the next class. Surge duration advances in the shared fixed movement step, so authoritative command execution and prediction replay agree. Ability and grenade cooldowns advance on server time. Client input never owns these resources.
+
+`server/explosives.ts` integrates gravity, bounce and impact against the authoritative voxel world. The Room limits active ordnance to 128, applies cover-aware falloff damage before carving, preserves protected foundations, then broadcasts one crater batch. Hosted serialization persists ordnance, IDs and inventory. `client/combat-fx.ts` uses three bounded instanced meshes for debris/smoke, streaks and projectiles; extrapolation is capped at 250ms. These visuals never determine hits or edits. NPCs use their class primaries and choose abilities or grenades through ordinary server input logic.

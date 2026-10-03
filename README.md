@@ -1,6 +1,6 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. Alpha 0.5.
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.0 — Frontier Forces.**
 
 Source: [nobothehobo/Blockfront-Relay](https://github.com/nobothehobo/Blockfront-Relay).
 
@@ -14,6 +14,8 @@ The browser client has a main menu, server browser, custom rooms, settings, and 
 - **Jetpacks:** configurable off / everyone / central pickup / relay and outbreak modes. Fuel, gravity, momentum, collisions and fall damage are server controlled.
 
 The north-up minimap shows terrain, your heading, living teammates, bases, relay objectives and jetpack pickups. It updates after terrain edits and round changes, without revealing enemy positions.
+
+**2.0:** choose Trailguard (rifle + nearby healing), Skirmisher (SMG + speed burst), Sapper (blast launcher + building resupply), or Surveyor (marksman + accuracy focus). Each has distinct health, speed, block/grenade reserves and original field-kit silhouettes. Class changes apply on respawn; every role retains access to the sandbox arsenal. Grenades bounce and explode; launcher rounds detonate on impact. Both damage players and carve synchronized voxel craters. Animated bullet streaks follow authoritative hitscan endpoints; bounded instanced debris, smoke, muzzle flashes and explosion audio add feedback. Terrain gains baked corner shading. See [2.0 release notes](docs/UPDATE-20.md).
 
 Maps now span 320 × 320 blocks with woodland, desert and snow themes, trenches, outposts and original ruins. Every next round generates a fresh seed. Create a room with 5/8/10-minute rounds and 16/32 slots; 32 slots require the dedicated WebSocket server. Hosted rooms remain capped at 16.
 
@@ -89,26 +91,28 @@ Build the hosted artifact with `npm run build:hosted`. `.openai/hosting.json` de
 
 ## Controls
 
-| Action                      | Desktop                 | iPhone / iPad                               |
-| --------------------------- | ----------------------- | ------------------------------------------- |
-| Move / sprint               | WASD / Shift            | Floating left stick; push farther to sprint |
-| Look                        | Mouse with pointer lock | Drag right side or SHOOT                    |
-| Fire / use selected tool    | Left click              | Hold SHOOT / PLACE / DIG                    |
-| Aim                         | Right click             | Tap AIM to toggle                           |
-| Jump / zombie wall scramble | Space                   | Hold JUMP                                   |
-| Crouch                      | Hold C                  | Tap CROUCH to toggle                        |
-| Reload                      | R                       | RELOAD                                      |
-| Select weapon / tool        | 1–6 or mouse wheel      | Tap weapon name; choose from picker         |
-| Dig                         | Hold Q                  | BUILD → hold DIG                            |
-| Build                       | Hold E                  | BUILD → hold PLACE; tap again for gun       |
-| Jetpack                     | Hold F                  | Hold JET                                    |
-| Expand minimap              | M                       | Tap MAP; tap CLOSE MAP to dismiss           |
-| Scores                      | Hold Tab                | Expand minimap                              | M   | Tap MAP; tap CLOSE MAP to dismiss |
-| Scores button               |
-| Pause / release mouse       | Esc                     | Pause button                                |
-| Relay interaction / pickup  | Walk near it            | Walk near it                                |
+| Action                      | Desktop                  | iPhone / iPad                               |
+| --------------------------- | ------------------------ | ------------------------------------------- |
+| Move / sprint               | WASD / Shift             | Floating left stick; push farther to sprint |
+| Look                        | Mouse with pointer lock  | Drag right side or SHOOT                    |
+| Fire / use selected tool    | Left click               | Hold SHOOT / PLACE / DIG                    |
+| Aim                         | Right click              | Tap AIM to toggle                           |
+| Jump / zombie wall scramble | Space                    | Hold JUMP                                   |
+| Crouch                      | Hold C                   | Tap CROUCH to toggle                        |
+| Reload                      | R                        | RELOAD                                      |
+| Select weapon / tool        | 1–7 or mouse wheel       | Tap weapon name; choose from picker         |
+| Throw grenade               | G                        | FRAG button                                 |
+| Class ability               | V                        | Named ability button                        |
+| Change class                | Class badge / pause menu | Class badge / pause menu                    |
+| Dig                         | Hold Q                   | BUILD → hold DIG                            |
+| Build                       | Hold E                   | BUILD → hold PLACE; tap again for gun       |
+| Jetpack                     | Hold F                   | Hold JET                                    |
+| Expand minimap              | M                        | Tap MAP; tap CLOSE MAP to dismiss           |
+| Scores                      | Hold Tab                 | Scores button                               |
+| Pause / release mouse       | Esc                      | Pause button                                |
+| Relay interaction / pickup  | Walk near it             | Walk near it                                |
 
-1 Rifle · 2 SMG · 3 Shotgun · 4 Marksman · 5 Spade · 6 Blocks. Digging yields blocks, up to 200; respawns start with 80. Terrain edits reach six blocks; zombies dig seven blocks away. The bottom layer and a small spawn foundation are protected. Placement inside living players is rejected. Edits last until the next round, and late joiners receive the current edited map.
+1 Rifle · 2 SMG · 3 Shotgun · 4 Marksman · 5 Spade · 6 Blocks · 7 Blast launcher. Digging yields blocks, up to 200; class loadouts determine starting reserves. Terrain edits reach six blocks; zombies dig seven blocks away. The bottom layer and a small spawn foundation are protected, including against explosions. Placement inside living players is rejected. Edits last until the next round, and late joiners receive the current edited map. Zombies cannot use explosives or class abilities.
 
 Settings save locally: quality preset, render distance, effects, FOV, master/effects volume, desktop/touch sensitivity, touch control scale, invert look and crosshair. Dynamic shadows, background music, controller support and custom keyboard bindings are not implemented.
 

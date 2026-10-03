@@ -16,7 +16,7 @@
       <div class="brand">
         <span class="brand-mark">BR</span
         ><span>BLOCKFRONT<br /><b>RELAY</b></span
-        ><small>ALPHA 0.7</small>
+        ><small>2.0 · FRONTIER FORCES</small>
       </div>
       <p class="eyebrow">PROCEDURAL FRONTIERS</p>
       <h1>Dig in.<br />Build your advantage.</h1>
@@ -30,6 +30,7 @@
           maxlength="20"
           value="Builder"
           autocomplete="nickname" /></label
+      ><button id="class-open">Class: Trailguard ▾</button
       ><button id="play" class="primary">Play multiplayer</button
       ><button id="practice">Practice with NPCs</button>
       <div class="menu-row">
@@ -111,9 +112,9 @@
       </div>
       <p>
         <b>PC / Mac</b><br />WASD move · Shift sprint · Space jump · C crouch<br />Mouse
-        aim · Left click fire / tool · Right click aim<br />R reload · 1–6 or
+        aim · Left click fire / tool · Right click aim<br />R reload · 1–7 or
         wheel select · Q dig · E place<br />F jetpack · M expand map · Tab
-        scoreboard · Esc pause
+        scoreboard · Esc pause · G grenade · V class ability
       </p>
       <p>
         <b>iPhone / iPad</b><br />Left stick to move; push farther to sprint.
@@ -122,6 +123,12 @@
         name to choose directly. BUILD opens the digging/placement tools; SHOOT
         becomes PLACE or DIG for the selected tool. Tap BUILD again to return to
         your gun.
+      </p>
+      <p>
+        <b>Frontier forces</b><br />Choose a class before deploying, or queue a
+        change using your class badge. Tap FRAG for a grenade and the named
+        ability for your class skill. Desktop: G grenade, V ability, 7 blast
+        launcher. Explosives can damage you as well as carve terrain.
       </p>
       <p>
         <b>Relay</b><br />Touch the enemy relay to collect it. Bring it to your
@@ -153,6 +160,22 @@
         <small>▲ YOU · ● TEAM · ◆ RELAY</small>
       </aside>
       <div id="crosshair">+</div>
+      <button id="class-hud">TRAILGUARD ▾</button>
+      <div id="tactical-controls">
+        <button
+          id="grenade-button"
+          data-action="grenade"
+          aria-label="Throw grenade"
+        >
+          FRAG 2</button
+        ><button
+          id="ability-button"
+          data-action="ability"
+          aria-label="Use class ability"
+        >
+          RALLY
+        </button>
+      </div>
       <div id="hitmarker" class="hidden">×</div>
       <div id="feed"></div>
       <div id="banner" class="hidden"></div>
@@ -173,7 +196,7 @@
         <small id="reload-note"></small>
       </div>
       <div id="desktop-hint">
-        WASD move · 1–6 tools · Q dig · E build · F jet · Tab scores
+        WASD · 1–7 tools · G grenade · V ability · Q dig · E build · F jet
       </div>
     </div>
     <div id="touch" class="hidden">
@@ -243,7 +266,8 @@
         ><button data-weapon="2">Shotgun</button
         ><button data-weapon="3">Marksman</button
         ><button data-weapon="4">Spade</button
-        ><button data-weapon="5">Blocks</button>
+        ><button data-weapon="5">Blocks</button
+        ><button data-weapon="6">Launcher</button>
       </div>
       <div id="touch-tip" class="hidden">
         Left thumb: move · Right thumb: look<br />Drag SHOOT to aim while firing
@@ -261,7 +285,20 @@
       <p>The match continues while paused.</p>
       <button id="resume" class="primary">Resume</button
       ><button id="pause-settings">Settings</button
+      ><button id="pause-class">Change class</button
       ><button id="leave">Leave match</button>
+    </section>
+    <section id="class-menu" class="modal hidden">
+      <div class="modal-head">
+        <h2>Frontier forces</h2>
+        <button id="class-close">Done</button>
+      </div>
+      <p>
+        Choose your role. Changes during a match apply on your next respawn.
+        Every class can build, dig and use the sandbox arsenal.
+      </p>
+      <div id="class-cards"></div>
+      <p id="class-choice-note">Select a class, then deploy.</p>
     </section>
     <script type="module" src="/main.ts"></script>
   </body>

@@ -29,6 +29,8 @@ Browser checks use real Chromium WebGL rendering, two browser pages and trusted 
 
 `npm run test:fieldwork` adds two real WebGL clients observing the same authoritative kit batch, desktop kit ghosts and scoped aiming, specialist weapon rejection, and native-touch kit selection/placement and class jetpacks on phone landscape/portrait and tablet sizes. Unit checks cover connected kit geometry, doors and solid ramps, rotations, atomic resource accounting, terrain/players/support/range/foundation rejection and late joins. Hosted checks cover specialist room creation and persistence. Browser test fixtures remain outside the deployed client/server endpoints.
 
+`npm run test:audio` runs actual Web Audio graphs after desktop/touch gesture unlocking. It checks non-silent PCM output, sustained rather than restarted engines, the four-engine cap, live mute and one-shot node cleanup. Audio mixing unit tests cover life/fuel/equipment, pause/visibility, nearest remote players, distance falloff, stereo heading and server-owned thrust snapshots. The normal two-client browser suite also checks in-game thrust starts and stops on F. These checks validate synthesis and lifecycle, not subjective fidelity to another game's sound recordings.
+
 Remaining validation:
 
 - Physical iPhone and iPad Safari; verify multitouch, audio unlocking, notch safe areas and thermal behavior during a full match.

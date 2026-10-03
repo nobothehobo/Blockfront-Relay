@@ -422,6 +422,7 @@ export class Room {
         }) => ({
           ...p,
           aim: input.aim,
+          thrusting: p.dead <= 0 && p.jetpack && input.jet && p.fuel > 0,
           ...Object.fromEntries(
             ["yaw", "pitch", "protected", "reload"].map((key) => [
               key,

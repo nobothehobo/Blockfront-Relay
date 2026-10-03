@@ -115,8 +115,10 @@ try {
     document.querySelector("#reload-note")?.textContent?.includes("RELOADING"),
   );
   await a.keyboard.down("KeyF");
+  await a.waitForFunction(() => (window as any).BR.audio.engines > 0);
   await a.waitForTimeout(700);
   await a.keyboard.up("KeyF");
+  await a.waitForFunction(() => (window as any).BR.audio.engines === 0);
   assert.ok(
     await a.evaluate(() => (window as any).BR.player.fuel < 95),
     "Jetpack fuel consumed",

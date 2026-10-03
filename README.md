@@ -15,6 +15,8 @@ The browser client has a main menu, server browser, custom rooms, settings, and 
 
 The north-up minimap shows terrain, your heading, living teammates, bases, relay objectives and jetpack pickups. It updates after terrain edits and round changes, without revealing enemy positions.
 
+Audio uses original synthesized retro gun reports, mechanical reloads, crunchy block impacts and fuller explosions. Continuous jetpack thrust includes ignition/shutdown, fuel-dependent tone and nearby-player stereo engines. Loops respect mute, pause, life and fuel. See [audio design and limits](docs/AUDIO.md).
+
 **2.0:** choose Trailguard (rifle + nearby healing), Skirmisher (SMG + speed burst), Sapper (blast launcher + building resupply), or Surveyor (marksman + accuracy focus). Each has distinct health, speed, block/grenade reserves and original field-kit silhouettes. Class changes apply on respawn; every role retains access to the sandbox arsenal. Grenades bounce and explode; launcher rounds detonate on impact. Both damage players and carve synchronized voxel craters. Animated bullet streaks follow authoritative hitscan endpoints; bounded instanced debris, smoke, muzzle flashes and explosion audio add feedback. Terrain gains baked corner shading. See [2.0 release notes](docs/UPDATE-20.md).
 
 **2.1:** original cover walls (6 blocks), connected four-step ramps (30) and open-door shelters (50) can be placed as an atomic kit. Select Blocks, then B or the touch KIT button to cycle; green/red footprint ghosts show whether placement is valid. All cells are checked for resources, terrain, players, support, range and protected foundations before any are created. Server edit batches replicate to everyone and late joins. Custom rooms now offer **Specialist loadouts** and **Class jetpacks** by default; these do not change existing sandbox rooms. Only Sapper can use the launcher in specialist rooms, Skirmishers get class jetpacks, and Sappers dig faster. Weapon handling gains bounded cosmetic recoil, smoother aim transitions and an original marksman optic. See [Fieldwork and reference research](docs/UPDATE-21.md).
@@ -148,6 +150,7 @@ BR_TRANSPORT=http npm run test:browser
 npm run test:elimination
 npm run test:polish
 npm run test:fieldwork
+npm run test:audio
 ```
 
 PowerShell users can set `$env:BR_BROWSER_PATH` and `$env:BR_TRANSPORT` instead. Tests start and stop their own server; no existing server is required. Browser QA uses two real browser pages, desktop keyboard/mouse and trusted emulated touch events. It saves screenshots under ignored `artifacts/`.

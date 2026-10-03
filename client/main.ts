@@ -24,6 +24,7 @@ import { stickInput, touchLookGain } from "./control-math.js";
 import { eliminationCamera } from "./elimination.js";
 import { Terrain } from "./mesh.js";
 import { Sound } from "./audio.js";
+import { jetVoices } from "./audio-mix.js";
 import { Sky } from "./sky.js";
 import { playerPose } from "./animation.js";
 import { CombatFX } from "./combat-fx.js";
@@ -97,7 +98,6 @@ let yaw = 0,
   hitUntil = 0,
   damageUntil = 0,
   stepAt = 0,
-  jetSoundAt = 0,
   mouseLocked = false,
   firstState = true,
   networkMode = "ws",
@@ -713,6 +713,7 @@ function message(msg: any) {
   } else if (msg.type === "error") disconnect(msg.message ?? "Server error");
 }
 function disconnect(reason = "Disconnected. Join a room to reconnect.") {
+  sound.stopJets();
   combatFX.clear();
   clearElimination();
   connected = false;
@@ -893,7 +894,7 @@ function handleEvent(e: any) {
       );
       if (predictedShotTimes.length) predictedShotTimes.shift();
       else {
-        sound.play("shot");
+        sound.play("shot", 1, e.weapon);
         lastShot = performance.now();
       }
     } else if (
@@ -901,13 +902,40 @@ function handleEvent(e: any) {
       e.origin &&
       Math.hypot(local.x - e.origin.x, local.z - e.origin.z) < 40
     )
-      sound.play("shot", 0.25);
+      sound.play("shot", 0.25, e.weapon);
     if (isFirearm(e.weapon) && e.origin)
       combatFX.shot(e.origin, e.traces ?? []);
+    if (local && e.traces?.length) {
+      const distance = Math.min(
+        ...e.traces.map((p: any) =>
+          Math.hypot(p.x - local!.x, p.y - local!.y - 1.5, p.z - local!.z),
+        ),
+      );
+      if (distance < 10) sound.play("impact", 0.3 * (1 - distance / 10));
+    }
   }
   if (e.kind === "launch" && local) {
-    sound.play("shot", 0.6);
-    if (e.id === id) lastShot = performance.now();
+    predictedShotTimes = predictedShotTimes.filter(
+      (at) => performance.now() - at < 1500,
+    );
+    const distance = e.projectile
+      ? Math.hypot(
+          local.x - e.projectile.x,
+          local.y - e.projectile.y,
+          local.z - e.projectile.z,
+        )
+      : 0;
+    if (e.projectile?.kind === "grenade") {
+      if (distance < 25)
+        sound.play("throw", e.id === id ? 0.7 : 0.25 * (1 - distance / 25));
+    } else {
+      if (e.id !== id && distance < 60)
+        sound.play("shot", 0.45 * (1 - distance / 60), 6);
+      if (e.id === id && !predictedShotTimes.length) {
+        sound.play("shot", 0.8, 6);
+        lastShot = performance.now();
+      } else if (e.id === id) predictedShotTimes.shift();
+    }
   }
   if (e.kind === "explosion") {
     combatFX.explosion(e.pos, camera.position);
@@ -1129,6 +1157,7 @@ function setPause(on: boolean) {
   paused = on;
   show("pause", on);
   if (on) {
+    sound.stopJets();
     resetInput();
     document.exitPointerLock?.();
   } else if (!touch) canvas.requestPointerLock?.();
@@ -1663,7 +1692,7 @@ function frame(now: number) {
       now >= nextShotFeedback
     ) {
       // Immediate cosmetic response; hits, damage and ammo remain authoritative.
-      sound.play("shot");
+      sound.play("shot", 1, input.weapon);
       lastShot = now;
       predictedShotTimes.push(now);
       nextShotFeedback = now + WEAPONS[input.weapon].interval * 1000;
@@ -1738,21 +1767,14 @@ function frame(now: number) {
       weaponGroup.userData.flash.visible =
         now - lastShot < 65 && local.reload <= 0;
     if (
+      local.dead <= 0 &&
+      !paused &&
       local.ground &&
       Math.hypot(local.vx, local.vz) > 1 &&
       now - stepAt > 370
     ) {
       sound.play("step", 0.3);
       stepAt = now;
-    }
-    if (
-      input.jet &&
-      local.jetpack &&
-      local.fuel > 0 &&
-      now - jetSoundAt > 110
-    ) {
-      sound.play("jet", 0.4);
-      jetSoundAt = now;
     }
     const hit = ray(world, ep, direction(yaw, pitch), 6);
     const kit = input.buildKit ?? 0;
@@ -1878,6 +1900,16 @@ function frame(now: number) {
     camera.position.y += Math.cos(now * 0.053) * combatFX.shake;
   }
   sky.update(camera, now / 1000);
+  sound.updateJets(
+    jetVoices(
+      connected ? local : null,
+      input.jet,
+      state?.players ?? [],
+      yaw,
+      paused,
+      document.hidden,
+    ),
+  );
   if (connected && local && state)
     minimap.update(now, state, { ...local, yaw });
   renderer.render(scene, camera);
@@ -1959,6 +1991,9 @@ setInterval(() => {
       tracers: combatFX.tracers.length,
       projectiles: combatFX.projectiles.length,
     };
+  },
+  get audio() {
+    return sound.diagnostics;
   },
   get construction() {
     return {

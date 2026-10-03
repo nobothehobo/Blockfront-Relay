@@ -1,6 +1,6 @@
 {
   "name": "blockfront-relay",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,6 +14,7 @@
     "test:browser": "node --import tsx tests/browser.ts",
     "test:elimination": "node --import tsx tests/elimination-browser.ts",
     "test:polish": "node --import tsx tests/polish-browser.ts",
+    "test:fieldwork": "node --import tsx tests/fieldwork-browser.ts",
     "format": "prettier --write client server shared worker/index.ts worker/assets.generated.d.ts tests docs db scripts/*.mjs *.json *.md *.yaml"
   },
   "dependencies": {

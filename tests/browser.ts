@@ -180,6 +180,8 @@ try {
     else {
       await p.locator("#browse").tap();
       await p.locator("#room-name").fill(`Touch ${viewport.name}`);
+      await p.locator("#arsenal").selectOption("sandbox");
+      await p.locator("#jet-mode").selectOption("all");
       await p.locator("#create").tap();
     }
     await p.waitForFunction(() => (window as any).BR.connected);

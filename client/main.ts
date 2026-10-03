@@ -27,7 +27,15 @@ import { Sound } from "./audio.js";
 import { Sky } from "./sky.js";
 import { playerPose } from "./animation.js";
 import { CombatFX } from "./combat-fx.js";
-import { CLASSES, classInfo, validClass } from "../shared/classes.js";
+import {
+  CLASSES,
+  classInfo,
+  validClass,
+  allowedWeapon,
+} from "../shared/classes.js";
+import { KITS } from "../shared/fortifications.js";
+import { FortificationView } from "./fortification-view.js";
+import { weaponPose } from "./weapon-pose.js";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const show = (id: string, on = true) => $(id).classList.toggle("hidden", !on);
@@ -140,6 +148,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.12;
 const scene = new THREE.Scene();
 const combatFX = new CombatFX(scene);
+const fortifications = new FortificationView(scene);
 scene.fog = new THREE.Fog(0xa9c3bd, 30, 100);
 scene.add(terrain.group);
 const ambient = new THREE.HemisphereLight(0xe4efff, 0x626349, 1.55);
@@ -627,7 +636,7 @@ async function refreshRooms() {
       const title = document.createElement("strong");
       title.textContent = r.name;
       const meta = document.createElement("small");
-      meta.textContent = `${r.bots ? `${r.bots} NPCs · ` : ""}${r.mode === "tdm" ? "Team deathmatch" : r.mode === "relay" ? "Capture the relay" : "Humans vs Zombies"} · ${r.players}/${r.max} players\n${r.map} · Jetpacks ${r.jet}`;
+      meta.textContent = `${r.bots ? `${r.bots} NPCs · ` : ""}${r.mode === "tdm" ? "Team deathmatch" : r.mode === "relay" ? "Capture the relay" : "Humans vs Zombies"} · ${r.players}/${r.max} players\n${r.map} · ${r.arsenal === "specialists" ? "Specialists" : "Sandbox"} · Jetpacks ${r.jet}`;
       meta.style.whiteSpace = "pre-line";
       info.append(title, meta);
       const joinButton = document.createElement("button");
@@ -1051,7 +1060,13 @@ function updateHud() {
     for (const b of document.querySelectorAll<HTMLButtonElement>(
       "[data-weapon]",
     ))
-      b.disabled = p.zombie && Number(b.dataset.weapon) !== 4;
+      b.disabled = p.zombie
+        ? Number(b.dataset.weapon) !== 4
+        : !allowedWeapon(
+            p.classId,
+            Number(b.dataset.weapon),
+            state.arsenal === "specialists",
+          );
   }
   $("score-rows").replaceChildren();
   const header = document.createElement("div");
@@ -1178,7 +1193,8 @@ window.addEventListener("keydown", (e) => {
     (input as any)[binding[e.code]] = true;
     pulses[binding[e.code]] = true;
   }
-  if (/^Digit[1-7]$/.test(e.code)) input.weapon = Number(e.code.slice(-1)) - 1;
+  if (e.code === "KeyB" && !e.repeat) cycleKit();
+  if (/^Digit[1-7]$/.test(e.code)) chooseWeapon(Number(e.code.slice(-1)) - 1);
 });
 window.addEventListener("keyup", (e) => {
   held.delete(e.code);
@@ -1204,7 +1220,21 @@ window.addEventListener(
   (e) => {
     if (connected && !paused && mouseLocked) {
       e.preventDefault();
-      input.weapon = (input.weapon + (e.deltaY > 0 ? 1 : 6)) % 7;
+      for (let n = 1; n <= 7; n++) {
+        const candidate = (input.weapon + n * (e.deltaY > 0 ? 1 : 6)) % 7;
+        if (
+          local?.zombie
+            ? candidate === 4
+            : allowedWeapon(
+                local?.classId,
+                candidate,
+                state?.arsenal === "specialists",
+              )
+        ) {
+          chooseWeapon(candidate);
+          break;
+        }
+      }
     }
   },
   { passive: false },
@@ -1335,6 +1365,11 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
 }
 let lastGun = 0;
 function chooseWeapon(weapon: number) {
+  if (
+    !local?.zombie &&
+    !allowedWeapon(local?.classId, weapon, state?.arsenal === "specialists")
+  )
+    return;
   input.weapon = local?.zombie ? 4 : weapon;
   if (isFirearm(input.weapon)) lastGun = input.weapon;
   if (local) {
@@ -1364,6 +1399,12 @@ function chooseWeapon(weapon: number) {
   $("switch-weapon").setAttribute("aria-expanded", "false");
   sound.play("ui");
 }
+function cycleKit() {
+  if (!connected || paused || local?.zombie || local?.dead) return;
+  input.buildKit = ((input.buildKit ?? 0) + 1) % KITS.length;
+  chooseWeapon(5);
+}
+$("kit-button").onclick = cycleKit;
 $("switch-weapon").onclick = () => {
   const open = $("weapon-picker").classList.contains("hidden");
   show("weapon-picker", open);
@@ -1511,6 +1552,7 @@ $("create").onclick = async () => {
         name: $<HTMLInputElement>("room-name").value,
         mode: $<HTMLSelectElement>("mode").value,
         jet: $<HTMLSelectElement>("jet-mode").value,
+        arsenal: $<HTMLSelectElement>("arsenal").value,
         seed: $<HTMLInputElement>("seed").value
           ? Number($<HTMLInputElement>("seed").value)
           : undefined,
@@ -1661,19 +1703,33 @@ function frame(now: number) {
       camera.position.set(view.position.x, view.position.y, view.position.z);
       camera.lookAt(view.focus.x, view.focus.y, view.focus.z);
     }
-    show("crosshair", local.dead <= 0);
-    camera.fov =
+    const scoped = input.aim && local.dead <= 0 && local.weapon === 3;
+    show("scope", scoped);
+    show("crosshair", local.dead <= 0 && !scoped);
+    const targetFov =
       settings.fov -
-      (input.aim && local.dead <= 0 ? (local.weapon === 3 ? 37 : 14) : 0);
+      (input.aim && local.dead <= 0
+        ? scoped
+          ? Math.min(52, settings.fov - 22)
+          : 14
+        : 0);
+    camera.fov = THREE.MathUtils.lerp(
+      camera.fov,
+      targetFov,
+      1 - Math.exp(-dt * 16),
+    );
     camera.updateProjectionMatrix();
-    weaponGroup.visible = local.dead <= 0;
-    weaponGroup.position.y =
-      local.reload > 0
-        ? -0.15
-        : Math.sin(now * 0.01) *
-          Math.min(0.012, Math.hypot(local.vx, local.vz) * 0.002);
-    weaponGroup.position.z = Math.max(0, 1 - (now - lastShot) / 110) * 0.05;
-    weaponGroup.position.x = input.aim ? -0.15 : 0;
+    weaponGroup.visible = local.dead <= 0 && !scoped;
+    const pose = weaponPose(
+      now - lastShot,
+      local.weapon,
+      Math.hypot(local.vx, local.vz),
+      now,
+      input.aim,
+      local.reload,
+    );
+    weaponGroup.position.set(pose.x, pose.y, pose.z);
+    weaponGroup.rotation.set(pose.pitch, 0, pose.roll);
     if (modelWeapon !== local.weapon) {
       modelWeapon = local.weapon;
       setWeaponModel(modelWeapon);
@@ -1681,8 +1737,6 @@ function frame(now: number) {
     if (weaponGroup.userData.flash)
       weaponGroup.userData.flash.visible =
         now - lastShot < 65 && local.reload <= 0;
-    weaponGroup.rotation.z =
-      local.reload > 0 ? Math.sin(local.reload * 4) * 0.12 : 0;
     if (
       local.ground &&
       Math.hypot(local.vx, local.vz) > 1 &&
@@ -1701,8 +1755,19 @@ function frame(now: number) {
       jetSoundAt = now;
     }
     const hit = ray(world, ep, direction(yaw, pitch), 6);
-    outline.visible = !!hit && local.dead <= 0;
-    if (hit) outline.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
+    const kit = input.buildKit ?? 0;
+    fortifications.update(now, world, local, state.players, kit, yaw, pitch);
+    const building = local.weapon === 5 && !local.zombie && local.dead <= 0;
+    show("construction-panel", building);
+    $("kit-button").textContent = `KIT: ${KITS[kit].name.toUpperCase()} ▾`;
+    $("kit-hint").textContent = kit
+      ? `${KITS[kit].cells.length} blocks · ${fortifications.reason}`
+      : "1 block · Tap KIT / B to cycle";
+    outline.visible = !!hit && local.dead <= 0 && !(building && kit > 0);
+    if (hit) {
+      const target = building ? hit.previous : hit;
+      outline.position.set(target.x + 0.5, target.y + 0.5, target.z + 0.5);
+    }
     terrain.distance(local.x, local.z, settings.distance);
     if (now - lastNet > (networkMode === "http" ? 100 : 50)) {
       lastNet = now;
@@ -1799,6 +1864,9 @@ function frame(now: number) {
     );
     camera.lookAt(W / 2 - 1, 14, D / 2 - 6);
     weaponGroup.visible = false;
+    show("scope", false);
+    show("construction-panel", false);
+    fortifications.mesh.count = 0;
     outline.visible = false;
     flagMeshes.forEach((f) => (f.visible = false));
     terrain.distance(W / 2, D / 2, 160);
@@ -1890,6 +1958,14 @@ setInterval(() => {
       particles: combatFX.particles.length,
       tracers: combatFX.tracers.length,
       projectiles: combatFX.projectiles.length,
+    };
+  },
+  get construction() {
+    return {
+      kit: input.buildKit ?? 0,
+      ghosts: fortifications.mesh.count,
+      reason: fortifications.reason,
+      edits: [...world.edits],
     };
   },
   get animation() {

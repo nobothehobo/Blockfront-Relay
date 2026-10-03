@@ -28,4 +28,6 @@ Hosted transport adds `POST /api/join`, `/api/input`, `/api/leave`. Join returns
 
 The optional `bots` setting requests 0–8 NPC slots. Room descriptions report actual `bots` and configured `npcSlots`; player snapshots carry a `bot` flag. Bots use no client connections or session tokens and cannot be controlled by human input endpoints.
 
+2.1 adds optional integer input `buildKit` (0–3), room/state `arsenal` (`sandbox` / `specialists`) and jetpack rule `classes`. Larger construction kits reuse the `edits` batch message and existing persistent index/value edits. Clients cannot supply kit coordinates or costs. These fields are additive to hosted format 5; existing rooms and sessions remain compatible.
+
 2.0 snapshots include class/current pending class, grenade reserves/cooldowns, ability duration/cooldown and live projectiles with server positions, velocities and fuses. `launch` events introduce ordnance; `explosion` events carry the position and `projectileKind`. `shot` events include actual hitscan endpoints for animated tracers. HTTP join accepts optional `classId`. Clients cannot submit projectile creation, damage, explosion positions or resource counts. Hosted format 5 resets prior sessions on upgrade.

@@ -1001,6 +1001,85 @@ body.touch #minimap.expanded {
   background: #142f3de6;
   font-size: 11px;
 }
+#construction-panel {
+  position: absolute;
+  bottom: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 210px;
+  text-align: center;
+  pointer-events: auto;
+}
+#construction-panel button {
+  width: 100%;
+  min-height: 44px;
+  font-size: 11px;
+  padding: 8px;
+  background: #143d39e6;
+}
+#kit-hint {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
+  text-shadow: 0 1px 3px #000;
+  color: #fff0cd;
+}
+body.touch #construction-panel {
+  left: 18px;
+  top: 212px;
+  bottom: auto;
+  transform: none;
+  width: 150px;
+}
+#scope {
+  position: fixed;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at center,
+    transparent 0 28vh,
+    #09131aee 28.5vh
+  );
+}
+.scope-reticle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 56vh;
+  height: 56vh;
+  border: 2px solid #758e8980;
+  border-radius: 50%;
+}
+.scope-reticle i,
+.scope-reticle b {
+  position: absolute;
+  display: block;
+  background: #143b36;
+}
+.scope-reticle i {
+  top: 50%;
+  left: 10%;
+  width: 80%;
+  height: 1px;
+}
+.scope-reticle b {
+  top: 10%;
+  left: 50%;
+  height: 80%;
+  width: 1px;
+}
+.scope-reticle span {
+  position: absolute;
+  top: 72%;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: #355349;
+}
 #tactical-controls {
   position: absolute;
   bottom: 46px;
@@ -1060,6 +1139,9 @@ body.touch #class-hud {
   top: 155px;
 }
 @media (orientation: portrait) {
+  body.touch #construction-panel {
+    top: 362px;
+  }
   body.touch #class-hud {
     top: 310px;
   }
@@ -1075,6 +1157,10 @@ body.touch #class-hud {
   }
 }
 @media (max-height: 520px) {
+  body.touch #construction-panel {
+    left: 188px;
+    top: 174px;
+  }
   body.touch #tactical-controls {
     bottom: 52px;
   }

@@ -27,6 +27,8 @@ Automated checks are in `tests/`. Unit tests exercise the actual authoritative R
 
 Browser checks use real Chromium WebGL rendering, two browser pages and trusted emulated touch events. Desktop checks include pointer lock, keyboard movement, weapon selection, shooting, reload and jetpacks. Phone landscape (844 × 390), phone portrait (390 × 844), and tablet (1024 × 768) checks include joystick movement, touch camera, fire/build/dig/jump/reload/jet inputs, aim toggling, direct weapon selection, drag-to-fire aiming, simultaneous two-thumb movement/firing and control bounds. Minimap checks verify full terrain initialization, desktop M toggle, touch open/close, and compact/expanded map bounds in each viewport. iPad-sized checks launch an NPC practice match. Screenshots are inspected for layout defects. The same suite can run against the hosted HTTP adapter's local SQL-backed harness.
 
+`npm run test:fieldwork` adds two real WebGL clients observing the same authoritative kit batch, desktop kit ghosts and scoped aiming, specialist weapon rejection, and native-touch kit selection/placement and class jetpacks on phone landscape/portrait and tablet sizes. Unit checks cover connected kit geometry, doors and solid ramps, rotations, atomic resource accounting, terrain/players/support/range/foundation rejection and late joins. Hosted checks cover specialist room creation and persistence. Browser test fixtures remain outside the deployed client/server endpoints.
+
 Remaining validation:
 
 - Physical iPhone and iPad Safari; verify multitouch, audio unlocking, notch safe areas and thermal behavior during a full match.

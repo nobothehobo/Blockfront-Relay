@@ -12,11 +12,14 @@
   <body>
     <canvas id="game" aria-label="Blockfront Relay game world"></canvas>
     <div id="vignette"></div>
+    <div id="scope" class="hidden" aria-hidden="true">
+      <div class="scope-reticle"><i></i><b></b><span>FIELD OPTIC</span></div>
+    </div>
     <section id="menu" class="panel">
       <div class="brand">
         <span class="brand-mark">BR</span
         ><span>BLOCKFRONT<br /><b>RELAY</b></span
-        ><small>2.0 · FRONTIER FORCES</small>
+        ><small>2.1 · FIELDWORK</small>
       </div>
       <p class="eyebrow">PROCEDURAL FRONTIERS</p>
       <h1>Dig in.<br />Build your advantage.</h1>
@@ -68,7 +71,11 @@
           <option value="tdm">Team deathmatch</option>
           <option value="relay">Capture the relay</option>
           <option value="infection">Humans vs Zombies</option></select
-        ><select id="jet-mode">
+        ><select id="arsenal" aria-label="Class loadout rules">
+          <option value="specialists">Specialist class loadouts</option>
+          <option value="sandbox">Sandbox: all weapons</option></select
+        ><select id="jet-mode" aria-label="Jetpack rules">
+          <option value="classes">Jetpacks: Skirmisher class</option>
           <option value="all">Jetpacks: everyone</option>
           <option value="pickup">Jetpacks: pickup</option>
           <option value="off">Jetpacks: disabled</option>
@@ -114,7 +121,7 @@
         <b>PC / Mac</b><br />WASD move · Shift sprint · Space jump · C crouch<br />Mouse
         aim · Left click fire / tool · Right click aim<br />R reload · 1–7 or
         wheel select · Q dig · E place<br />F jetpack · M expand map · Tab
-        scoreboard · Esc pause · G grenade · V class ability
+        scoreboard · Esc pause · G grenade · V class ability · B cycle build kit
       </p>
       <p>
         <b>iPhone / iPad</b><br />Left stick to move; push farther to sprint.
@@ -122,13 +129,18 @@
         to toggle zoom. Hold JUMP or JET; tap RELOAD or CROUCH. Tap the weapon
         name to choose directly. BUILD opens the digging/placement tools; SHOOT
         becomes PLACE or DIG for the selected tool. Tap BUILD again to return to
-        your gun.
+        your gun. With Blocks selected, tap KIT to cycle a cover wall, ramp,
+        shelter or single block. Green ghosts are placeable; red ghosts show why
+        placement is blocked.
       </p>
       <p>
         <b>Frontier forces</b><br />Choose a class before deploying, or queue a
         change using your class badge. Tap FRAG for a grenade and the named
         ability for your class skill. Desktop: G grenade, V ability, 7 blast
-        launcher. Explosives can damage you as well as carve terrain.
+        launcher (Sapper in specialist rooms). In Specialist loadouts each class
+        has its own weapons; Skirmisher gets the jetpack when Class jetpacks is
+        selected. Sappers dig twice as fast. Explosives can damage you as well
+        as carve terrain.
       </p>
       <p>
         <b>Relay</b><br />Touch the enemy relay to collect it. Bring it to your
@@ -160,6 +172,12 @@
         <small>▲ YOU · ● TEAM · ◆ RELAY</small>
       </aside>
       <div id="crosshair">+</div>
+      <div id="construction-panel" class="hidden">
+        <button id="kit-button" aria-label="Cycle building kit">
+          KIT: SINGLE BLOCK ▾
+        </button>
+        <small id="kit-hint" role="status"></small>
+      </div>
       <button id="class-hud">TRAILGUARD ▾</button>
       <div id="tactical-controls">
         <button
@@ -196,7 +214,8 @@
         <small id="reload-note"></small>
       </div>
       <div id="desktop-hint">
-        WASD · 1–7 tools · G grenade · V ability · Q dig · E build · F jet
+        WASD · 1–7 tools · G grenade · V ability · Q dig · E build · B kit · F
+        jet
       </div>
     </div>
     <div id="touch" class="hidden">
@@ -295,7 +314,9 @@
       </div>
       <p>
         Choose your role. Changes during a match apply on your next respawn.
-        Every class can build, dig and use the sandbox arsenal.
+        Every class can build and dig. Sandbox rooms unlock all weapons;
+        Specialist rooms enforce class loadouts. Sapper carries shotgun +
+        launcher and digs faster. Class jetpacks equip only Skirmishers.
       </p>
       <div id="class-cards"></div>
       <p id="class-choice-note">Select a class, then deploy.</p>

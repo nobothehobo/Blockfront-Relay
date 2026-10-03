@@ -1,6 +1,6 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.0 — Frontier Forces.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.1 — Fieldwork.**
 
 Source: [nobothehobo/Blockfront-Relay](https://github.com/nobothehobo/Blockfront-Relay).
 
@@ -11,11 +11,13 @@ The browser client has a main menu, server browser, custom rooms, settings, and 
 - **Team deathmatch:** Azure vs Ember; 40 eliminations or five minutes.
 - **Capture the relay:** steal the enemy relay and bring it home while your own relay is home; three captures wins. Approach objectives to interact automatically. Dropped relays return after 25 seconds.
 - **Humans vs Zombies:** humans survive five minutes. One carrier per five players starts infected, with at least one carrier. Eliminated humans convert to zombies. Zombies have melee only, more health, regeneration, stronger jumps, wall scrambling, and faster digging.
-- **Jetpacks:** configurable off / everyone / central pickup / relay and outbreak modes. Fuel, gravity, momentum, collisions and fall damage are server controlled.
+- **Jetpacks:** configurable off / everyone / central pickup / relay and outbreak modes / Skirmisher class only. Fuel, gravity, momentum, collisions and fall damage are server controlled.
 
 The north-up minimap shows terrain, your heading, living teammates, bases, relay objectives and jetpack pickups. It updates after terrain edits and round changes, without revealing enemy positions.
 
 **2.0:** choose Trailguard (rifle + nearby healing), Skirmisher (SMG + speed burst), Sapper (blast launcher + building resupply), or Surveyor (marksman + accuracy focus). Each has distinct health, speed, block/grenade reserves and original field-kit silhouettes. Class changes apply on respawn; every role retains access to the sandbox arsenal. Grenades bounce and explode; launcher rounds detonate on impact. Both damage players and carve synchronized voxel craters. Animated bullet streaks follow authoritative hitscan endpoints; bounded instanced debris, smoke, muzzle flashes and explosion audio add feedback. Terrain gains baked corner shading. See [2.0 release notes](docs/UPDATE-20.md).
+
+**2.1:** original cover walls (6 blocks), connected four-step ramps (30) and open-door shelters (50) can be placed as an atomic kit. Select Blocks, then B or the touch KIT button to cycle; green/red footprint ghosts show whether placement is valid. All cells are checked for resources, terrain, players, support, range and protected foundations before any are created. Server edit batches replicate to everyone and late joins. Custom rooms now offer **Specialist loadouts** and **Class jetpacks** by default; these do not change existing sandbox rooms. Only Sapper can use the launcher in specialist rooms, Skirmishers get class jetpacks, and Sappers dig faster. Weapon handling gains bounded cosmetic recoil, smoother aim transitions and an original marksman optic. See [Fieldwork and reference research](docs/UPDATE-21.md).
 
 Maps now span 320 × 320 blocks with woodland, desert and snow themes, trenches, outposts and original ruins. Every next round generates a fresh seed. Create a room with 5/8/10-minute rounds and 16/32 slots; 32 slots require the dedicated WebSocket server. Hosted rooms remain capped at 16.
 
@@ -106,6 +108,7 @@ Build the hosted artifact with `npm run build:hosted`. `.openai/hosting.json` de
 | Change class                | Class badge / pause menu | Class badge / pause menu                    |
 | Dig                         | Hold Q                   | BUILD → hold DIG                            |
 | Build                       | Hold E                   | BUILD → hold PLACE; tap again for gun       |
+| Cycle construction kit      | B (selects Blocks)       | With Blocks selected, tap KIT               |
 | Jetpack                     | Hold F                   | Hold JET                                    |
 | Expand minimap              | M                        | Tap MAP; tap CLOSE MAP to dismiss           |
 | Scores                      | Hold Tab                 | Scores button                               |
@@ -142,6 +145,9 @@ For local Chromium QA, download Playwright Chromium with `npx playwright install
 ```sh
 npm run test:browser
 BR_TRANSPORT=http npm run test:browser
+npm run test:elimination
+npm run test:polish
+npm run test:fieldwork
 ```
 
 PowerShell users can set `$env:BR_BROWSER_PATH` and `$env:BR_TRANSPORT` instead. Tests start and stop their own server; no existing server is required. Browser QA uses two real browser pages, desktop keyboard/mouse and trusted emulated touch events. It saves screenshots under ignored `artifacts/`.

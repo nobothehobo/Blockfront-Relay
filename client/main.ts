@@ -1,6 +1,12 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { replay } from "../shared/prediction.js";
+import {
+  inputPacket,
+  MAX_PENDING_INPUTS,
+  requestJson,
+  ApiError,
+} from "./network.js";
 import "./style.css";
 import {
   World,
@@ -122,22 +128,17 @@ let lastPing = 0;
 let nextShotFeedback = 0;
 let predictedShotTimes: number[] = [];
 let sentCommand = 0;
+let lastStateAt = performance.now(),
+  retryAt = 0,
+  networkFailures = 0;
 let serverUrl =
   localStorage.getItem("br-server") ??
   (import.meta as any).env.VITE_SERVER_URL ??
   "";
 $("server-url").setAttribute("value", serverUrl);
 const base = () => serverUrl.replace(/\/$/, "");
-const api = async (path: string, options?: RequestInit) => {
-  const r = await fetch(base() + path, options);
-  if (!r.ok) {
-    const data = await r
-      .json()
-      .catch(() => ({ error: `Server error ${r.status}` }));
-    throw Error(data.error ?? `Server error ${r.status}`);
-  }
-  return r.json();
-};
+const api = (path: string, options?: RequestInit) =>
+  requestJson(base() + path, options);
 const world = new World(),
   terrain = new Terrain(world);
 terrain.prioritize(W / 2, D / 2);
@@ -734,6 +735,8 @@ function disconnect(reason = "Disconnected. Join a room to reconnect.") {
   ws?.close();
   ws = null;
   httpToken = "";
+  retryAt = 0;
+  networkFailures = 0;
   for (const r of remote.values()) disposePlayer(r);
   remote.clear();
   show("hud", false);
@@ -820,6 +823,7 @@ async function join(room: string) {
   }, 10000);
 }
 function handleState(next: any) {
+  lastStateAt = performance.now();
   state = next;
   combatFX.sync(next.projectiles ?? [], performance.now());
   const p = next.players.find((p: any) => p.id === id);
@@ -1062,7 +1066,9 @@ function updateHud() {
         ? "SPAWN SHIELD"
         : "";
   $("network").textContent =
-    `${ping} ms · ${networkMode === "http" ? "HTTP" : "WS"}`;
+    performance.now() - lastStateAt > 1500 || networkFailures
+      ? "Recovering connection…"
+      : `${ping} ms · ${networkMode === "http" ? "HTTP" : "WS"}`;
   let banner = "";
   if (state.phase === "finished")
     banner = `${state.winner} · Next round in ${Math.ceil(state.remaining)}s`;
@@ -1611,18 +1617,20 @@ $("create").onclick = async () => {
   }
 };
 async function sendInput() {
-  if (!connected) return;
-  const commands = (
+  if (!connected || performance.now() < retryAt) return;
+  const commands =
     networkMode === "ws"
       ? pendingInputs.filter((c) => c.seq > sentCommand)
-      : pendingInputs
-  ).slice(0, 64);
+      : pendingInputs;
   if (networkMode === "ws") {
     if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(
-        JSON.stringify({ type: "input", commands, epoch: predictionEpoch }),
+      if (ws.bufferedAmount > 8192) return;
+      const packet = inputPacket(
+        { type: "input", epoch: predictionEpoch },
+        commands,
       );
-      if (commands.length) sentCommand = commands[commands.length - 1].seq;
+      ws.send(packet.body);
+      if (packet.lastSeq !== undefined) sentCommand = packet.lastSeq;
       if (performance.now() - lastPing > 2000) {
         lastPing = performance.now();
         ws.send(JSON.stringify({ type: "ping", at: lastPing }));
@@ -1636,18 +1644,22 @@ async function sendInput() {
       const result = await api("/api/input", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          room: roomId,
-          token: httpToken,
+        body: inputPacket(
+          {
+            room: roomId,
+            token: httpToken,
+            epoch: predictionEpoch,
+            revision: (world as any).revision ?? 0,
+            cursor: httpCursor,
+            round: state?.round,
+          },
           commands,
-          epoch: predictionEpoch,
-          revision: (world as any).revision ?? 0,
-          cursor: httpCursor,
-          round: state?.round,
-        }),
+        ).body,
       });
       if (httpToken !== activeToken || !connected) return;
       ping = Math.round(performance.now() - start);
+      networkFailures = 0;
+      retryAt = 0;
       if (result.map) {
         world.seed = result.seed ?? world.seed;
         applyTheme();
@@ -1659,9 +1671,18 @@ async function sendInput() {
       (world as any).revision = result.revision;
       httpCursor = result.cursor;
     } catch (e) {
-      if ((e as Error).message.includes("Session"))
-        disconnect("Session expired. Rejoin the match.");
-      else $("network").textContent = "Connection unstable";
+      if (httpToken !== activeToken || !connected) return;
+      if (e instanceof ApiError && e.status === 401) {
+        const previousRoom = roomId;
+        disconnect("Session expired. Reconnecting…");
+        void join(previousRoom);
+      } else {
+        networkFailures++;
+        retryAt =
+          performance.now() +
+          Math.min(2000, 150 * 2 ** Math.min(networkFailures, 4));
+        $("network").textContent = "Recovering connection…";
+      }
     } finally {
       httpBusy = false;
     }
@@ -1677,6 +1698,10 @@ function frame(now: number) {
   if (!connected || !local) simulationFrame = now;
   terrain.update(2);
   if (connected && local) {
+    if (now - lastStateAt > 15000) {
+      disconnect("Connection lost. Check your internet and join again.");
+      return;
+    }
     input.forward = paused
       ? 0
       : touch
@@ -1712,7 +1737,7 @@ function frame(now: number) {
     accumulator += Math.min(0.25, Math.max(0, (now - simulationFrame) / 1000));
     simulationFrame = now;
     while (accumulator >= TICK) {
-      if (pendingInputs.length < 120) {
+      if (pendingInputs.length < MAX_PENDING_INPUTS) {
         const command = { ...input, seq: ++seq };
         for (const [key, on] of Object.entries(pulses))
           if (on) (command as any)[key] = true;

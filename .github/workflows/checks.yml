@@ -21,3 +21,4 @@ jobs:
       - run: npm run test:polish
       - run: npm run test:fieldwork
       - run: npm run test:audio
+      - run: npm run test:connection

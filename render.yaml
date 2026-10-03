@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: blockfront-relay
+    runtime: docker
+    healthCheckPath: /api/health
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: ALLOWED_ORIGINS
+        sync: false

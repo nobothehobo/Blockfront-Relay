@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"
+    />
+    <meta name="theme-color" content="#122a33" />
+    <title>Blockfront Relay</title>
+  </head>
+  <body>
+    <canvas id="game" aria-label="Blockfront Relay game world"></canvas>
+    <div id="vignette"></div>
+    <section id="menu" class="panel">
+      <div class="brand">
+        <span class="brand-mark">BR</span
+        ><span>BLOCKFRONT<br /><b>RELAY</b></span
+        ><small>ALPHA 0.4</small>
+      </div>
+      <p class="eyebrow">PROCEDURAL FRONTIERS</p>
+      <h1>Dig in.<br />Build your advantage.</h1>
+      <p class="intro">
+        An original voxel battlefield. Fight for your team, run the relay, or
+        survive the outbreak.
+      </p>
+      <label
+        >CALLSIGN<input
+          id="name"
+          maxlength="20"
+          value="Builder"
+          autocomplete="nickname" /></label
+      ><button id="play" class="primary">Play multiplayer</button
+      ><button id="practice">Practice with NPCs</button>
+      <div class="menu-row">
+        <button id="browse">Server browser</button
+        ><button id="settings-open">Settings</button
+        ><button id="controls-open">Controls</button>
+      </div>
+      <p id="status" role="status">Connecting to the server…</p>
+      <details>
+        <summary>About & connection</summary>
+        <p>
+          Original terrain, models, UI, code and synthesized sounds. MIT
+          licensed. Best played in landscape on a phone.
+        </p>
+        <label
+          >SERVER URL<input
+            id="server-url"
+            placeholder="Same origin, or https://your-server.example" /></label
+        ><button id="connect-server">Connect</button>
+        <p id="transport-note"></p>
+      </details>
+    </section>
+    <section id="browser" class="modal hidden">
+      <div class="modal-head">
+        <h2>Find your battlefield</h2>
+        <button data-close="browser">Close</button>
+      </div>
+      <p>All devices can join the same room. Rounds start with two players.</p>
+      <div id="rooms"></div>
+      <div class="create">
+        <h3>Create a match</h3>
+        <input id="room-name" placeholder="Room name" maxlength="30" /><select
+          id="mode"
+        >
+          <option value="tdm">Team deathmatch</option>
+          <option value="relay">Capture the relay</option>
+          <option value="infection">Humans vs Zombies</option></select
+        ><select id="jet-mode">
+          <option value="all">Jetpacks: everyone</option>
+          <option value="pickup">Jetpacks: pickup</option>
+          <option value="off">Jetpacks: disabled</option>
+          <option value="modes">Jetpacks: relay / outbreak</option></select
+        ><input
+          id="seed"
+          type="number"
+          placeholder="Random map seed"
+          aria-label="Map seed"
+        /><select id="round-duration" aria-label="Round duration">
+          <option value="300">5 minute rounds</option>
+          <option value="480">8 minute rounds</option>
+          <option value="600">10 minute rounds</option></select
+        ><select id="capacity" aria-label="Player capacity">
+          <option value="16">16 players</option>
+          <option value="32">32 players (WebSocket server)</option></select
+        ><select id="npc-count" aria-label="NPC players">
+          <option value="0">Players only</option>
+          <option value="2">2 NPC scouts</option>
+          <option value="4">4 NPC scouts</option>
+          <option value="6">6 NPC scouts</option>
+          <option value="8">8 NPC scouts</option></select
+        ><button id="create" class="primary">Create & join</button>
+      </div>
+    </section>
+    <section id="settings" class="modal hidden">
+      <div class="modal-head">
+        <h2>Settings</h2>
+        <button data-close="settings">Close</button>
+      </div>
+      <div id="settings-fields"></div>
+      <p>
+        Preferences save on this device. Lighting uses baked face shading;
+        dynamic shadows are not enabled.
+      </p>
+    </section>
+    <section id="controls" class="modal hidden">
+      <div class="modal-head">
+        <h2>Field manual</h2>
+        <button data-close="controls">Close</button>
+      </div>
+      <p>
+        <b>PC / Mac</b><br />WASD move · Shift sprint · Space jump · C crouch<br />Mouse
+        aim · Left click fire / tool · Right click aim<br />R reload · 1–6 or
+        wheel select · Q dig · E place<br />F jetpack · M expand map · Tab
+        scoreboard · Esc pause
+      </p>
+      <p>
+        <b>iPhone / iPad</b><br />Left stick to move; push farther to sprint.
+        Drag the right side to look, or drag SHOOT to aim while firing. Tap AIM
+        to toggle zoom. Hold JUMP or JET; tap RELOAD or CROUCH. Tap the weapon
+        name to choose directly. BUILD opens the digging/placement tools; SHOOT
+        becomes PLACE or DIG for the selected tool. Tap BUILD again to return to
+        your gun.
+      </p>
+      <p>
+        <b>Relay</b><br />Touch the enemy relay to collect it. Bring it to your
+        base while your own relay is home. Dropped relays return after 25
+        seconds.
+      </p>
+      <p>
+        <b>Outbreak</b><br />Humans survive five minutes. Eliminated humans
+        become zombies. Zombies regenerate, jump higher, scramble up walls while
+        holding jump, and dig faster. Reach the central beacon for pickup
+        jetpacks.
+      </p>
+    </section>
+    <div id="hud" class="hidden">
+      <div id="match">
+        <span id="mode-label"></span><b id="scores">0 : 0</b
+        ><span id="timer">05:00</span><small id="match-note"></small>
+      </div>
+      <div id="hud-top">
+        <span id="network">— ms</span><button id="score-button">Scores</button
+        ><button id="pause-button">Pause</button>
+      </div>
+      <aside id="minimap" aria-label="Battlefield map">
+        <canvas
+          id="minimap-canvas"
+          aria-label="North-up terrain, your heading, teammates, bases and objectives"
+        ></canvas>
+        <button id="minimap-toggle" aria-expanded="false">MAP ⤢</button>
+        <small>▲ YOU · ● TEAM · ◆ RELAY</small>
+      </aside>
+      <div id="crosshair">+</div>
+      <div id="hitmarker" class="hidden">×</div>
+      <div id="feed"></div>
+      <div id="banner" class="hidden"></div>
+      <div id="objective-hud"></div>
+      <div id="vitals">
+        <span id="team-label">AZURE</span>
+        <div class="vital-row">
+          <b id="health">100</b><small>HP</small
+          ><span id="blocks">80 blocks</span>
+        </div>
+        <div class="bar"><i id="health-bar"></i></div>
+        <div id="fuel-label">JETPACK <span id="fuel">100%</span></div>
+        <div class="bar fuel"><i id="fuel-bar"></i></div>
+      </div>
+      <div id="weapon-hud">
+        <small id="weapon-name">RIFLE</small>
+        <div><b id="ammo">24</b><span id="reserve">/ 144</span></div>
+        <small id="reload-note"></small>
+      </div>
+      <div id="desktop-hint">
+        WASD move · 1–6 tools · Q dig · E build · F jet · Tab scores
+      </div>
+    </div>
+    <div id="touch" class="hidden">
+      <div id="look-zone" aria-label="Drag to look"></div>
+      <div id="move-zone">
+        <div id="joystick">
+          <div id="stick"></div>
+          <small>MOVE</small>
+        </div>
+      </div>
+      <div id="touch-actions">
+        <button
+          data-action="aim"
+          aria-label="Toggle aiming"
+          aria-pressed="false"
+        >
+          AIM
+        </button>
+        <button data-action="reload" aria-label="Reload weapon">RELOAD</button>
+        <button
+          data-action="fire"
+          class="fire"
+          aria-label="Hold to fire and drag to aim"
+        >
+          SHOOT
+        </button>
+        <button data-action="jump" aria-label="Jump">JUMP</button>
+        <button data-action="jet" aria-label="Hold for jetpack thrust">
+          JET
+        </button>
+        <button
+          data-action="crouch"
+          aria-label="Toggle crouching"
+          aria-pressed="false"
+        >
+          CROUCH
+        </button>
+        <button
+          id="build-mode"
+          aria-label="Toggle building tools"
+          aria-pressed="false"
+        >
+          BUILD
+        </button>
+        <div id="touch-tools" class="hidden">
+          <button data-action="dig" aria-label="Hold to dig">DIG</button
+          ><button data-action="place" aria-label="Hold to place blocks">
+            PLACE
+          </button>
+        </div>
+      </div>
+      <button
+        id="switch-weapon"
+        aria-expanded="false"
+        aria-controls="weapon-picker"
+      >
+        RIFLE ▾
+      </button>
+      <div
+        id="weapon-picker"
+        class="hidden"
+        role="group"
+        aria-label="Choose weapon or tool"
+      >
+        <button data-weapon="0">Rifle</button
+        ><button data-weapon="1">SMG</button
+        ><button data-weapon="2">Shotgun</button
+        ><button data-weapon="3">Marksman</button
+        ><button data-weapon="4">Spade</button
+        ><button data-weapon="5">Blocks</button>
+      </div>
+      <div id="touch-tip" class="hidden">
+        Left thumb: move · Right thumb: look<br />Drag SHOOT to aim while firing
+      </div>
+    </div>
+    <section id="scoreboard" class="modal hidden">
+      <div class="modal-head">
+        <h2>Scoreboard</h2>
+        <button data-close="scoreboard">Close</button>
+      </div>
+      <div id="score-rows"></div>
+    </section>
+    <section id="pause" class="modal hidden">
+      <h2>Take a breather</h2>
+      <p>The match continues while paused.</p>
+      <button id="resume" class="primary">Resume</button
+      ><button id="pause-settings">Settings</button
+      ><button id="leave">Leave match</button>
+    </section>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

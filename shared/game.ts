@@ -1,3 +1,4 @@
+import { classInfo } from "./classes.js";
 export const W = 320,
   H = 56,
   D = 320,
@@ -22,6 +23,9 @@ export type Input = {
   weapon: number;
   place: boolean;
   dig: boolean;
+  grenade?: boolean;
+  ability?: boolean;
+  classId?: number;
 };
 export const emptyInput = (): Input => ({
   seq: 0,
@@ -107,7 +111,29 @@ export const WEAPONS = [
     range: 6,
     pellets: 1,
   },
+  {
+    name: "Blast launcher",
+    damage: 85,
+    interval: 1.1,
+    mag: 2,
+    reserve: 10,
+    reload: 2.7,
+    spread: 0.012,
+    range: 90,
+    pellets: 1,
+  },
 ];
+export const isFirearm = (weapon: number) => weapon < 4 || weapon === 6;
+export type Projectile = Vec & {
+  id: number;
+  owner: string;
+  team: number;
+  kind: "grenade" | "rocket";
+  vx: number;
+  vy: number;
+  vz: number;
+  fuse: number;
+};
 export type Body = Vec & {
   vx: number;
   vy: number;
@@ -117,6 +143,8 @@ export type Body = Vec & {
   yaw: number;
   pitch: number;
   crouch: boolean;
+  classId?: number;
+  abilityTime?: number;
 };
 export type Player = Body & {
   id: string;
@@ -139,6 +167,10 @@ export type Player = Body & {
   input: Input;
   lastSeq: number;
   lastDamage: number;
+  nextClass?: number;
+  grenades?: number;
+  grenadeCooldown?: number;
+  abilityCooldown?: number;
   bot?: boolean;
   brain?: {
     nextThink: number;
@@ -511,9 +543,12 @@ export function move(
   }
   const speed =
     (zombie ? 6.4 : 5.1) *
+    (zombie ? 1 : classInfo(p.classId).speed) *
+    (!zombie && p.classId === 1 && (p.abilityTime ?? 0) > 0 ? 1.25 : 1) *
     (i.sprint ? 1.4 : 1) *
     (p.crouch ? 0.5 : 1) *
     (i.aim ? 0.65 : 1);
+  p.abilityTime = Math.max(0, (p.abilityTime ?? 0) - dt);
   const tx = (-Math.sin(p.yaw) * f + Math.cos(p.yaw) * s) * speed,
     tz = (-Math.cos(p.yaw) * f - Math.sin(p.yaw) * s) * speed;
   const a = Math.min(1, dt * (p.ground ? 18 : 6));

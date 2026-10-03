@@ -11,7 +11,7 @@ export function sanitizeInput(raw: unknown): Input | null {
     strafe: Math.max(-1, Math.min(1, r.strafe)),
     yaw: r.yaw % (Math.PI * 2),
     pitch: Math.max(-1.5, Math.min(1.5, r.pitch)),
-    weapon: Math.max(0, Math.min(5, r.weapon | 0)),
+    weapon: Math.max(0, Math.min(6, r.weapon | 0)),
     jump: r.jump === true,
     sprint: r.sprint === true,
     crouch: r.crouch === true,
@@ -21,6 +21,12 @@ export function sanitizeInput(raw: unknown): Input | null {
     reload: r.reload === true,
     place: r.place === true,
     dig: r.dig === true,
+    grenade: r.grenade === true,
+    ability: r.ability === true,
+    classId:
+      Number.isInteger(r.classId) && r.classId >= 0 && r.classId < 4
+        ? r.classId
+        : undefined,
   };
 }
 // Both prediction and authoritative command execution use exactly one 30 Hz step.

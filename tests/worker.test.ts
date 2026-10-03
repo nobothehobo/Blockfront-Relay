@@ -41,6 +41,70 @@ function fixture() {
   };
   return { db, call, DB };
 }
+test("hosted sessions persist selected classes, active grenades and replicated blast edits", async () => {
+  const { call, db } = fixture();
+  await call("/api/rooms");
+  const a = await call("/api/join", {
+    room: "valley",
+    name: "Sapper",
+    classId: 2,
+  });
+  const b = await call("/api/join", { room: "valley", name: "Observer" });
+  const id = a.data.welcome.id;
+  assert.equal(
+    a.data.welcome.state.players.find((p: any) => p.id === id).classId,
+    2,
+  );
+  const saved = JSON.parse(
+    (db.prepare("SELECT data FROM game_rooms WHERE id=?").get("valley") as any)
+      .data,
+  );
+  saved.room.phase = "active";
+  saved.clock = Date.now() - 100;
+  const p = saved.players.find((p: any) => p.id === id);
+  saved.room.projectiles = [
+    {
+      id: 1,
+      owner: id,
+      team: p.team,
+      kind: "grenade",
+      x: 160.5,
+      y: 2,
+      z: 160.5,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      fuse: 0.01,
+    },
+  ];
+  saved.room.nextProjectile = 1;
+  saved.edits.push([160 + 320 * (160 + 320 * 2), 3]);
+  db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(
+    JSON.stringify(saved),
+    "valley",
+  );
+  await new Promise((r) => setTimeout(r, 65));
+  const poll = await call("/api/input", {
+    room: "valley",
+    token: b.data.token,
+    commands: [],
+    epoch: 1,
+    round: 1,
+    cursor: b.data.cursor,
+  });
+  assert.equal(poll.status, 200);
+  assert.ok(poll.data.messages.some((m: any) => m.type === "edits"));
+  assert.ok(
+    poll.data.messages.some((m: any) =>
+      m.events?.some((e: any) => e.kind === "explosion"),
+    ),
+  );
+  const committed = JSON.parse(
+    (db.prepare("SELECT data FROM game_rooms WHERE id=?").get("valley") as any)
+      .data,
+  );
+  assert.equal(committed.room.projectiles.length, 0);
+});
 test("hosted transport shares authoritative state and never accepts another session token", async () => {
   const { call, db } = fixture();
   const list = await call("/api/rooms");

@@ -1,3 +1,4 @@
+import { classInfo } from "../shared/classes.js";
 import {
   Player,
   Input,
@@ -115,7 +116,9 @@ export function thinkBot(p: Player, arena: Arena): Input {
   }
   const distance = target ? horizontal(target, p) : Infinity;
   const ready = !!target && arena.time - brain.acquired > 0.4;
-  const ammoLow = !p.zombie && p.ammo[0] < Math.max(1, WEAPONS[0].mag / 4);
+  const primary = classInfo(p.classId).primary;
+  const ammoLow =
+    !p.zombie && p.ammo[primary] < Math.max(1, WEAPONS[primary].mag / 4);
   const retreat =
     !!target &&
     !p.zombie &&
@@ -246,7 +249,7 @@ export function thinkBot(p: Player, arena: Arena): Input {
     seq: p.lastSeq + 1,
     yaw,
     pitch,
-    weapon: p.zombie || tool ? 4 : 0,
+    weapon: p.zombie || tool ? 4 : primary,
     forward,
     strafe,
     sprint: !attack && !retreat,
@@ -254,11 +257,24 @@ export function thinkBot(p: Player, arena: Arena): Input {
     dig: tool,
     jet: p.jetpack && !!front && brain.stuck > 0.8 && p.fuel > 30,
     aim: attack && !p.zombie && !retreat,
+    grenade:
+      attack &&
+      !p.zombie &&
+      distance > 12 &&
+      distance < 28 &&
+      !teammateBlocked &&
+      (p.grenades ?? 0) > 0 &&
+      (p.grenadeCooldown ?? 0) === 0 &&
+      Math.floor(arena.time * 5 + personality) % 17 === 0,
+    ability:
+      !p.zombie &&
+      (p.abilityCooldown ?? 0) === 0 &&
+      (retreat || (attack && (p.classId !== 0 || p.health < 70))),
     fire:
       attack &&
       arena.phase === "active" &&
       !teammateBlocked &&
       Math.abs(wrap(aimYaw - yaw)) < 0.12,
-    reload: !p.zombie && !p.reload && ammoLow && p.reserve[0] > 0,
+    reload: !p.zombie && !p.reload && ammoLow && p.reserve[primary] > 0,
   };
 }

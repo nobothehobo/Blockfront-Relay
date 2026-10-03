@@ -55,7 +55,7 @@ function save(
   clock: number,
 ): Data {
   return {
-    format: 4,
+    format: 5,
     options: r.options,
     clock,
     room: {
@@ -69,6 +69,8 @@ function save(
       flags: r.flags,
       warmup: r.warmup,
       lastBroadcast: r.lastBroadcast,
+      projectiles: r.projectiles,
+      nextProjectile: r.nextProjectile,
     },
     players: [...r.players.values()],
     edits: [...r.world.edits],
@@ -205,7 +207,7 @@ export default {
         if (!row) return response({ error: "Room not found" }, 404);
         const stored = JSON.parse(row.data) as Data;
         const data =
-          stored.format === 4
+          stored.format === 5
             ? stored
             : fresh(String(body.room), { ...stored.options, limit: 16 });
         const r = restore(String(body.room), data),
@@ -246,6 +248,8 @@ export default {
                 fire: false,
                 place: false,
                 dig: false,
+                grenade: false,
+                ability: false,
                 jet: false,
                 jump: false,
               };
@@ -266,11 +270,17 @@ export default {
           const token = crypto.randomUUID(),
             id = crypto.randomUUID();
           let welcome: any;
-          r.add(id, String(body.name ?? "Builder"), {
-            send: (raw) => {
-              welcome = JSON.parse(raw);
+          r.add(
+            id,
+            String(body.name ?? "Builder"),
+            {
+              send: (raw) => {
+                welcome = JSON.parse(raw);
+              },
             },
-          });
+            false,
+            Number(body.classId ?? 0),
+          );
           r.peers.clear();
           data.sessions[token] = { id, seen: now };
           result = { token, welcome, cursor };

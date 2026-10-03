@@ -147,14 +147,23 @@ app.on("upgrade", (req, socket, head) => {
     let messages = 0,
       windowStart = Date.now(),
       lastInput = Date.now();
-    r.add(id, url.searchParams.get("name") ?? "Builder", {
-      send: (data) => {
-        if (ws.readyState === WebSocket.OPEN && ws.bufferedAmount < 512 * 1024)
-          ws.send(data);
-        else if (ws.bufferedAmount >= 512 * 1024)
-          ws.close(1013, "Slow connection");
+    r.add(
+      id,
+      url.searchParams.get("name") ?? "Builder",
+      {
+        send: (data) => {
+          if (
+            ws.readyState === WebSocket.OPEN &&
+            ws.bufferedAmount < 512 * 1024
+          )
+            ws.send(data);
+          else if (ws.bufferedAmount >= 512 * 1024)
+            ws.close(1013, "Slow connection");
+        },
       },
-    });
+      false,
+      Number(url.searchParams.get("class") ?? 0),
+    );
     ws.on("message", (data) => {
       const now = Date.now();
       if (now - windowStart > 1000) {

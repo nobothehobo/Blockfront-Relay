@@ -1,0 +1,53 @@
+// Original roles. Base rifle remains compatible with existing sandbox rooms/tools.
+export const CLASSES = [
+  {
+    name: "Trailguard",
+    primary: 0,
+    health: 100,
+    speed: 1,
+    blocks: 80,
+    grenades: 2,
+    ability: "Rally",
+    cooldown: 22,
+    description: "Rifle · restore nearby teammates' health",
+  },
+  {
+    name: "Skirmisher",
+    primary: 1,
+    health: 90,
+    speed: 1.12,
+    blocks: 65,
+    grenades: 2,
+    ability: "Surge",
+    cooldown: 20,
+    description: "SMG · faster movement and a short speed burst",
+  },
+  {
+    name: "Sapper",
+    primary: 6,
+    health: 115,
+    speed: 0.92,
+    blocks: 140,
+    grenades: 3,
+    ability: "Resupply",
+    cooldown: 30,
+    description: "Blast launcher · replenish blocks and one grenade",
+  },
+  {
+    name: "Surveyor",
+    primary: 3,
+    health: 85,
+    speed: 1,
+    blocks: 55,
+    grenades: 1,
+    ability: "Focus",
+    cooldown: 20,
+    description: "Marksman · temporarily steadier firearm accuracy",
+  },
+] as const;
+export const validClass = (value: unknown) =>
+  typeof value === "number" &&
+  Number.isInteger(value) &&
+  value >= 0 &&
+  value < CLASSES.length;
+export const classInfo = (id?: number) => CLASSES[validClass(id) ? id! : 0];

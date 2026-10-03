@@ -1,6 +1,8 @@
 import { basePosition, mapTheme, nextMapSeed } from "../shared/game.js";
 import { thinkBot } from "./bots.js";
 import { sanitizeInput } from "../shared/prediction.js";
+import { CLASSES, classInfo, validClass } from "../shared/classes.js";
+import { stepProjectile, blastCells } from "./explosives.js";
 import {
   World,
   Player,
@@ -19,6 +21,8 @@ import {
   D,
   Vec,
   TICK,
+  Projectile,
+  isFirearm,
 } from "../shared/game.js";
 export type Peer = { send: (data: string) => void; close?: () => void };
 export type RoomOptions = {
@@ -43,6 +47,8 @@ export class Room {
   round = 1;
   revision = 0;
   events: any[] = [];
+  projectiles: Projectile[] = [];
+  nextProjectile = 0;
   flags: {
     team: number;
     home: Vec;
@@ -104,10 +110,10 @@ export class Room {
     for (let i = bots.length; i < wanted; i++) {
       let n = 1;
       while (this.players.has(`npc-${n}`)) n++;
-      this.add(`npc-${n}`, `Scout ${n}`, { send: () => {} }, true);
+      this.add(`npc-${n}`, `Scout ${n}`, { send: () => {} }, true, (n - 1) % 4);
     }
   }
-  add(id: string, name: string, peer: Peer, bot = false) {
+  add(id: string, name: string, peer: Peer, bot = false, selectedClass = 0) {
     if (!bot && this.players.size >= this.limit) {
       const npc = [...this.players.values()].find((p) => p.bot);
       if (npc) this.remove(npc.id);
@@ -147,6 +153,8 @@ export class Room {
       input: emptyInput(),
       lastSeq: 0,
       lastDamage: 0,
+      classId: validClass(selectedClass) ? selectedClass : 0,
+      nextClass: validClass(selectedClass) ? selectedClass : 0,
     };
     this.players.set(id, p);
     if (!bot) this.peers.set(id, peer);
@@ -185,6 +193,7 @@ export class Room {
     if (!p || !value || value.seq <= p.lastSeq || value.seq > p.lastSeq + 10000)
       return;
     p.input = value;
+    if (validClass(value.classId)) p.nextClass = value.classId;
     p.lastSeq = value.seq;
   }
   queueInputs(id: string, raw: unknown, epoch: number) {
@@ -213,9 +222,17 @@ export class Room {
       const command = p.commands.shift()!;
       p.input = command;
       p.pendingActions ??= {};
-      for (const key of ["fire", "reload", "place", "dig"] as const)
+      for (const key of [
+        "fire",
+        "reload",
+        "place",
+        "dig",
+        "grenade",
+        "ability",
+      ] as const)
         if (command[key]) p.pendingActions[key] = true;
       p.lastSeq = command.seq;
+      if (validClass(command.classId)) p.nextClass = command.classId;
       p.movementCredit = Math.max(0, (p.movementCredit ?? 0) - TICK);
       if (p.dead <= 0) {
         const oldVy = p.vy;
@@ -226,6 +243,8 @@ export class Room {
     }
   }
   spawn(p: Player) {
+    if (validClass(p.nextClass)) p.classId = p.nextClass;
+    const role = classInfo(p.classId);
     p.epoch = (p.epoch ?? 0) + 1;
     p.brain = undefined;
     p.commands = [];
@@ -257,10 +276,15 @@ export class Room {
       vx: 0,
       vy: 0,
       vz: 0,
-      health: p.zombie ? 150 : 100,
+      health: p.zombie ? 150 : role.health,
       dead: 0,
       fuel: 100,
-      blocks: p.zombie ? 0 : 80,
+      blocks: p.zombie ? 0 : role.blocks,
+      weapon: p.zombie ? 4 : role.primary,
+      grenades: p.zombie ? 0 : role.grenades,
+      grenadeCooldown: 0,
+      abilityCooldown: 0,
+      abilityTime: 0,
       ammo: WEAPONS.map((w) => w.mag),
       reserve: WEAPONS.map((w) => w.reserve),
       reload: 0,
@@ -272,6 +296,13 @@ export class Room {
       this.options.jet === "all" ||
       (this.options.jet === "modes" && this.options.mode !== "tdm");
     if (p.zombie) p.weapon = 4;
+    p.input = {
+      ...emptyInput(),
+      weapon: p.weapon,
+      yaw: p.yaw,
+      pitch: p.pitch,
+      classId: p.nextClass,
+    };
   }
   start() {
     this.phase = "active";
@@ -302,9 +333,11 @@ export class Room {
     this.phase = "finished";
     this.winner = winner;
     this.remaining = 10;
+    this.projectiles = [];
     this.event("victory", winner);
   }
   restart() {
+    this.projectiles = [];
     this.round++;
     this.options.seed = nextMapSeed(this.options.seed, this.round);
     this.world = new World(this.options.seed);
@@ -353,6 +386,7 @@ export class Room {
       revision: this.revision,
       humans: [...this.players.values()].filter((p) => !p.zombie).length,
       flags: this.flags,
+      projectiles: this.projectiles.map((p) => ({ ...p })),
       players: [...this.players.values()].map(
         ({
           input,
@@ -410,6 +444,8 @@ export class Room {
       p.cooldown = Math.max(0, p.cooldown - dt);
       p.editCooldown = Math.max(0, p.editCooldown - dt);
       p.protected = Math.max(0, p.protected - dt);
+      p.grenadeCooldown = Math.max(0, (p.grenadeCooldown ?? 0) - dt);
+      p.abilityCooldown = Math.max(0, (p.abilityCooldown ?? 0) - dt);
       if (p.commandMode) {
         // Retain enough real elapsed time for a delayed HTTP batch, never extra time.
         p.movementCredit = Math.min(2, (p.movementCredit ?? 0) + dt);
@@ -471,7 +507,7 @@ export class Room {
       if (
         p.input.reload &&
         !p.reload &&
-        p.weapon < 4 &&
+        isFirearm(p.weapon) &&
         p.ammo[p.weapon] < WEAPONS[p.weapon].mag &&
         p.reserve[p.weapon] > 0
       ) {
@@ -479,6 +515,8 @@ export class Room {
         this.event("reload", "Reloading", p.id);
       }
       if (this.phase !== "finished") {
+        if (p.input.grenade) this.throwGrenade(p);
+        if (p.input.ability) this.useAbility(p);
         if ((p.input.place || (p.input.fire && p.weapon === 5)) && !p.zombie)
           this.edit(p, true);
         else if (p.input.dig || (p.input.fire && p.weapon === 4))
@@ -487,6 +525,11 @@ export class Room {
       }
       p.input = latestInput;
     }
+    for (const projectile of [...this.projectiles])
+      if (stepProjectile(projectile, this.world, dt)) {
+        this.projectiles = this.projectiles.filter((p) => p !== projectile);
+        this.explode(projectile);
+      }
     if (this.phase === "active") {
       if (this.options.mode === "relay") this.objectives();
       if (this.options.mode === "infection") {
@@ -560,16 +603,23 @@ export class Room {
   fire(p: Player) {
     const w = WEAPONS[p.weapon];
     if (p.cooldown > 0 || p.reload > 0) return;
-    if (p.weapon < 4 && p.ammo[p.weapon] <= 0) return;
+    if (isFirearm(p.weapon) && p.ammo[p.weapon] <= 0) return;
     p.cooldown = w.interval;
-    if (p.weapon < 4) p.ammo[p.weapon]--;
+    if (isFirearm(p.weapon)) p.ammo[p.weapon]--;
     p.protected = 0;
     const origin = eye(p),
       base = direction(p.yaw, p.pitch);
-    this.event("shot", "", p.id, { origin, dir: base, weapon: p.weapon });
+    if (p.weapon === 6) {
+      this.launch(p, "rocket");
+      return;
+    }
     const damage = new Map<Player, number>();
+    const traces: Vec[] = [];
     for (let n = 0; n < w.pellets; n++) {
-      const spread = w.spread * (p.input.aim ? 0.3 : 1),
+      const spread =
+          w.spread *
+          (p.input.aim ? 0.3 : 1) *
+          (p.classId === 3 && (p.abilityTime ?? 0) > 0 ? 0.35 : 1),
         d = {
           x: base.x + (Math.random() - 0.5) * spread * 2,
           y: base.y + (Math.random() - 0.5) * spread * 2,
@@ -599,8 +649,124 @@ export class Room {
           target,
           (damage.get(target) ?? 0) + w.damage * (p.zombie ? 1.4 : 1),
         );
+      if (isFirearm(p.weapon))
+        traces.push({
+          x: origin.x + d.x * distance,
+          y: origin.y + d.y * distance,
+          z: origin.z + d.z * distance,
+        });
     }
+    this.event("shot", "", p.id, {
+      origin,
+      dir: base,
+      weapon: p.weapon,
+      traces,
+    });
     for (const [v, amount] of damage) this.damage(v, amount, p);
+  }
+  launch(p: Player, kind: "grenade" | "rocket") {
+    if (this.projectiles.length >= 128) return;
+    const d = direction(p.yaw, p.pitch),
+      o = eye(p),
+      speed = kind === "rocket" ? 24 : 13;
+    const projectile: Projectile = {
+      id: ++this.nextProjectile,
+      owner: p.id,
+      team: p.team,
+      kind,
+      x: o.x + d.x * 0.45,
+      y: o.y + d.y * 0.45,
+      z: o.z + d.z * 0.45,
+      vx: d.x * speed + p.vx * 0.4,
+      vy: d.y * speed + (kind === "grenade" ? 4 : 0),
+      vz: d.z * speed + p.vz * 0.4,
+      fuse: kind === "rocket" ? 3.8 : 2.2,
+    };
+    this.projectiles.push(projectile);
+    p.protected = 0;
+    this.event("launch", "", p.id, { projectile: { ...projectile } });
+  }
+  throwGrenade(p: Player) {
+    if (
+      p.zombie ||
+      p.dead > 0 ||
+      !(p.grenades ?? 0) ||
+      (p.grenadeCooldown ?? 0) > 0 ||
+      this.projectiles.length >= 128
+    )
+      return;
+    p.grenades!--;
+    p.grenadeCooldown = 0.8;
+    this.launch(p, "grenade");
+  }
+  useAbility(p: Player) {
+    if (p.zombie || p.dead > 0 || (p.abilityCooldown ?? 0) > 0) return;
+    const role = classInfo(p.classId);
+    p.abilityCooldown = role.cooldown;
+    if (p.classId === 0)
+      for (const v of this.players.values()) {
+        if (
+          v.team === p.team &&
+          !v.zombie &&
+          v.dead <= 0 &&
+          Math.hypot(v.x - p.x, v.y - p.y, v.z - p.z) < 8
+        )
+          v.health = Math.min(
+            classInfo(v.classId).health,
+            v.health + (v.id === p.id ? 20 : 15),
+          );
+      }
+    else if (p.classId === 2) {
+      p.blocks = Math.min(200, p.blocks + 35);
+      p.grenades = Math.min(role.grenades, (p.grenades ?? 0) + 1);
+    } else p.abilityTime = p.classId === 1 ? 4 : 5;
+    this.event("ability", `${p.name}: ${role.ability}`, p.id, {
+      pos: eye(p),
+      classId: p.classId,
+    });
+  }
+  explode(projectile: Projectile) {
+    const pos = { x: projectile.x, y: projectile.y, z: projectile.z },
+      owner = this.players.get(projectile.owner);
+    for (const v of this.players.values()) {
+      if (
+        v.dead > 0 ||
+        (v.team === projectile.team && v.id !== projectile.owner)
+      )
+        continue;
+      const target = { x: v.x, y: v.y + 0.8, z: v.z },
+        distance = Math.hypot(
+          target.x - pos.x,
+          target.y - pos.y,
+          target.z - pos.z,
+        );
+      if (distance > 5.5) continue;
+      const d = {
+        x: (target.x - pos.x) / Math.max(0.01, distance),
+        y: (target.y - pos.y) / Math.max(0.01, distance),
+        z: (target.z - pos.z) / Math.max(0.01, distance),
+      };
+      const cover =
+        distance > 0.1 && ray(this.world, pos, d, Math.max(0, distance - 0.4));
+      const amount = Math.round(
+        (projectile.kind === "rocket" ? 105 : 115) *
+          (1 - distance / 5.5) *
+          (cover ? 0.25 : 1),
+      );
+      if (amount > 0) this.damage(v, amount, owner);
+    }
+    const edits = blastCells(this.world, pos);
+    for (const [x, y, z, value] of edits) {
+      this.world.set(x, y, z, value);
+      this.revision++;
+    }
+    if (edits.length)
+      this.broadcast({ type: "edits", edits, revision: this.revision });
+    this.event("explosion", "", projectile.owner, {
+      pos,
+      projectileKind: projectile.kind,
+      idProjectile: projectile.id,
+    });
   }
   edit(p: Player, place: boolean) {
     if (p.editCooldown > 0 || p.dead > 0) return;

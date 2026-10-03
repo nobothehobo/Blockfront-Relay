@@ -23,7 +23,10 @@ test("hosted Home Screen manifest and PNG icons preserve installation metadata a
     );
     assert.equal(response.headers.get("content-type"), "image/png");
     const bytes = Buffer.from(await response.arrayBuffer());
-    assert.deepEqual(bytes, await readFile(`client/public${icon.src}`));
+    assert.deepEqual(
+      bytes,
+      await readFile(`client/public${icon.src.split("?")[0]}`),
+    );
     assert.equal(bytes.readUInt32BE(16), Number(icon.sizes.split("x")[0]));
   }
   const html = await (

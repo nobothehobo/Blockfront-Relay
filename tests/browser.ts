@@ -175,7 +175,13 @@ try {
         .querySelector("#status")
         ?.textContent?.includes("rooms available"),
     );
-    await p.locator(viewport.name === "ipad" ? "#practice" : "#play").tap();
+    // Isolate phone controls from prior clients' warmup/round-start loadout resets.
+    if (viewport.name === "ipad") await p.locator("#practice").tap();
+    else {
+      await p.locator("#browse").tap();
+      await p.locator("#room-name").fill(`Touch ${viewport.name}`);
+      await p.locator("#create").tap();
+    }
     await p.waitForFunction(() => (window as any).BR.connected);
     assert.ok(await p.locator("#touch").isVisible());
     await p.waitForFunction(
@@ -209,7 +215,7 @@ try {
       await p.waitForFunction(
         () =>
           (window as any).BR.state.players.filter((p: any) => p.bot).length ===
-          4,
+            4 && (window as any).BR.state.phase === "active",
       );
     const controls = await p
       .locator("#touch-actions button")
@@ -301,6 +307,24 @@ try {
         touchPoints: [{ id: 3, x: r.x + r.width / 2, y: r.y + r.height / 2 }],
       });
       await p.waitForTimeout(120);
+      if (
+        !(await p.evaluate(
+          (action) => (window as any).BR.input[action],
+          action,
+        ))
+      ) {
+        await p.screenshot({
+          path: `artifacts/${viewport.name}-${action}-failure.png`,
+        });
+        console.log(
+          "Touch diagnostic",
+          action,
+          await p.evaluate(() => ({
+            player: (window as any).BR.player,
+            input: (window as any).BR.input,
+          })),
+        );
+      }
       assert.equal(
         await p.evaluate((action) => (window as any).BR.input[action], action),
         true,

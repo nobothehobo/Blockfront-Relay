@@ -776,8 +776,8 @@ body.touch #scores {
 #touch-actions [data-action="fire"] {
   right: 0;
   bottom: 0;
-  width: calc(78px * var(--touch-scale));
-  height: calc(78px * var(--touch-scale));
+  width: calc(84px * var(--touch-scale));
+  height: calc(84px * var(--touch-scale));
   border-radius: 50%;
   font-size: calc(14px * var(--touch-scale));
   background: #885432bb;
@@ -799,17 +799,17 @@ body.touch #scores {
 #touch-actions [data-action="reload"] {
   right: calc(152px * var(--touch-scale));
   bottom: calc(76px * var(--touch-scale));
-  height: calc(42px * var(--touch-scale));
+  height: calc(44px * var(--touch-scale));
 }
 #touch-actions [data-action="crouch"] {
   right: calc(152px * var(--touch-scale));
   bottom: calc(130px * var(--touch-scale));
-  height: calc(42px * var(--touch-scale));
+  height: calc(44px * var(--touch-scale));
 }
 #touch-actions #build-mode {
   right: calc(158px * var(--touch-scale));
   bottom: calc(18px * var(--touch-scale));
-  height: calc(42px * var(--touch-scale));
+  height: calc(44px * var(--touch-scale));
 }
 #touch-tools {
   position: absolute;
@@ -822,7 +822,14 @@ body.touch #scores {
 #touch-actions #touch-tools button {
   position: static;
   width: calc(54px * var(--touch-scale));
-  height: calc(40px * var(--touch-scale));
+  height: calc(44px * var(--touch-scale));
+}
+#joystick.sprinting {
+  border-color: #ffe29d;
+  background: #c58a3525;
+}
+#joystick.sprinting small {
+  color: #ffe29d;
 }
 #switch-weapon {
   position: absolute;

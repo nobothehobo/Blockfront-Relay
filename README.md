@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. Alpha 0.4.
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. Alpha 0.5.
+
+Source: [nobothehobo/Blockfrony-Relay](https://github.com/nobothehobo/Blockfrony-Relay). The repository spelling differs from the working game title.
 
 ## Play
 
@@ -17,13 +19,15 @@ Maps now span 320 × 320 blocks with woodland, desert and snow themes, trenches,
 
 Choose **Practice with NPCs** for a shared server match with four scouts, or select 0/2/4/6/8 NPCs when creating a room. Scouts use the same combat, damage, reload, respawn, objective and infection rules as players. Humans can join the same room; NPCs yield their slots when a room fills and disappear after the last human leaves. They use simple navigation and obstruction digging, rather than sophisticated squad tactics.
 
+Alpha 0.5 increases NPC rifle aim sway slightly (yaw ±0.016 radians, pitch ±0.008) without reducing health, damage, fire rate or aggression. Zombie melee has no firearm sway. Eliminations show your original player model in a terrain-aware third-person camera during the three-second respawn countdown; first-person view returns automatically. Mobile controls include a joystick deadzone, forward-only sprint feedback, larger action targets and slower aimed camera movement (especially with the marksman weapon).
+
 ## Local run — Windows, macOS, Linux
 
 Install Node.js 22.13+ (Node 24 recommended) and Git. In your shell:
 
 ```sh
-git clone <YOUR_NEW_GITHUB_REPOSITORY_URL>
-cd blockfront-relay
+git clone https://github.com/nobothehobo/Blockfrony-Relay.git
+cd Blockfrony-Relay
 npm ci
 npm run build
 npm start

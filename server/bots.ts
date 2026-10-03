@@ -114,8 +114,10 @@ export function thinkBot(p: Player, arena: Arena): Input {
       Math.hypot(target!.x - p.x, target!.z - p.z),
     );
     // Human bots aim imperfectly; no hidden player damage or perfect-accuracy shortcuts.
-    yaw += Math.sin(arena.time * 2.3 + p.id.length) * 0.012;
-    pitch += Math.cos(arena.time * 1.7 + p.id.length) * 0.006;
+    if (!p.zombie) {
+      yaw += Math.sin(arena.time * 2.3 + p.id.length) * 0.016;
+      pitch += Math.cos(arena.time * 1.7 + p.id.length) * 0.008;
+    }
   }
   const tool = brain.stuck > 0.8 && !attack;
   if (tool) pitch = -0.12;

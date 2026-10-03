@@ -19,6 +19,8 @@ import {
   mapTheme,
 } from "../shared/game.js";
 import { MiniMap } from "./minimap.js";
+import { stickInput, touchLookGain } from "./control-math.js";
+import { eliminationCamera } from "./elimination.js";
 import { Terrain } from "./mesh.js";
 import { Sound } from "./audio.js";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
@@ -332,6 +334,13 @@ function disposePlayer(r: { group: THREE.Group; label: HTMLElement }) {
   });
   r.label.remove();
 }
+let eliminated: ReturnType<typeof makePlayer> | null = null;
+let eliminatedAt = 0;
+function clearElimination() {
+  if (eliminated) disposePlayer(eliminated);
+  eliminated = null;
+  show("crosshair", true);
+}
 const flagMeshes = [0, 1].map((t) => {
   const g = new THREE.Group();
   box(0.09, 2.0, 0.09, 0, 1, 0, 0xece6ca, g);
@@ -550,6 +559,7 @@ function message(msg: any) {
   } else if (msg.type === "error") disconnect(msg.message ?? "Server error");
 }
 function disconnect(reason = "Disconnected. Join a room to reconnect.") {
+  clearElimination();
   connected = false;
   joining = false;
   local = null;
@@ -638,6 +648,14 @@ function handleState(next: any) {
   state = next;
   const p = next.players.find((p: any) => p.id === id);
   if (!p) return;
+  if (p.dead > 0 && !eliminated) {
+    eliminated = makePlayer({ ...(local ?? p), x: p.x, y: p.y, z: p.z });
+    eliminated.group.position.set(p.x, p.y + 0.28, p.z);
+    eliminated.group.rotation.set(0, local?.yaw ?? p.yaw, -1.25);
+    eliminated.label.style.display = "none";
+    eliminatedAt = performance.now();
+    resetInput();
+  } else if (p.dead <= 0 && eliminated) clearElimination();
   const reset = !local || firstState || predictionEpoch !== p.epoch;
   if (reset) {
     local = { ...p };
@@ -914,6 +932,8 @@ function resetInput() {
   input.strafe = 0;
   joyF = 0;
   joyS = 0;
+  joystick.classList.remove("sprinting");
+  joystick.querySelector("small")!.textContent = "MOVE";
   show("weapon-picker", false);
   for (const b of document.querySelectorAll("[aria-pressed]"))
     b.setAttribute("aria-pressed", "false");
@@ -1054,9 +1074,14 @@ function joyUpdate(e: PointerEvent) {
     x /= length;
     y /= length;
   }
-  joyS = x;
-  joyF = -y;
-  input.sprint = length > 0.9;
+  const movement = stickInput(x, y, input.aim, input.crouch);
+  joyS = movement.strafe;
+  joyF = movement.forward;
+  input.sprint = movement.sprint;
+  joystick.classList.toggle("sprinting", movement.sprint);
+  joystick.querySelector("small")!.textContent = movement.sprint
+    ? "SPRINT"
+    : "MOVE";
   $("stick").style.transform =
     `translate(calc(-50% + ${x * radius}px),calc(-50% + ${y * radius}px))`;
 }
@@ -1073,16 +1098,19 @@ for (const kind of ["pointerup", "pointercancel", "lostpointercapture"])
       joyF = 0;
       joyS = 0;
       input.sprint = false;
+      joystick.classList.remove("sprinting");
+      joystick.querySelector("small")!.textContent = "MOVE";
       $("stick").style.transform = "translate(-50%,-50%)";
     }
   });
 function touchLook(dx: number, dy: number) {
-  yaw -= dx * 0.004 * settings.mobile;
+  const gain = touchLookGain(input.aim, input.weapon);
+  yaw -= dx * 0.004 * settings.mobile * gain;
   pitch = Math.max(
     -1.5,
     Math.min(
       1.5,
-      pitch - dy * 0.004 * settings.mobile * (settings.invert ? -1 : 1),
+      pitch - dy * 0.004 * settings.mobile * gain * (settings.invert ? -1 : 1),
     ),
   );
 }
@@ -1113,6 +1141,11 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
     sound.unlock();
     if (action === "crouch" || action === "aim") {
       (input as any)[action] = !(input as any)[action];
+      if (input.aim || input.crouch) {
+        input.sprint = false;
+        joystick.classList.remove("sprinting");
+        joystick.querySelector("small")!.textContent = "MOVE";
+      }
       button.classList.toggle("held", (input as any)[action]);
       button.setAttribute("aria-pressed", String((input as any)[action]));
     } else {
@@ -1364,6 +1397,7 @@ function frame(now: number) {
         : (held.has("KeyD") ? 1 : 0) - (held.has("KeyA") ? 1 : 0);
     input.yaw = yaw;
     input.pitch = pitch;
+    if (touch && (input.aim || input.crouch)) input.sprint = false;
     if ((input.jump || pulses.jump) && local.ground && !jumpFeedback)
       sound.play("jump");
     jumpFeedback = input.jump;
@@ -1405,8 +1439,20 @@ function frame(now: number) {
       ep.z + renderCorrection.z,
     );
     camera.rotation.set(pitch, yaw, 0, "YXZ");
+    if (local.dead > 0 && eliminated) {
+      const view = eliminationCamera(
+        world,
+        eliminated.target,
+        eliminated.target.yaw,
+        (now - eliminatedAt) / 1000,
+      );
+      camera.position.set(view.position.x, view.position.y, view.position.z);
+      camera.lookAt(view.focus.x, view.focus.y, view.focus.z);
+    }
+    show("crosshair", local.dead <= 0);
     camera.fov =
-      settings.fov - (input.aim ? (local.weapon === 3 ? 37 : 14) : 0);
+      settings.fov -
+      (input.aim && local.dead <= 0 ? (local.weapon === 3 ? 37 : 14) : 0);
     camera.updateProjectionMatrix();
     weaponGroup.visible = local.dead <= 0;
     weaponGroup.position.y =
@@ -1569,6 +1615,13 @@ setInterval(() => {
   },
   get chunks() {
     return terrain.chunks.size;
+  },
+  get elimination() {
+    return {
+      active: !!eliminated,
+      modelVisible: eliminated?.group.visible ?? false,
+      camera: camera.position.toArray(),
+    };
   },
   get network() {
     return {

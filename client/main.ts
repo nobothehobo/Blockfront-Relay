@@ -131,8 +131,8 @@ renderer.setClearColor(0xa9c3bd);
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0xa9c3bd, 30, 100);
 scene.add(terrain.group);
-scene.add(new THREE.HemisphereLight(0xe8f4d7, 0x53646e, 2.0));
-const sun = new THREE.DirectionalLight(0xffdeb0, 2.2);
+scene.add(new THREE.HemisphereLight(0xeaf4dc, 0x4d596c, 1.35));
+const sun = new THREE.DirectionalLight(0xffe8bf, 2.0);
 sun.position.set(-30, 70, 15);
 scene.add(sun);
 const camera = new THREE.PerspectiveCamera(
@@ -244,6 +244,31 @@ function setWeaponModel(n: number) {
       weaponGroup,
     );
     box(0.08, 0.21, 0.12, 0.23, -0.31, -0.4, 0x865d41, weaponGroup);
+    box(0.11, 0.13, 0.24, 0.23, -0.23, -0.22, 0x796342, weaponGroup);
+    box(
+      0.1,
+      0.09,
+      n === 2 ? 0.27 : 0.2,
+      0.23,
+      -0.25,
+      -0.67,
+      0x796342,
+      weaponGroup,
+    );
+    if (n !== 2 && n !== 3)
+      box(0.075, 0.2, 0.11, 0.23, -0.36, -0.55, 0x263b43, weaponGroup);
+    if (n === 1)
+      box(0.055, 0.18, 0.065, 0.23, -0.34, -0.69, 0x263b43, weaponGroup);
+    box(
+      0.1,
+      0.055,
+      0.07,
+      0.23,
+      -0.185,
+      n === 3 ? -1.14 : -1.0,
+      0x26333a,
+      weaponGroup,
+    );
     if (n === 3)
       box(0.08, 0.08, 0.25, 0.23, -0.11, -0.49, 0x142b32, weaponGroup);
     else box(0.04, 0.05, 0.04, 0.23, -0.14, -0.68, 0x132c34, weaponGroup);
@@ -252,6 +277,11 @@ function setWeaponModel(n: number) {
     box(0.24, 0.22, 0.045, 0.26, -0.01, -0.54, 0x91a6a3, weaponGroup);
   } else box(0.23, 0.23, 0.23, 0.26, -0.25, -0.55, 0x57caba, weaponGroup);
   box(0.13, 0.15, 0.25, 0.23, -0.39, -0.28, 0xd6b183, weaponGroup);
+  box(0.15, 0.11, 0.18, 0.23, -0.4, -0.14, 0x416b63, weaponGroup);
+  if (n < 4) {
+    box(0.12, 0.12, 0.14, 0.2, -0.32, -0.66, 0xd6b183, weaponGroup);
+    box(0.15, 0.14, 0.24, 0.14, -0.4, -0.55, 0x416b63, weaponGroup);
+  }
 }
 setWeaponModel(0);
 let modelWeapon = 0;
@@ -279,6 +309,16 @@ function makePlayer(p: any) {
     box(0.19, 0.12, 0.3, x, 0.1, -0.05, 0x293236, g);
     box(0.08, 0.43, 0.025, x, 1.09, -0.205, 0x52624b, g);
     box(0.15, 0.16, 0.035, x, 1.04, -0.235, 0x7b805c, g);
+    box(0.21, 0.13, 0.255, x, 0.43, -0.015, color, g);
+    box(0.09, 0.055, 0.045, x, 1.69, -0.23, 0xf1d092, g);
+  }
+  // Original field-kit silhouettes and team-colored helmet markings, batched below.
+  box(0.11, 0.09, 0.455, 0, 1.92, 0, 0xe6ddbb, g);
+  box(0.65, 0.1, 0.4, 0, 0.79, 0, 0x34413a, g);
+  box(0.12, 0.18, 0.08, 0, 0.97, -0.235, 0xb8a879, g);
+  for (const x of [-0.4, 0.4]) {
+    box(0.19, 0.14, 0.225, x, 0.81, -0.08, 0x34413a, g);
+    box(0.19, 0.11, 0.225, x, 1.23, -0.08, 0xe6ddbb, g);
   }
   // Batch static anatomy into one draw call; gun and thrust stay independently animated.
   const parts = g.children.filter((c) => c !== g.userData.gun) as THREE.Mesh[];
@@ -703,6 +743,8 @@ function handleState(next: any) {
       r = makePlayer(rp);
       remote.set(rp.id, r);
     }
+    // Never interpolate through a respawn or a round's spawn relocation.
+    if (r.target.epoch !== rp.epoch) r.samples.length = 0;
     r.target = rp;
     r.samples.push({ at: performance.now(), ...rp });
     if (r.samples.length > 8) r.samples.shift();
@@ -1326,7 +1368,7 @@ async function sendInput() {
     networkMode === "ws"
       ? pendingInputs.filter((c) => c.seq > sentCommand)
       : pendingInputs
-  ).slice(0, 32);
+  ).slice(0, 64);
   if (networkMode === "ws") {
     if (ws?.readyState === WebSocket.OPEN) {
       ws.send(
@@ -1378,11 +1420,13 @@ async function sendInput() {
   }
 }
 let lastFrame = performance.now(),
+  simulationFrame = lastFrame,
   accumulator = 0;
 function frame(now: number) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - lastFrame) / 1000);
   lastFrame = now;
+  if (!connected || !local) simulationFrame = now;
   terrain.update(2);
   if (connected && local) {
     input.forward = paused
@@ -1416,9 +1460,11 @@ function frame(now: number) {
       predictedShotTimes.push(now);
       nextShotFeedback = now + WEAPONS[input.weapon].interval * 1000;
     }
-    accumulator += dt;
+    // Keep 30 Hz simulation at 15–30 FPS too; bound hidden-tab catch-up to 250 ms.
+    accumulator += Math.min(0.25, Math.max(0, (now - simulationFrame) / 1000));
+    simulationFrame = now;
     while (accumulator >= TICK) {
-      if (pendingInputs.length < 60) {
+      if (pendingInputs.length < 120) {
         const command = { ...input, seq: ++seq };
         for (const [key, on] of Object.entries(pulses))
           if (on) (command as any)[key] = true;

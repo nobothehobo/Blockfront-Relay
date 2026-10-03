@@ -2,7 +2,7 @@
 
 An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. Alpha 0.5.
 
-Source: [nobothehobo/Blockfrony-Relay](https://github.com/nobothehobo/Blockfrony-Relay). The repository spelling differs from the working game title.
+Source: [nobothehobo/Blockfront-Relay](https://github.com/nobothehobo/Blockfront-Relay).
 
 ## Play
 
@@ -26,8 +26,8 @@ Alpha 0.5 increases NPC rifle aim sway slightly (yaw ±0.016 radians, pitch ±0.
 Install Node.js 22.13+ (Node 24 recommended) and Git. In your shell:
 
 ```sh
-git clone https://github.com/nobothehobo/Blockfrony-Relay.git
-cd Blockfrony-Relay
+git clone https://github.com/nobothehobo/Blockfront-Relay.git
+cd Blockfront-Relay
 npm ci
 npm run build
 npm start

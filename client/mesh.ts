@@ -118,25 +118,39 @@ export class Terrain {
   constructor(public world: World) {
     this.material.onBeforeCompile = (shader) => {
       shader.vertexShader =
-        "varying vec3 voxelPosition;\n" + shader.vertexShader;
+        "varying vec3 voxelPosition; varying vec3 voxelNormal;\n" +
+        shader.vertexShader;
       shader.vertexShader = shader.vertexShader.replace(
         "#include <begin_vertex>",
-        "#include <begin_vertex>\nvoxelPosition = position - normal * 0.001;",
+        "#include <begin_vertex>\nvoxelPosition = position - normal * 0.001; voxelNormal = normal;",
       );
       shader.fragmentShader =
-        "varying vec3 voxelPosition;\n" + shader.fragmentShader;
+        "varying vec3 voxelPosition; varying vec3 voxelNormal;\n" +
+        shader.fragmentShader;
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <color_fragment>",
         `#include <color_fragment>
         vec3 cell = floor(voxelPosition);
         float grain = fract(sin(dot(cell,vec3(12.9898,78.233,37.719)))*43758.5453);
-        diffuseColor.rgb *= 0.92 + grain * 0.16;
+        // Subtle cube-edge shading survives greedy merging without extra geometry.
+        vec3 f = fract(voxelPosition);
+        vec3 edge = min(f,1.0-f) + abs(voxelNormal);
+        float seam = smoothstep(0.0,0.035, min(min(edge.x,edge.y),edge.z));
+        diffuseColor.rgb *= (0.88 + grain * 0.20) * mix(0.92,1.0,seam);
       `,
       );
     };
     this.rebuild();
   }
   rebuild() {
+    // World replacement invalidates every mesh, not just its eventual rebuild.
+    for (const mesh of this.chunks.values()) {
+      this.group.remove(mesh);
+      mesh.geometry.dispose();
+    }
+    this.chunks.clear();
+    this.dirty.clear();
+    this.lastCenter = "";
     for (let cx = 0; cx < W / CHUNK; cx++)
       for (let cz = 0; cz < D / CHUNK; cz++) this.dirty.add(`${cx},${cz}`);
   }
@@ -162,6 +176,7 @@ export class Terrain {
     ])
       if (xx >= 0 && xx < W && zz >= 0 && zz < D)
         this.dirty.add(`${Math.floor(xx / CHUNK)},${Math.floor(zz / CHUNK)}`);
+    this.prioritize(this.view.x, this.view.z);
   }
   update(count = 2) {
     const start = performance.now();

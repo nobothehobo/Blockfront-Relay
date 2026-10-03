@@ -10,7 +10,7 @@ Node REST:
 Client WebSocket messages:
 
 - `{ type: "input", epoch, commands: [{ seq, forward, strafe, yaw, pitch, jump, sprint, crouch, jet, fire, aim, reload, weapon, place, dig }] }`
-- Commands represent fixed 1/30-second steps, with a contiguous sequence within each spawn epoch. At most 32 commands per packet. `lastSeq` acknowledges processed commands, not merely received packets. Movement credit is bounded by server elapsed time; flooding never grants extra speed. Legacy single-input packets remain accepted for tooling.
+- Commands represent fixed 1/30-second steps, with a contiguous sequence within each spawn epoch. At most 64 commands per packet, 120 pending commands, and two seconds of elapsed-time credit accommodate delayed HTTP batches. `lastSeq` acknowledges processed commands, not merely received packets. Flooding never grants extra simulation time. Legacy single-input packets remain accepted for tooling.
 - `{ type: "ping", at }`
 
 Server WebSocket messages:

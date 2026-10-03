@@ -189,7 +189,7 @@ export class Room {
   }
   queueInputs(id: string, raw: unknown, epoch: number) {
     const p = this.players.get(id);
-    if (!p || epoch !== p.epoch || !Array.isArray(raw) || raw.length > 32)
+    if (!p || epoch !== p.epoch || !Array.isArray(raw) || raw.length > 64)
       return;
     p.commandMode = true;
     p.commands ??= [];
@@ -197,7 +197,7 @@ export class Room {
     for (const candidate of raw) {
       const value = sanitizeInput(candidate);
       if (!value || value.seq <= p.commandSeq) continue;
-      if (value.seq !== p.commandSeq + 1 || p.commands.length >= 60) break;
+      if (value.seq !== p.commandSeq + 1 || p.commands.length >= 120) break;
       p.commands.push(value);
       p.commandSeq = value.seq;
     }
@@ -370,19 +370,10 @@ export class Room {
         }) => ({
           ...p,
           ...Object.fromEntries(
-            [
-              "x",
-              "y",
-              "z",
-              "vx",
-              "vy",
-              "vz",
-              "yaw",
-              "pitch",
-              "fuel",
-              "protected",
-              "reload",
-            ].map((key) => [key, Math.round((p as any)[key] * 1000) / 1000]),
+            ["yaw", "pitch", "protected", "reload"].map((key) => [
+              key,
+              Math.round((p as any)[key] * 1000) / 1000,
+            ]),
           ),
         }),
       ),
@@ -419,7 +410,8 @@ export class Room {
       p.editCooldown = Math.max(0, p.editCooldown - dt);
       p.protected = Math.max(0, p.protected - dt);
       if (p.commandMode) {
-        p.movementCredit = Math.min(0.35, (p.movementCredit ?? 0) + dt);
+        // Retain enough real elapsed time for a delayed HTTP batch, never extra time.
+        p.movementCredit = Math.min(2, (p.movementCredit ?? 0) + dt);
         this.consumeMovement(p);
         if (this.time - (p.lastCommandTime ?? 0) > 0.5) {
           p.input = {
@@ -429,8 +421,8 @@ export class Room {
             pitch: p.pitch,
             weapon: p.weapon,
           };
-          if (!p.commands?.length && p.dead <= 0)
-            move(p, p.input, this.world, dt, p.zombie, p.jetpack);
+          // Do not run unacknowledged physics: replay must start at lastSeq's body.
+          // Missing commands freeze movement, while combat/round clocks keep ticking.
         }
       }
       const latestInput = p.input;

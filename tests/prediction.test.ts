@@ -37,7 +37,7 @@ function setup() {
   room.remaining = 300;
   return { room, player, world };
 }
-for (const latency of [100, 250])
+for (const latency of [100, 250, 650])
   test(`acknowledged replay prevents stale-snapshot pull at ${latency} ms one-way latency with jitter`, () => {
     const { room, player, world } = setup();
     let local = { ...player },
@@ -68,7 +68,7 @@ for (const latency of [100, 250])
         messages.push({
           at: lastInput,
           kind: "input",
-          value: pending.slice(0, 32),
+          value: pending.slice(0, 64),
         });
       }
       for (const m of messages.filter(
@@ -80,7 +80,8 @@ for (const latency of [100, 250])
       room.tick();
       if (frame % 3 === 0) {
         lastState = Math.max(lastState, frame + delay());
-        messages.push({ at: lastState, kind: "state", value: { ...player } });
+        const snapshot = room.state().players.find((p) => p.id === "a")!;
+        messages.push({ at: lastState, kind: "state", value: snapshot });
       }
       for (const m of messages.filter(
         (m) => m.kind === "state" && m.at <= frame,
@@ -100,8 +101,39 @@ for (const latency of [100, 250])
       }
     }
     assert.ok(maxError < 1e-8, `Prediction correction ${maxError}`);
-    assert.ok(player.lastSeq > 275);
+    assert.ok(player.lastSeq > 265);
   });
+test("a stalled transport does not mutate the acknowledged movement body", () => {
+  const { room, player } = setup();
+  room.queueInputs(
+    "a",
+    [{ ...emptyInput(), seq: 1, jump: true }],
+    player.epoch!,
+  );
+  room.tick();
+  const body = [
+    player.x,
+    player.y,
+    player.z,
+    player.vx,
+    player.vy,
+    player.vz,
+    player.fuel,
+  ];
+  for (let n = 0; n < 45; n++) room.tick();
+  assert.deepEqual(
+    [
+      player.x,
+      player.y,
+      player.z,
+      player.vx,
+      player.vy,
+      player.vz,
+      player.fuel,
+    ],
+    body,
+  );
+});
 test("input flooding cannot create extra simulation time, and old spawn commands are rejected", () => {
   const { room, player } = setup();
   for (let frame = 0; frame < 30; frame++) {

@@ -157,7 +157,7 @@ export type Player = Body & {
   lastCommandTime?: number;
 };
 export const palette = [
-  0, 0x619a4d, 0x9b7150, 0x68747b, 0x77503b, 0x427d45, 0xcdb58a, 0x259ca8,
+  0, 0x78ae42, 0x997044, 0x78828a, 0x77503b, 0x467f34, 0xead2a0, 0x259ca8,
   0xd95c39, 0xe4dba9, 0xd2ad53, 0xb58a56, 0xab8261, 0x7b9253, 0xe9f0ed,
   0x8d989c, 0x6d8396, 0x96c5b0, 0xc8cbd0, 0x414d5b, 0xad7149, 0x809881,
 ];
@@ -331,6 +331,20 @@ export class World {
         fill(x + dx, floor, z + 8, 2, 13, 2, 6);
         fill(x + dx, floor + 12, z - 8, 2, 2, 16, 6);
       }
+      // Open galleries and irregular broken pillars frame the observation terraces.
+      // Broad silhouettes remain readable at mobile draw distances.
+      for (const side of [-1, 1]) {
+        for (let along = -18; along <= 18; along += 6) {
+          const px = x + along,
+            pz = z + side * 19;
+          fill(px - 1, 1, pz - 1, 3, floor, 3, theme.rock);
+          const intact = (along + side + this.seed) % 3 !== 0;
+          fill(px, floor + 1, pz, 1, intact ? 7 : 3, 1, 6);
+          fill(px - 1, floor + (intact ? 8 : 4), pz - 1, 3, 1, 3, 6);
+          if (intact && along < 18)
+            fill(px, floor + 9, pz, 7, 1, 1, theme.rock);
+        }
+      }
     };
     landmark(W / 2, Math.floor(D * 0.22));
     landmark(W / 2, Math.floor(D * 0.78));
@@ -347,19 +361,37 @@ export class World {
             fill(x + dx, floor, z + dz, 1, 3, 1, 6);
         }
     }
-    // Covered low routes alongside original winding trenches.
+    // Continuous three-wide trenches: cut AND fill, including low river crossings.
     for (const x0 of [Math.floor(W * 0.29), Math.floor(W * 0.7)])
       for (let z = Math.floor(D * 0.2); z < D * 0.8; z++) {
         const x = x0 + Math.floor(Math.sin(z * 0.055 + phase) * 3);
-        for (let xx = x; xx < x + 3; xx++)
-          for (let y = 9; y < 26; y++) raw(xx, y, z, 0);
+        for (let xx = x - 1; xx <= x + 3; xx++) {
+          fill(xx, 1, z, 1, 8, 1, theme.earth);
+          if (xx >= x && xx < x + 3) {
+            for (let y = 9; y < H; y++) raw(xx, y, z, 0);
+            // Restore the main road as a bridge, with a clear tunnel beneath it.
+            if (Math.abs(z - center) < 4) raw(xx, 12, z, 6);
+          } else if (Math.abs(z - center) >= 4) {
+            fill(xx, 9, z, 1, 2, 1, theme.earth);
+            raw(xx, 11, z, theme.grass);
+          }
+        }
+        // Regular side stairs provide exits without requiring a jetpack.
+        if (z % 32 < 3 && Math.abs(z - center) > 16) {
+          for (let step = 0; step < 14; step++) {
+            const xx = x - 1 - step;
+            const floor = Math.min(8 + step, Math.max(8, heights[xx + W * z]));
+            fill(xx, 1, z, 1, floor, 1, theme.earth);
+            for (let y = floor + 1; y < H; y++) raw(xx, y, z, 0);
+          }
+        }
       }
     for (let t = 0; t < Math.floor((W * D) / 194); t++) {
       const x = 5 + Math.floor(rnd() * (W - 10)),
         z = 5 + Math.floor(rnd() * (D - 10));
       if (
-        Math.abs(x - Math.floor(W * 0.29)) < 7 ||
-        Math.abs(x - Math.floor(W * 0.7)) < 7 ||
+        Math.abs(x - Math.floor(W * 0.29)) < 21 ||
+        Math.abs(x - Math.floor(W * 0.7)) < 21 ||
         Math.abs(z - center) < 14 ||
         (Math.abs(x - W / 2) < 18 && Math.abs(z - D / 2) > D * 0.2) ||
         [0, 1].some((team) => {

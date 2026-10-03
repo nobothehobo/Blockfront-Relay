@@ -55,7 +55,7 @@ function save(
   clock: number,
 ): Data {
   return {
-    format: 3,
+    format: 4,
     options: r.options,
     clock,
     room: {
@@ -205,7 +205,7 @@ export default {
         if (!row) return response({ error: "Room not found" }, 404);
         const stored = JSON.parse(row.data) as Data;
         const data =
-          stored.format === 3
+          stored.format === 4
             ? stored
             : fresh(String(body.room), { ...stored.options, limit: 16 });
         const r = restore(String(body.room), data),

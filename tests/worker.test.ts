@@ -41,6 +41,67 @@ function fixture() {
   };
   return { db, call, DB };
 }
+test("hosted Frontline ownership, progress and score survive independent requests and reach both peers", async () => {
+  const { db, call } = fixture();
+  await call("/api/rooms");
+  const created = await call("/api/create", {
+    name: "Sectors",
+    mode: "frontline",
+    jet: "off",
+    seed: 7231,
+  });
+  const room = created.data.id;
+  const a = await call("/api/join", { room, name: "A" });
+  const b = await call("/api/join", { room, name: "B" });
+  const statement = db.prepare("SELECT data FROM game_rooms WHERE id=?");
+  for (let i = 0; i < 5; i++) {
+    const stored = JSON.parse((statement.get(room) as any).data);
+    stored.room.phase = "active";
+    stored.clock = Date.now() - 2000;
+    for (const session of Object.values(stored.sessions) as any[])
+      session.seen = Date.now() - 100;
+    const player = stored.players.find((p: any) => p.id === a.data.welcome.id);
+    Object.assign(player, stored.room.controlPoints[0].pos, {
+      protected: 0,
+      commandMode: true,
+      commands: [],
+    });
+    db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(
+      JSON.stringify(stored),
+      room,
+    );
+    const result = await call("/api/input", {
+      room,
+      token: a.data.token,
+      commands: [],
+      epoch: player.epoch,
+    });
+    assert.equal(result.status, 200);
+  }
+  const persisted = JSON.parse((statement.get(room) as any).data);
+  assert.equal(persisted.room.controlPoints[0].owner, 0);
+  assert.ok(persisted.room.scores[0] > 0);
+  for (const joined of [a, b]) {
+    const data = JSON.parse((statement.get(room) as any).data);
+    data.sessions[joined.data.token].seen -= 100;
+    db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(
+      JSON.stringify(data),
+      room,
+    );
+    const state = (
+      await call("/api/input", {
+        room,
+        token: joined.data.token,
+        commands: [],
+        epoch: 1,
+      })
+    ).data.messages.find((m: any) => m.type === "state").state;
+    assert.equal(state.controlPoints[0].owner, 0);
+    assert.ok(state.scores[0] > 0);
+    assert.equal(state.supplyStations.length, 2);
+  }
+  db.close();
+});
 test("hosted creation persists specialist rules and class jetpacks and rejects invalid rules", async () => {
   const { call, db } = fixture();
   await call("/api/rooms");
@@ -144,7 +205,7 @@ test("hosted sessions persist selected classes, active grenades and replicated b
 test("hosted transport shares authoritative state and never accepts another session token", async () => {
   const { call, db } = fixture();
   const list = await call("/api/rooms");
-  assert.equal(list.data.length, 3);
+  assert.equal(list.data.length, 4);
   const a = await call("/api/join", { room: "valley", name: "A" }),
     b = await call("/api/join", { room: "valley", name: "B" });
   assert.equal(a.status, 200);

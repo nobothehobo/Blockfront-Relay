@@ -1,4 +1,5 @@
 import { basePosition, mapTheme, nextMapSeed } from "../shared/game.js";
+import { sectors, supplies, Sector } from "../shared/battlefield.js";
 import { thinkBot } from "./bots.js";
 import { sanitizeInput } from "../shared/prediction.js";
 import {
@@ -70,6 +71,9 @@ export class Room {
     dropped: number;
   }[] = [];
   warmup = 8;
+  controlPoints: Sector[] = [];
+  supplyStations = supplies();
+  controlClock = 0;
   lastBroadcast = 0;
   limit: number;
   duration: number;
@@ -82,13 +86,17 @@ export class Room {
     this.world = cachedWorld ?? new World(options.seed);
     this.limit = Math.min(32, options.limit ?? 32);
     this.duration = options.duration ?? 300;
-    this.target = options.target ?? (options.mode === "relay" ? 3 : 40);
+    this.target =
+      options.target ??
+      (options.mode === "relay" ? 3 : options.mode === "frontline" ? 300 : 40);
     this.resetFlags();
   }
   base(team: number): Vec {
     return basePosition(team);
   }
   resetFlags() {
+    this.controlPoints = sectors(this.world);
+    this.controlClock = 0;
     this.flags = [0, 1].map((team) => ({
       team,
       home: this.base(team),
@@ -299,6 +307,8 @@ export class Room {
         : classPrimary(p.classId, this.options.arsenal === "specialists"),
       grenades: p.zombie ? 0 : role.grenades,
       grenadeCooldown: 0,
+      supplyCooldown: 0,
+      supplyProgress: 0,
       abilityCooldown: 0,
       abilityTime: 0,
       ammo: WEAPONS.map((w) => w.mag),
@@ -404,6 +414,9 @@ export class Room {
       revision: this.revision,
       humans: [...this.players.values()].filter((p) => !p.zombie).length,
       flags: this.flags,
+      controlPoints: this.controlPoints,
+      supplyStations: this.supplyStations,
+      target: this.target,
       projectiles: this.projectiles.map((p) => ({ ...p })),
       players: [...this.players.values()].map(
         ({
@@ -465,6 +478,7 @@ export class Room {
       p.protected = Math.max(0, p.protected - dt);
       p.grenadeCooldown = Math.max(0, (p.grenadeCooldown ?? 0) - dt);
       p.abilityCooldown = Math.max(0, (p.abilityCooldown ?? 0) - dt);
+      this.resupply(p, dt);
       if (p.commandMode) {
         // Retain enough real elapsed time for a delayed HTTP batch, never extra time.
         p.movementCredit = Math.min(2, (p.movementCredit ?? 0) + dt);
@@ -598,6 +612,7 @@ export class Room {
       }
     }
     if (this.phase === "active") {
+      if (this.options.mode === "frontline") this.controlSectors(dt);
       if (this.options.mode === "relay") this.objectives();
       if (this.options.mode === "infection") {
         const humans = [...this.players.values()].filter((p) => !p.zombie);
@@ -928,6 +943,102 @@ export class Room {
     p.editCooldown = 0.65;
     this.broadcast({ type: "edits", edits, revision: this.revision });
     this.event("place", "", p.id, { pos: anchor, kit: id });
+  }
+  resupply(p: Player, dt: number) {
+    p.supplyCooldown = Math.max(0, (p.supplyCooldown ?? 0) - dt);
+    const role = classInfo(p.classId);
+    const needs =
+      p.health < role.health ||
+      p.blocks < role.blocks ||
+      (p.grenades ?? 0) < role.grenades ||
+      WEAPONS.some(
+        (w, i) =>
+          isFirearm(i) && (p.ammo[i] < w.mag || p.reserve[i] < w.reserve),
+      );
+    const station = this.supplyStations.find(
+      (s) =>
+        s.team === p.team &&
+        Math.hypot(p.x - s.pos.x, p.z - s.pos.z) < 3 &&
+        Math.abs(p.y - s.pos.y) < 3,
+    );
+    if (
+      p.zombie ||
+      p.dead > 0 ||
+      !needs ||
+      !station ||
+      p.supplyCooldown ||
+      this.time - p.lastDamage < 4
+    ) {
+      p.supplyProgress = 0;
+      return;
+    }
+    p.supplyProgress = (p.supplyProgress ?? 0) + dt;
+    if (p.supplyProgress < 3) return;
+    p.health = role.health;
+    p.blocks = Math.max(p.blocks, role.blocks);
+    p.grenades = role.grenades;
+    WEAPONS.forEach((w, i) => {
+      if (isFirearm(i)) {
+        p.ammo[i] = w.mag;
+        p.reserve[i] = w.reserve;
+      }
+    });
+    p.reload = 0;
+    p.supplyProgress = 0;
+    p.supplyCooldown = 25;
+    this.event("pickup", `${p.name} replenished at the supply station`, p.id);
+  }
+  controlSectors(dt: number) {
+    for (const point of this.controlPoints) {
+      const counts = [0, 0];
+      for (const p of this.players.values())
+        if (
+          p.dead <= 0 &&
+          !p.protected &&
+          Math.hypot(p.x - point.pos.x, p.z - point.pos.z) < 6 &&
+          Math.abs(p.y - point.pos.y) < 4
+        )
+          counts[p.team]++;
+      point.contested = counts[0] > 0 && counts[1] > 0;
+      if (point.contested) continue;
+      const team = counts[0] ? 0 : counts[1] ? 1 : -1;
+      if (team < 0) {
+        point.progress = Math.max(0, point.progress - dt * 0.1);
+        continue;
+      }
+      if (team === point.owner) {
+        point.progress = 0;
+        point.capturing = -1;
+        continue;
+      }
+      if (point.capturing !== team) {
+        point.capturing = team;
+        point.progress = 0;
+      }
+      point.progress = Math.min(
+        1,
+        point.progress + (dt * Math.min(2, counts[team])) / 8,
+      );
+      if (point.progress >= 1) {
+        point.owner = team;
+        point.progress = 0;
+        point.capturing = -1;
+        this.event(
+          "objective",
+          `${team === 0 ? "Azure" : "Ember"} secured sector ${point.name}`,
+        );
+      }
+    }
+    this.controlClock += dt;
+    while (this.controlClock >= 1) {
+      this.controlClock--;
+      for (const point of this.controlPoints)
+        if (point.owner >= 0 && !point.contested) this.scores[point.owner]++;
+    }
+    if (this.scores.some((score) => score >= this.target))
+      this.end(
+        `${this.scores[0] >= this.target ? "Azure" : "Ember"} controls the frontier`,
+      );
   }
   objectives() {
     for (const f of this.flags) {

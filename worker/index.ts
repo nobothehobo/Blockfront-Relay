@@ -26,6 +26,7 @@ const defaults = [
   ["valley", "Copperwater Skirmish", "tdm", "all"],
   ["relay", "Relay Runners", "relay", "pickup"],
   ["outbreak", "Nightfall Outbreak", "infection", "modes"],
+  ["frontline", "Frontline Control", "frontline", "classes"],
 ] as const;
 const terrainCache = new Map<number, Uint8Array>();
 function restore(id: string, data: Data) {
@@ -67,6 +68,8 @@ function save(
       round: r.round,
       revision: r.revision,
       flags: r.flags,
+      controlPoints: r.controlPoints,
+      controlClock: r.controlClock,
       warmup: r.warmup,
       lastBroadcast: r.lastBroadcast,
       projectiles: r.projectiles,
@@ -102,7 +105,16 @@ async function ensure(db: DB) {
       )
       .bind(
         id,
-        JSON.stringify(fresh(id, { name, mode, jet, seed: 7231, limit: 16 })),
+        JSON.stringify(
+          fresh(id, {
+            name,
+            mode,
+            jet,
+            seed: 7231,
+            limit: 16,
+            arsenal: mode === "frontline" ? "specialists" : "sandbox",
+          }),
+        ),
         Date.now(),
       )
       .run();
@@ -176,7 +188,7 @@ export default {
         if (count.total >= 8)
           return response({ error: "Room limit reached" }, 429);
         if (
-          !["tdm", "relay", "infection"].includes(body.mode) ||
+          !["tdm", "relay", "infection", "frontline"].includes(body.mode) ||
           !["off", "all", "pickup", "modes", "classes"].includes(body.jet) ||
           (body.arsenal !== undefined &&
             !["sandbox", "specialists"].includes(body.arsenal))

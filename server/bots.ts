@@ -1,4 +1,5 @@
 import { classPrimary } from "../shared/classes.js";
+import { Sector, SupplyStation } from "../shared/battlefield.js";
 import {
   Player,
   Input,
@@ -21,6 +22,8 @@ type Arena = {
   world: World;
   players: Map<string, Player>;
   options: { mode: string; arsenal?: "sandbox" | "specialists" };
+  controlPoints?: Sector[];
+  supplyStations?: SupplyStation[];
   flags: {
     team: number;
     home: Vec;
@@ -112,6 +115,30 @@ export function thinkBot(p: Player, arena: Arena): Input {
         };
         objective = true;
       }
+    }
+  }
+  if (arena.options.mode === "frontline" && arena.controlPoints?.length) {
+    const available = arena.controlPoints.filter(
+      (point) => point.owner !== p.team,
+    );
+    const point = (available.length ? available : arena.controlPoints)[
+      personality % (available.length || arena.controlPoints.length)
+    ];
+    goal = point.pos;
+    objective = true;
+  }
+  if (
+    !p.zombie &&
+    (p.health < 40 ||
+      !p.reserve[
+        classPrimary(p.classId, arena.options.arsenal === "specialists")
+      ]) &&
+    !(p.supplyCooldown ?? 0)
+  ) {
+    const station = arena.supplyStations?.find((s) => s.team === p.team);
+    if (station) {
+      goal = station.pos;
+      objective = true;
     }
   }
   const distance = target ? horizontal(target, p) : Infinity;

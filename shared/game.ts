@@ -4,7 +4,7 @@ export const W = 320,
   D = 320,
   CHUNK = 16,
   TICK = 1 / 30;
-export type Mode = "tdm" | "relay" | "infection";
+export type Mode = "tdm" | "relay" | "infection" | "frontline";
 export type JetMode = "off" | "all" | "pickup" | "modes" | "classes";
 export type Vec = { x: number; y: number; z: number };
 export type Input = {
@@ -171,6 +171,8 @@ export type Player = Body & {
   nextClass?: number;
   grenades?: number;
   grenadeCooldown?: number;
+  supplyCooldown?: number;
+  supplyProgress?: number;
   abilityCooldown?: number;
   bot?: boolean;
   brain?: {

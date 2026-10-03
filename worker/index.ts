@@ -143,6 +143,7 @@ export default {
               name: data.options.name,
               mode: data.options.mode,
               jet: data.options.jet,
+              arsenal: data.options.arsenal ?? "sandbox",
               seed: data.options.seed,
               map: mapTheme(data.options.seed).name,
               max: data.options.limit ?? 16,
@@ -173,7 +174,9 @@ export default {
           return response({ error: "Room limit reached" }, 429);
         if (
           !["tdm", "relay", "infection"].includes(body.mode) ||
-          !["off", "all", "pickup", "modes"].includes(body.jet)
+          !["off", "all", "pickup", "modes", "classes"].includes(body.jet) ||
+          (body.arsenal !== undefined &&
+            !["sandbox", "specialists"].includes(body.arsenal))
         )
           return response({ error: "Invalid settings" }, 400);
         const id = crypto.randomUUID().slice(0, 8),
@@ -181,6 +184,7 @@ export default {
             name: String(body.name || "Custom match").slice(0, 30),
             mode: body.mode,
             jet: body.jet,
+            arsenal: body.arsenal ?? "sandbox",
             seed: Number.isInteger(body.seed) ? body.seed : Date.now() >>> 0,
             limit: 16,
             bots: Math.max(0, Math.min(8, Number(body.bots) || 0)) | 0,

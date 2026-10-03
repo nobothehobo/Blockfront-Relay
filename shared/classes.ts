@@ -51,3 +51,20 @@ export const validClass = (value: unknown) =>
   value >= 0 &&
   value < CLASSES.length;
 export const classInfo = (id?: number) => CLASSES[validClass(id) ? id! : 0];
+export const CLASS_WEAPONS = [
+  [0, 2, 4, 5],
+  [1, 4, 5],
+  [2, 4, 5, 6],
+  [3, 0, 4, 5],
+] as const;
+export const allowedWeapon = (
+  id: number | undefined,
+  weapon: number,
+  specialists: boolean,
+) =>
+  !specialists ||
+  (CLASS_WEAPONS[validClass(id) ? id! : 0] as readonly number[]).includes(
+    weapon,
+  );
+export const classPrimary = (id: number | undefined, specialists: boolean) =>
+  specialists && id === 2 ? 2 : classInfo(id).primary;

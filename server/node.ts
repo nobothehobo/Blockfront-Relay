@@ -72,7 +72,9 @@ const app = http.createServer(async (req, res) => {
       const o = JSON.parse(body);
       if (
         !["tdm", "relay", "infection"].includes(o.mode) ||
-        !["off", "all", "pickup", "modes"].includes(o.jet)
+        !["off", "all", "pickup", "modes", "classes"].includes(o.jet) ||
+        (o.arsenal !== undefined &&
+          !["sandbox", "specialists"].includes(o.arsenal))
       )
         throw Error("Invalid settings");
       const id = randomUUID().slice(0, 8),
@@ -80,6 +82,7 @@ const app = http.createServer(async (req, res) => {
           name: String(o.name || "Custom match").slice(0, 30),
           mode: o.mode,
           jet: o.jet,
+          arsenal: o.arsenal ?? "sandbox",
           seed: Number.isInteger(o.seed) ? o.seed : Date.now() >>> 0,
           limit: Math.max(2, Math.min(32, Number(o.limit) || 32)),
           bots: Math.max(0, Math.min(8, Number(o.bots) || 0)) | 0,

@@ -1,7 +1,19 @@
 import { basePosition, mapTheme, nextMapSeed } from "../shared/game.js";
 import { thinkBot } from "./bots.js";
 import { sanitizeInput } from "../shared/prediction.js";
-import { CLASSES, classInfo, validClass } from "../shared/classes.js";
+import {
+  CLASSES,
+  classInfo,
+  validClass,
+  allowedWeapon,
+  classPrimary,
+} from "../shared/classes.js";
+import {
+  KITS,
+  kitCells,
+  buildQuarter,
+  validateKit,
+} from "../shared/fortifications.js";
 import { stepProjectile, blastCells } from "./explosives.js";
 import {
   World,
@@ -34,6 +46,7 @@ export type RoomOptions = {
   duration?: number;
   target?: number;
   bots?: number;
+  arsenal?: "sandbox" | "specialists";
 };
 export class Room {
   world: World;
@@ -90,6 +103,7 @@ export class Room {
       name: this.options.name,
       mode: this.options.mode,
       jet: this.options.jet,
+      arsenal: this.options.arsenal ?? "sandbox",
       seed: this.options.seed,
       map: mapTheme(this.options.seed).name,
       players: this.players.size,
@@ -280,7 +294,9 @@ export class Room {
       dead: 0,
       fuel: 100,
       blocks: p.zombie ? 0 : role.blocks,
-      weapon: p.zombie ? 4 : role.primary,
+      weapon: p.zombie
+        ? 4
+        : classPrimary(p.classId, this.options.arsenal === "specialists"),
       grenades: p.zombie ? 0 : role.grenades,
       grenadeCooldown: 0,
       abilityCooldown: 0,
@@ -294,6 +310,7 @@ export class Room {
     });
     p.jetpack =
       this.options.jet === "all" ||
+      (this.options.jet === "classes" && !p.zombie && p.classId === 1) ||
       (this.options.jet === "modes" && this.options.mode !== "tdm");
     if (p.zombie) p.weapon = 4;
     p.input = {
@@ -382,6 +399,7 @@ export class Room {
       seed: this.options.seed,
       map: mapTheme(this.options.seed).name,
       mode: this.options.mode,
+      arsenal: this.options.arsenal ?? "sandbox",
       jet: this.options.jet,
       revision: this.revision,
       humans: [...this.players.values()].filter((p) => !p.zombie).length,
@@ -488,7 +506,15 @@ export class Room {
         p.jetpack = true;
         this.event("pickup", `${p.name} collected a jetpack`, p.id);
       }
-      const selected = p.zombie ? 4 : p.input.weapon;
+      const selected = p.zombie
+        ? 4
+        : allowedWeapon(
+              p.classId,
+              p.input.weapon,
+              this.options.arsenal === "specialists",
+            )
+          ? p.input.weapon
+          : p.weapon;
       if (selected !== p.weapon) {
         p.weapon = selected;
         p.reload = 0;
@@ -818,6 +844,10 @@ export class Room {
       p.zombie ? 7 : 6,
     );
     if (!hit) return;
+    if (place && (p.input.buildKit ?? 0) > 0 && !p.zombie) {
+      this.buildKit(p, hit.previous);
+      return;
+    }
     const b = place ? hit.previous : hit;
     if (
       b.y <= 0 ||
@@ -851,7 +881,11 @@ export class Room {
       if (!this.world.get(b.x, b.y, b.z)) return;
       if (!p.zombie) p.blocks = Math.min(200, p.blocks + 1);
     }
-    p.editCooldown = p.zombie ? 0.16 : 0.22;
+    p.editCooldown = p.zombie
+      ? 0.16
+      : this.options.arsenal === "specialists" && p.classId === 2 && !place
+        ? 0.1
+        : 0.22;
     this.world.set(b.x, b.y, b.z, place ? (p.team === 0 ? 7 : 8) : 0);
     this.revision++;
     this.broadcast({
@@ -863,6 +897,36 @@ export class Room {
       revision: this.revision,
     });
     this.event(place ? "place" : "dig", "", p.id, { pos: b });
+  }
+  buildKit(p: Player, anchor: Vec) {
+    const id = p.input.buildKit ?? 0;
+    if (
+      id < 1 ||
+      id >= KITS.length ||
+      p.zombie ||
+      p.dead > 0 ||
+      p.editCooldown > 0
+    )
+      return;
+    const cells = kitCells(id, anchor, buildQuarter(p.yaw));
+    const result = validateKit(
+      this.world,
+      cells,
+      [...this.players.values()],
+      eye(p),
+      p.blocks,
+    );
+    if (!result.valid) return;
+    const value = p.team === 0 ? 7 : 8,
+      edits = cells.map((b) => [b.x, b.y, b.z, value]);
+    for (const b of cells) {
+      this.world.set(b.x, b.y, b.z, value);
+      this.revision++;
+    }
+    p.blocks -= result.cost;
+    p.editCooldown = 0.65;
+    this.broadcast({ type: "edits", edits, revision: this.revision });
+    this.event("place", "", p.id, { pos: anchor, kit: id });
   }
   objectives() {
     for (const f of this.flags) {

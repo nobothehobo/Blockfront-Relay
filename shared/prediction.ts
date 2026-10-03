@@ -22,6 +22,10 @@ export function sanitizeInput(raw: unknown): Input | null {
     place: r.place === true,
     dig: r.dig === true,
     grenade: r.grenade === true,
+    buildKit:
+      Number.isInteger(r.buildKit) && r.buildKit >= 0 && r.buildKit < 4
+        ? r.buildKit
+        : 0,
     ability: r.ability === true,
     classId:
       Number.isInteger(r.classId) && r.classId >= 0 && r.classId < 4

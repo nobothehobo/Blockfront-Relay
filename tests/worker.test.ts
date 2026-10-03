@@ -41,6 +41,42 @@ function fixture() {
   };
   return { db, call, DB };
 }
+test("hosted creation persists specialist rules and class jetpacks and rejects invalid rules", async () => {
+  const { call, db } = fixture();
+  await call("/api/rooms");
+  const created = await call("/api/create", {
+    name: "Fieldwork",
+    mode: "tdm",
+    jet: "classes",
+    arsenal: "specialists",
+    seed: 23,
+  });
+  assert.equal(created.status, 201);
+  const id = created.data.id;
+  const a = await call("/api/join", { room: id, name: "Sapper", classId: 2 }),
+    b = await call("/api/join", { room: id, name: "Skirmisher", classId: 1 });
+  assert.equal(a.data.welcome.state.arsenal, "specialists");
+  assert.equal(a.data.welcome.state.players[0].weapon, 2);
+  assert.equal(a.data.welcome.state.players[0].jetpack, false);
+  const skirmisher = b.data.welcome.state.players.find(
+    (p: any) => p.classId === 1,
+  );
+  assert.equal(skirmisher.jetpack, true);
+  assert.equal(
+    (
+      await call("/api/create", {
+        mode: "tdm",
+        jet: "classes",
+        arsenal: "cheats",
+      })
+    ).status,
+    400,
+  );
+  const saved = JSON.parse(
+    (db.prepare("SELECT data FROM game_rooms WHERE id=?").get(id) as any).data,
+  );
+  assert.equal(saved.options.arsenal, "specialists");
+});
 test("hosted sessions persist selected classes, active grenades and replicated blast edits", async () => {
   const { call, db } = fixture();
   await call("/api/rooms");

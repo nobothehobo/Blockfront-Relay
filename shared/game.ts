@@ -5,7 +5,7 @@ export const W = 320,
   CHUNK = 16,
   TICK = 1 / 30;
 export type Mode = "tdm" | "relay" | "infection";
-export type JetMode = "off" | "all" | "pickup" | "modes";
+export type JetMode = "off" | "all" | "pickup" | "modes" | "classes";
 export type Vec = { x: number; y: number; z: number };
 export type Input = {
   seq: number;
@@ -26,6 +26,7 @@ export type Input = {
   grenade?: boolean;
   ability?: boolean;
   classId?: number;
+  buildKit?: number;
 };
 export const emptyInput = (): Input => ({
   seq: 0,

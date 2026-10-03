@@ -1,4 +1,4 @@
-import { classInfo } from "../shared/classes.js";
+import { classPrimary } from "../shared/classes.js";
 import {
   Player,
   Input,
@@ -20,7 +20,7 @@ type Arena = {
   phase: string;
   world: World;
   players: Map<string, Player>;
-  options: { mode: string };
+  options: { mode: string; arsenal?: "sandbox" | "specialists" };
   flags: {
     team: number;
     home: Vec;
@@ -116,7 +116,10 @@ export function thinkBot(p: Player, arena: Arena): Input {
   }
   const distance = target ? horizontal(target, p) : Infinity;
   const ready = !!target && arena.time - brain.acquired > 0.4;
-  const primary = classInfo(p.classId).primary;
+  const primary = classPrimary(
+    p.classId,
+    arena.options.arsenal === "specialists",
+  );
   const ammoLow =
     !p.zombie && p.ammo[primary] < Math.max(1, WEAPONS[primary].mag / 4);
   const retreat =

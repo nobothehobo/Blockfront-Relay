@@ -44,6 +44,17 @@ const sound = new Sound();
 const touch =
   matchMedia("(pointer:coarse)").matches || navigator.maxTouchPoints > 0;
 document.body.classList.toggle("touch", touch);
+const standaloneQuery = matchMedia("(display-mode: standalone)");
+const updateAppMode = () => {
+  const standalone =
+    standaloneQuery.matches ||
+    matchMedia("(display-mode: fullscreen)").matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  document.body.classList.toggle("standalone", standalone);
+  $("install-tip").hidden = !touch || standalone;
+};
+standaloneQuery.addEventListener("change", updateAppMode);
+updateAppMode();
 type Settings = {
   preset: string;
   distance: number;

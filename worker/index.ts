@@ -114,7 +114,10 @@ export default {
     if (!url.pathname.startsWith("/api/")) {
       const asset = assets[url.pathname === "/" ? "/index.html" : url.pathname];
       if (!asset) return new Response("Not found", { status: 404 });
-      return new Response(asset.body, {
+      const body = asset.binary
+        ? Uint8Array.from(atob(asset.body), (char) => char.charCodeAt(0))
+        : asset.body;
+      return new Response(body, {
         headers: {
           "Content-Type": asset.mime,
           "Cache-Control": url.pathname.startsWith("/assets/")

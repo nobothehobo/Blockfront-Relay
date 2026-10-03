@@ -1,1 +1,4 @@
-export const assets: Record<string, { body: string; mime: string }>;
+export const assets: Record<
+  string,
+  { body: string; mime: string; binary?: boolean }
+>;

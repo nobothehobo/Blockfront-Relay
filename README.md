@@ -6,6 +6,8 @@ Source: [nobothehobo/Blockfront-Relay](https://github.com/nobothehobo/Blockfront
 
 ## Play
 
+**iPhone / iPad app:** open in Safari → Share → Add to Home Screen → launch **Blockfront** from its icon. Standalone launch removes Safari's browser bars and keeps controls within safe areas. Existing shortcuts may need to be removed and added again. See [Home Screen instructions and device-testing limits](docs/HOME-SCREEN.md).
+
 The browser client has a main menu, server browser, custom rooms, settings, and a field manual. Choose a callsign and press **Play multiplayer**. Matches start with two players after an eight-second warmup. A lone player can explore, practice shooting, build, and dig while waiting.
 
 - **Team deathmatch:** Azure vs Ember; 40 eliminations or five minutes.

@@ -169,9 +169,28 @@ try {
       hasTouch: true,
       deviceScaleFactor: 1,
     });
+    // Exercise Apple's standalone signal on tablet; phone cases remain browser launches.
+    if (viewport.name === "ipad") {
+      await context.addInitScript(
+        'Object.defineProperty(navigator, "standalone", { value: true });',
+      );
+    }
     const p = await context.newPage();
     watch(p);
     await p.goto(url);
+    assert.equal(
+      await p
+        .locator("body")
+        .evaluate((el) => el.classList.contains("standalone")),
+      viewport.name === "ipad",
+    );
+    assert.equal(
+      await p.locator("#install-tip").isVisible(),
+      viewport.name !== "ipad",
+    );
+    const canvasBox = await p.locator("#game").boundingBox();
+    assert.equal(canvasBox?.width, viewport.width);
+    assert.equal(canvasBox?.height, viewport.height);
     await p.waitForFunction(() =>
       document
         .querySelector("#status")

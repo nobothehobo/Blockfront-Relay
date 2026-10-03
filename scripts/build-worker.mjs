@@ -21,8 +21,15 @@ async function scan(dir) {
           ".js": "text/javascript; charset=utf-8",
           ".css": "text/css; charset=utf-8",
           ".svg": "image/svg+xml",
+          ".webmanifest": "application/manifest+json",
+          ".png": "image/png",
         }[path.extname(file)] ?? "text/plain";
-      assets[key] = { mime, body: await readFile(file, "utf8") };
+      const binary = path.extname(file) === ".png";
+      assets[key] = {
+        mime,
+        body: await readFile(file, binary ? "base64" : "utf8"),
+        binary,
+      };
     }
   }
 }

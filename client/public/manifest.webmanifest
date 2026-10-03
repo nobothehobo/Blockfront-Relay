@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "Blockfront Relay",
+  "short_name": "Blockfront",
+  "description": "An original multiplayer voxel battlefield. Dig, build and fight together.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#182d38",
+  "theme_color": "#122a33",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

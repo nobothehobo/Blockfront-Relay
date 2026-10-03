@@ -110,6 +110,8 @@ const app = http.createServer(async (req, res) => {
       ".css": "text/css",
       ".svg": "image/svg+xml",
       ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+      ".png": "image/png",
     };
     res.writeHead(200, {
       "Content-Type":

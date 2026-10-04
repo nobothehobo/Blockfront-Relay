@@ -224,6 +224,84 @@ try {
   await a.locator("#game").click();
   await a.waitForFunction(() => document.pointerLockElement?.id === "game");
   await faceNorth(a);
+  // The observer sees the actual held rifle/tool; firing creates accepted impacts
+  // and bounded ejection effects in both WebGL views, without staging client state.
+  await a.keyboard.press("Digit1");
+  await a.waitForFunction(() => (window as any).BR.player.weapon === 0);
+  await b.waitForFunction(
+    () =>
+      (window as any).BR.animation.find((p: any) => p.id === "viewer1")
+        ?.equipment?.weapon === 0,
+  );
+  const shooter = room.players.get("viewer1")!;
+  const barrierZ = Math.floor(shooter.z) - 4;
+  for (let x = Math.floor(shooter.x) - 1; x <= Math.floor(shooter.x) + 1; x++)
+    for (let y = 13; y <= 16; y++) {
+      room.world.set(x, y, barrierZ, 3);
+      room.broadcast({ type: "edit", x, y, z: barrierZ, value: 3 });
+    }
+  await a.evaluate(() => {
+    // Pointer-lock cursor warps from the observer tab can arrive after a
+    // weapon swap. Set view direction through the same relative-look input
+    // immediately before firing; never assign simulation/player state.
+    const p = (window as any).BR.player;
+    document.dispatchEvent(
+      new MouseEvent("mousemove", {
+        movementX: p.yaw / 0.002,
+        movementY: p.pitch / 0.002,
+        bubbles: true,
+      }),
+    );
+    window.dispatchEvent(
+      new MouseEvent("mousedown", { button: 0, bubbles: true }),
+    );
+  });
+  try {
+    await Promise.all([
+      a.waitForFunction(() => (window as any).BR.combat.casings > 0),
+      b.waitForFunction(() => (window as any).BR.combat.casings > 0),
+      a.waitForFunction(() => (window as any).BR.combat.smoke > 0),
+      b.waitForFunction(() => (window as any).BR.combat.impactsPresented > 0),
+    ]);
+    assert.ok(
+      shooter.ammo[0] < 24,
+      "new cosmetic effects correspond to accepted shots",
+    );
+    assert.equal(
+      await b.evaluate(() => (window as any).BR.combat.lastImpact.kind),
+      "terrain",
+    );
+    assert.equal(
+      await b.evaluate(() => (window as any).BR.combat.lastImpact.block),
+      3,
+    );
+    await a.screenshot({ path: "artifacts/field-finish-firing.png" });
+  } finally {
+    await a.evaluate(() =>
+      window.dispatchEvent(
+        new MouseEvent("mouseup", { button: 0, bubbles: true }),
+      ),
+    );
+  }
+  for (let x = Math.floor(shooter.x) - 1; x <= Math.floor(shooter.x) + 1; x++)
+    for (let y = 13; y <= 16; y++) {
+      room.world.set(x, y, barrierZ, 0);
+      room.broadcast({ type: "edit", x, y, z: barrierZ, value: 0 });
+    }
+  await a.keyboard.press("Digit5");
+  await b.waitForFunction(
+    () =>
+      (window as any).BR.animation.find((p: any) => p.id === "viewer1")
+        ?.equipment?.weapon === 4,
+  );
+  assert.ok(
+    await b.evaluate(
+      () =>
+        (window as any).BR.animation.find((p: any) => p.id === "viewer1")
+          ?.equipment.visible,
+    ),
+    "dig tools remain visible rather than disappearing",
+  );
   await a.keyboard.press("KeyK");
   await b.waitForFunction(() =>
     (window as any).BR.state.fieldGear.some((g: any) => g.kind === "beacon"),
@@ -414,8 +492,24 @@ try {
   await a.screenshot({ path: "artifacts/fieldcraft-outbreak.png" });
   assert.deepEqual(errors, []);
   console.log(
-    "PASS Fieldcraft: five skinned class silhouettes, three infected variants, sun shadows/material shaders, two-browser beacon and Bore replication, keyboard drill, touch gear, phone/tablet layouts and mobile shadow preset; no WebGL errors",
+    "PASS Field Finish: class silhouettes, infected variants, server-driven rifle/tool swaps, casing/impact/smoke batches in two browsers, shadows/material shaders, beacon/Bore replication, touch layouts and snow highlight headroom; no WebGL errors",
   );
+} catch (error) {
+  console.error("Graphics browser diagnostics", errors);
+  for (const context of browser.contexts())
+    for (const page of context.pages())
+      console.error(
+        await page.evaluate(() => ({
+          network: (window as any).BR?.network,
+          combat: (window as any).BR?.combat,
+          player: (window as any).BR?.player,
+          pause: !document
+            .querySelector("#pause")
+            ?.classList.contains("hidden"),
+          lock: document.pointerLockElement?.id,
+        })),
+      );
+  throw error;
 } finally {
   await browser.close();
   clearInterval(timer);

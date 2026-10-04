@@ -276,6 +276,32 @@ try {
   console.log(
     "PASS 2.0 polish: class selection, Sapper loadout, resupply, grenade replicated to two browsers, launcher crater/blast effects in both browsers, NPC gait and sky; no browser errors",
   );
+} catch (error) {
+  console.error("Polish browser diagnostics", {
+    time: room.time,
+    phase: room.phase,
+    players: [...room.players.values()].map((p) => ({
+      id: p.id,
+      dead: p.dead,
+      grenades: p.grenades,
+      weapon: p.weapon,
+      lastSeq: p.lastSeq,
+    })),
+  });
+  for (const context of browser.contexts())
+    for (const page of context.pages())
+      console.error(
+        await page.evaluate(() => ({
+          network: (window as any).BR?.network,
+          input: (window as any).BR?.input,
+          player: (window as any).BR?.player,
+          pause: !document
+            .querySelector("#pause")
+            ?.classList.contains("hidden"),
+          lock: document.pointerLockElement?.id,
+        })),
+      );
+  throw error;
 } finally {
   await browser.close();
   clearInterval(ticks);

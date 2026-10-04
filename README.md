@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.8 — Afterdark Update.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.9 — Field Finish Update.**
+
+**2.9:** corrected terrain corner occlusion, quieter anti-aliased voxel edges, more detailed class gear and first-person weapons, real held NPC weapons/tools, smoother weapon sway/landing, shell casings, softer explosion smoke and server-confirmed material-colored impact chips. The default crosshair responds to weapon spread and aiming; headshots and eliminations have distinct feedback. See [changes, references and verification](docs/UPDATE-29.md). Refresh/rejoin to load the update.
 
 **2.8:** a synchronized six-minute day/night cycle with sunset, dawn, stars, moonlight and moving shadows; plus the original **Lumen Quay Afterdark** neon-city map. Choose it in Solo practice → Map or Server browser → Create a match → Map layout. Its streets, open buildings, signs, lamps, cover and skybridges are destructible; the city stays at night. All four map families work with existing modes and NPC options. See [changes, research and verification limits](docs/UPDATE-28.md). Refresh/rejoin after updating.
 

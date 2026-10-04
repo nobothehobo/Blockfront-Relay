@@ -1,5 +1,9 @@
 # Performance notes — alpha 0.4
 
+## 2.9 presentation budget
+
+The client is approximately 163 KB gzipped. Exposed-face occlusion is computed while meshing and participates in greedy merging; unobstructed floors remain a single quad. The additional corner detail increases geometry near walls/overhangs, as quantified in UPDATE-29.md. Anti-aliased seams use derivatives in the existing terrain material. Bodies remain one skinned mesh each, under 6000 vertices. Held weapons/tools remain one solid batch per character. Casings use a reused 64-element pool, capped at sixteen on low effects; soft smoke is capped at 96 instances. Those effects add at most two active draws, without shadow maps or postprocess buffers. Physical-device performance remains unmeasured.
+
 ## 2.8 atmosphere budget
 
 The complete compressed client is about 160 KB. Day/night is shader/uniform presentation from the existing room clock, without new network messages or a second simulation timer; snapshots include a small derived atmosphere description. Emissive terrain adds one float per meshed vertex, not independent voxel meshes. Stars/clouds use the existing sky draw, with three cloud-texture samples per fragment and procedural star hashing. High effects cap additional street lighting at two nearby shadowless point lights, refreshed at four Hz; mobile/low uses emissive materials only. The single sun/moon shadow map retains its previous bounded preset/refresh budgets. Color/vector temporaries are reused in frame updates. Physical mobile frame rate remains unmeasured.

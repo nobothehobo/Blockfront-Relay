@@ -498,7 +498,7 @@ function setWeaponModel(n: number) {
       local?.team === 1 ? 0xff9d59 : 0x57ded0,
       weaponGroup,
     );
-    const flash = box(
+    const flash: THREE.Mesh = box(
       0.17,
       0.17,
       0.12,
@@ -509,10 +509,37 @@ function setWeaponModel(n: number) {
       weaponGroup,
     );
     (flash.material as THREE.Material).dispose();
+    flash.geometry.dispose();
+    const flare: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4,
+        b = ((i + 1) * Math.PI) / 4;
+      const r = i % 2 ? 0.028 : 0.105,
+        s = (i + 1) % 2 ? 0.028 : 0.105;
+      flare.push(
+        0,
+        0,
+        0,
+        Math.cos(a) * r,
+        Math.sin(a) * r,
+        0,
+        Math.cos(b) * s,
+        Math.sin(b) * s,
+        0,
+      );
+    }
+    flash.geometry = new THREE.BufferGeometry();
+    flash.geometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(flare, 3),
+    );
     (flash as THREE.Mesh).material = new THREE.MeshBasicMaterial({
       color: 0xffde88,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.9,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      toneMapped: false,
     });
     flash.visible = false;
     weaponGroup.userData.flash = flash;
@@ -2180,7 +2207,11 @@ function frame(now: number) {
     $("kit-hint").textContent = kit
       ? `${KITS[kit].cells.length} blocks · ${fortifications.reason}`
       : "1 block · Tap KIT / B to cycle";
-    outline.visible = !!hit && local.dead <= 0 && !(building && kit > 0);
+    outline.visible =
+      !!hit &&
+      local.dead <= 0 &&
+      (building || local.weapon === 4) &&
+      !(building && kit > 0);
     if (hit) {
       const target = building ? hit.previous : hit;
       outline.position.set(target.x + 0.5, target.y + 0.5, target.z + 0.5);

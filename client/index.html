@@ -39,7 +39,7 @@
       <div class="brand">
         <span class="brand-mark">BR</span
         ><span>BLOCKFRONT<br /><b>RELAY</b></span
-        ><small>2.4 · CONNECTION & COMBAT</small>
+        ><small>2.5 · BANNER PATROL</small>
       </div>
       <p class="eyebrow">PROCEDURAL FRONTIERS</p>
       <h1>Dig in.<br />Build your advantage.</h1>
@@ -55,7 +55,7 @@
           autocomplete="nickname" /></label
       ><button id="class-open">Class: Trailguard ▾</button
       ><button id="play" class="primary">Play multiplayer</button
-      ><button id="practice">Practice with NPCs</button>
+      ><button id="practice">Solo practice / NPC squad</button>
       <div class="menu-row">
         <button id="browse">Server browser</button
         ><button id="settings-open">Settings</button
@@ -99,8 +99,11 @@
           <option value="frontline">
             Frontline Control — hold three sectors
           </option>
+          <option value="ctf">Capture the flag — Banner Patrol</option>
           <option value="relay">Capture the relay</option>
           <option value="infection">Humans vs Zombies</option></select
+        ><select id="map-preset" aria-label="Map layout">
+          <option value="">Random map / custom seed</option></select
         ><select id="arsenal" aria-label="Class loadout rules">
           <option value="specialists">Specialist class loadouts</option>
           <option value="sandbox">Sandbox: all weapons</option></select
@@ -141,6 +144,52 @@
         Preferences save on this device. Lighting uses baked face shading and
         optional lightweight character contact shadows. Desktop can also enable
         nearby terrain shadows. Reflection render targets are not used.
+      </p>
+    </section>
+    <section id="solo-setup" class="modal hidden">
+      <div class="modal-head">
+        <h2>Solo practice</h2>
+        <button data-close="solo-setup">Close</button>
+      </div>
+      <p>
+        Your NPC squad uses the same server rules as multiplayer. Friends can
+        join your room later.
+      </p>
+      <div class="create">
+        <label
+          >Mode<select id="solo-mode">
+            <option value="ctf">Capture the flag / cooperative squad</option>
+            <option value="tdm">Team deathmatch</option>
+            <option value="frontline">Frontline Control</option>
+            <option value="demolition">Stronghold Demolition</option>
+            <option value="infection">Humans vs Zombies</option>
+            <option value="relay">Capture the relay</option>
+          </select></label
+        >
+        <label
+          >Map<select id="solo-map">
+            <option value="">Random layout</option>
+          </select></label
+        >
+        <label
+          >NPC players<select id="solo-bots">
+            <option value="3">3 — quick skirmish</option>
+            <option value="5">5 — small squad</option>
+            <option value="7" selected>7 — balanced 4 vs 4 with you</option>
+          </select></label
+        >
+        <label
+          >Round length<select id="solo-duration">
+            <option value="300">5 minutes</option>
+            <option value="480">8 minutes</option>
+            <option value="600">10 minutes</option>
+          </select></label
+        >
+        <button id="solo-start" class="primary">Deploy with squad</button>
+      </div>
+      <p id="solo-status" role="status">
+        NPC aim remains deliberately imperfect. Teams assign automatically.
+        Outbreak practice starts you as a human survivor.
       </p>
     </section>
     <section id="controls" class="modal hidden">
@@ -187,6 +236,14 @@
         25-second cooldown. Zombies cannot use supplies.
       </p>
       <p>
+        <b>Capture the flag</b><br />Steal the enemy banner and bring it home
+        while your own flag is home. Touch your dropped flag to return it; it
+        returns automatically after 25 seconds. First to three captures wins.
+        NPC squads split into defenders and raiders, escort friendly carriers
+        and recover stolen flags. Solo practice lets you select the map, mode,
+        NPC count and round length; it still requires the game server.
+      </p>
+      <p>
         <b>Relay</b><br />Touch the enemy relay to collect it. Bring it to your
         base while your own relay is home. Dropped relays return after 25
         seconds.
@@ -213,7 +270,7 @@
           aria-label="North-up terrain, your heading, teammates, bases and objectives"
         ></canvas>
         <button id="minimap-toggle" aria-expanded="false">MAP ⤢</button>
-        <small>▲ YOU · ● TEAM · ◆ RELAY</small>
+        <small>▲ YOU · ● TEAM · ◆ FLAG / RELAY</small>
       </aside>
       <div id="crosshair">+</div>
       <div id="construction-panel" class="hidden">

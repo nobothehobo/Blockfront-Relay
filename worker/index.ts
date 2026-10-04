@@ -25,6 +25,7 @@ type Data = {
 const defaults = [
   ["valley", "Copperwater Skirmish", "tdm", "all"],
   ["relay", "Relay Runners", "relay", "pickup"],
+  ["ctf", "Banner Patrol", "ctf", "all"],
   ["outbreak", "Nightfall Outbreak", "infection", "modes"],
   ["frontline", "Frontline Control", "frontline", "classes"],
   ["demolition", "Stronghold Demolition", "demolition", "classes"],
@@ -57,7 +58,7 @@ function save(
   clock: number,
 ): Data {
   return {
-    format: 6,
+    format: 7,
     options: r.options,
     clock,
     room: {
@@ -164,12 +165,16 @@ export default {
               mode: data.options.mode,
               jet: data.options.jet,
               arsenal: data.options.arsenal ?? "sandbox",
+              duration: data.options.duration ?? 300,
               seed: data.options.seed,
               map: mapTheme(data.options.seed).name,
               max: data.options.limit ?? 16,
               phase: data.room.phase,
               bots: data.players.filter((p: any) => p.bot).length,
               npcSlots: data.options.bots ?? 0,
+              humans: Object.values(data.sessions).filter(
+                (s) => Date.now() - s.seen < 20000,
+              ).length,
               players:
                 Object.values(data.sessions).filter(
                   (s) => Date.now() - s.seen < 20000,
@@ -187,15 +192,38 @@ export default {
         return response({ error: "Request too large" }, 413);
       const body = JSON.parse(text);
       if (url.pathname === "/api/create") {
+        // Only explicitly ephemeral practice rooms expire; compare versions to protect joins.
+        const stale = await db
+          .prepare("SELECT id,version,data FROM game_rooms WHERE updated<?")
+          .bind(Date.now() - 300000)
+          .all();
+        for (const row of stale.results) {
+          const saved = JSON.parse(row.data) as Data;
+          if (
+            saved.options.practice &&
+            Object.values(saved.sessions).every(
+              (s) => Date.now() - s.seen > 20000,
+            )
+          )
+            await db
+              .prepare("DELETE FROM game_rooms WHERE id=? AND version=?")
+              .bind(row.id, row.version)
+              .run();
+        }
         const count = await db
           .prepare("SELECT COUNT(*) AS total FROM game_rooms")
           .first();
-        if (count.total >= 8)
+        if (count.total >= 16)
           return response({ error: "Room limit reached" }, 429);
         if (
-          !["tdm", "relay", "infection", "frontline", "demolition"].includes(
-            body.mode,
-          ) ||
+          ![
+            "tdm",
+            "relay",
+            "ctf",
+            "infection",
+            "frontline",
+            "demolition",
+          ].includes(body.mode) ||
           !["off", "all", "pickup", "modes", "classes"].includes(body.jet) ||
           (body.arsenal !== undefined &&
             !["sandbox", "specialists"].includes(body.arsenal))
@@ -205,6 +233,7 @@ export default {
           options: RoomOptions = {
             name: String(body.name || "Custom match").slice(0, 30),
             mode: body.mode,
+            practice: body.practice === true,
             jet: body.jet,
             arsenal: body.arsenal ?? "sandbox",
             seed: Number.isInteger(body.seed) ? body.seed : Date.now() >>> 0,
@@ -233,7 +262,7 @@ export default {
         if (!row) return response({ error: "Room not found" }, 404);
         const stored = JSON.parse(row.data) as Data;
         const data =
-          stored.format === 6
+          stored.format === 7
             ? stored
             : fresh(String(body.room), { ...stored.options, limit: 16 });
         const r = restore(String(body.room), data),

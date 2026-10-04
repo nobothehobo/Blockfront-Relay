@@ -15,6 +15,7 @@ import {
   basePosition,
 } from "../shared/game.js";
 import { planRoute, walkHeight } from "./navigation.js";
+import { flagAssignment } from "./ctf-tactics.js";
 export type BotBrain = NonNullable<Player["brain"]>;
 type Arena = {
   time: number;
@@ -93,6 +94,12 @@ export function thinkBot(p: Player, arena: Arena): Input {
       z: D / 2 + Math.cos(arena.time * 0.09 + personality) * 24,
     };
   let objective = false;
+  if (arena.options.mode === "ctf") {
+    const assignment = flagAssignment(p, arena.players, arena.flags);
+    goal = assignment.goal;
+    brain.role = assignment.role;
+    objective = true;
+  }
   if (arena.options.mode === "relay") {
     const own = arena.flags[p.team],
       enemy = arena.flags[1 - p.team];

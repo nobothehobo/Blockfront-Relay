@@ -209,8 +209,12 @@ try {
         ?.textContent?.includes("rooms available"),
     );
     // Isolate phone controls from prior clients' warmup/round-start loadout resets.
-    if (viewport.name === "ipad") await p.locator("#practice").tap();
-    else {
+    if (viewport.name === "ipad") {
+      await p.locator("#practice").tap();
+      await p.locator("#solo-mode").selectOption("tdm");
+      await p.locator("#solo-bots").selectOption("3");
+      await p.locator("#solo-start").tap();
+    } else {
       await p.locator("#browse").tap();
       await p.locator("#room-name").fill(`Touch ${viewport.name}`);
       await p.locator("#arsenal").selectOption("sandbox");
@@ -250,7 +254,7 @@ try {
       await p.waitForFunction(
         () =>
           (window as any).BR.state.players.filter((p: any) => p.bot).length ===
-            4 && (window as any).BR.state.phase === "active",
+            3 && (window as any).BR.state.phase === "active",
       );
     const controls = await p
       .locator("#touch-actions button, #tactical-controls button")

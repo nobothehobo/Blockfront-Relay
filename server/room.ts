@@ -57,11 +57,13 @@ export type RoomOptions = {
   bots?: number;
   arsenal?: "sandbox" | "specialists";
   rewind?: boolean;
+  practice?: boolean;
 };
 export class Room {
   world: World;
   players = new Map<string, Player>();
   peers = new Map<string, Peer>();
+  emptySince = Date.now();
   time = 0;
   remaining = 300;
   phase: "waiting" | "active" | "finished" = "waiting";
@@ -101,7 +103,7 @@ export class Room {
     this.duration = options.duration ?? 300;
     this.target =
       options.target ??
-      (options.mode === "relay"
+      (options.mode === "relay" || options.mode === "ctf"
         ? 3
         : options.mode === "frontline"
           ? 300
@@ -193,6 +195,7 @@ export class Room {
       bots: [...this.players.values()].filter((p) => p.bot).length,
       npcSlots: this.options.bots ?? 0,
       max: this.limit,
+      duration: this.duration,
       phase: this.phase,
     };
   }
@@ -253,7 +256,10 @@ export class Room {
       nextClass: validClass(selectedClass) ? selectedClass : 0,
     };
     this.players.set(id, p);
-    if (!bot) this.peers.set(id, peer);
+    if (!bot) {
+      this.peers.set(id, peer);
+      this.emptySince = 0;
+    }
     this.spawn(p);
     if (!bot) this.ensureBots();
     if (!bot)
@@ -277,10 +283,11 @@ export class Room {
         const p = this.players.get(id);
         f.carrier = null;
         f.pos = p ? { x: p.x, y: p.y, z: p.z } : { ...f.home };
-        f.dropped = this.time;
+        f.dropped = Math.max(this.time, 0.000001);
       }
     this.players.delete(id);
     this.peers.delete(id);
+    if (!this.peers.size) this.emptySince = Date.now();
     if (removed && !removed.bot) this.ensureBots();
   }
   input(id: string, raw: unknown) {
@@ -413,7 +420,11 @@ export class Room {
     if (this.options.mode === "infection") {
       let i = 0;
       const zombies = Math.max(1, Math.floor(this.players.size / 5));
-      for (const p of this.players.values()) {
+      // NPC practice starts humans as survivors; human-only rounds retain join order.
+      const participants = [...this.players.values()].sort(
+        (a, b) => Number(!!b.bot) - Number(!!a.bot),
+      );
+      for (const p of participants) {
         p.zombie = i++ < zombies;
         p.team = p.zombie ? 1 : 0;
         this.spawn(p);
@@ -447,6 +458,8 @@ export class Room {
     this.revision = 0;
     this.phase = "waiting";
     this.warmup = 8;
+    this.scores = [0, 0];
+    this.winner = "";
     this.remaining = this.duration;
     this.resetFlags();
     for (const p of this.players.values()) {
@@ -513,6 +526,10 @@ export class Room {
           ...p
         }) => ({
           ...p,
+          npcRole:
+            p.bot && this.options.mode === "ctf"
+              ? (brain?.role ?? "raider")
+              : undefined,
           aim: input.aim,
           thrusting: p.dead <= 0 && p.jetpack && input.jet && p.fuel > 0,
           ...Object.fromEntries(
@@ -704,7 +721,8 @@ export class Room {
           );
       }
       if (this.options.mode === "frontline") this.controlSectors(dt);
-      if (this.options.mode === "relay") this.objectives();
+      if (this.options.mode === "relay" || this.options.mode === "ctf")
+        this.objectives();
       if (this.options.mode === "infection") {
         const humans = [...this.players.values()].filter((p) => !p.zombie);
         if (!humans.length) this.end("Zombies win");
@@ -756,7 +774,7 @@ export class Room {
       if (f.carrier === victim.id) {
         f.carrier = null;
         f.pos = { x: victim.x, y: victim.y, z: victim.z };
-        f.dropped = this.time;
+        f.dropped = Math.max(this.time, 0.000001);
       }
     if (
       this.options.mode === "infection" &&
@@ -1191,6 +1209,7 @@ export class Room {
       );
   }
   objectives() {
+    const noun = this.options.mode === "ctf" ? "flag" : "relay";
     for (const f of this.flags) {
       if (f.carrier) {
         const p = this.players.get(f.carrier);
@@ -1211,18 +1230,22 @@ export class Room {
           if (f.dropped) {
             f.pos = { ...f.home };
             f.dropped = 0;
-            this.event("objective", `${p.name} returned the relay`);
+            this.event("objective", `${p.name} returned the ${noun}`);
           }
         } else {
           f.carrier = p.id;
           f.dropped = 0;
           p.protected = 0;
-          this.event("objective", `${p.name} took the enemy relay`);
+          this.event("objective", `${p.name} took the enemy ${noun}`);
         }
       }
       if (f.dropped && this.time - f.dropped > 25) {
         f.pos = { ...f.home };
         f.dropped = 0;
+        this.event(
+          "objective",
+          `${f.team === 0 ? "Azure" : "Ember"} ${noun} returned home`,
+        );
       }
     }
     for (const f of this.flags) {
@@ -1238,7 +1261,7 @@ export class Room {
         this.scores[p.team]++;
         f.carrier = null;
         f.pos = { ...f.home };
-        this.event("objective", `${p.name} delivered a relay`);
+        this.event("objective", `${p.name} captured the ${noun}`);
         if (this.scores[p.team] >= this.target)
           this.end(`${p.team === 0 ? "Azure" : "Ember"} wins`);
       }

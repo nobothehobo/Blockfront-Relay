@@ -26,6 +26,8 @@ import {
   mapTheme,
   isFirearm,
   palette,
+  mapLayout,
+  MAP_PRESETS,
 } from "../shared/game.js";
 import { MiniMap } from "./minimap.js";
 import { stickInput, touchLookGain } from "./control-math.js";
@@ -213,6 +215,7 @@ function applyTheme() {
   sky.theme(world.seed);
   (scene.fog as THREE.Fog).color.copy(sky.material.uniforms.horizon.value);
   water.theme(theme.water);
+  water.mesh.scale.y = mapLayout(world.seed) === 1 ? 1.8 : 1;
   sun.color.setHex(theme.kind === 0 ? 0xffdfad : 0xfff0d5);
   ambient.groundColor.setHex(
     theme.kind === 2 ? 0x9aa6bc : theme.kind === 0 ? 0x9f8666 : 0x899a6c,
@@ -238,6 +241,14 @@ function box(
   return m;
 }
 function setWeaponModel(n: number) {
+  weaponGroup.userData.dynamic = [];
+  const moving = (mesh: THREE.Mesh, kind: string) => {
+    if (kind === "fixed") return mesh;
+    mesh.userData.kind = kind;
+    mesh.userData.home = mesh.position.clone();
+    weaponGroup.userData.dynamic.push(mesh);
+    return mesh;
+  };
   weaponGroup.userData.flash = null;
   while (weaponGroup.children.length) {
     const child = weaponGroup.children[0] as THREE.Mesh;
@@ -275,18 +286,24 @@ function setWeaponModel(n: number) {
     );
     box(0.08, 0.21, 0.12, 0.23, -0.31, -0.4, 0x865d41, weaponGroup);
     box(0.11, 0.13, 0.24, 0.23, -0.23, -0.22, 0x796342, weaponGroup);
-    box(
-      0.1,
-      0.09,
-      n === 2 ? 0.27 : 0.2,
-      0.23,
-      -0.25,
-      -0.67,
-      0x796342,
-      weaponGroup,
+    moving(
+      box(
+        0.1,
+        0.09,
+        n === 2 ? 0.27 : 0.2,
+        0.23,
+        -0.25,
+        -0.67,
+        0x796342,
+        weaponGroup,
+      ),
+      n === 2 ? "pump" : "fixed",
     );
-    if (n !== 2 && n !== 3)
-      box(0.075, 0.2, 0.11, 0.23, -0.36, -0.55, 0x263b43, weaponGroup);
+    if (n !== 2)
+      moving(
+        box(0.075, 0.2, 0.11, 0.23, -0.36, -0.55, 0x263b43, weaponGroup),
+        "magazine",
+      );
     if (n === 1)
       box(0.055, 0.18, 0.065, 0.23, -0.34, -0.69, 0x263b43, weaponGroup);
     box(
@@ -309,9 +326,23 @@ function setWeaponModel(n: number) {
   box(0.13, 0.15, 0.25, 0.23, -0.39, -0.28, 0xd6b183, weaponGroup);
   box(0.15, 0.11, 0.18, 0.23, -0.4, -0.14, 0x416b63, weaponGroup);
   if (isFirearm(n)) {
-    box(0.12, 0.12, 0.14, 0.2, -0.32, -0.66, 0xd6b183, weaponGroup);
-    box(0.15, 0.14, 0.24, 0.14, -0.4, -0.55, 0x416b63, weaponGroup);
-    box(0.015, 0.04, 0.13, 0.3, -0.2, -0.55, 0x9baeb0, weaponGroup);
+    moving(
+      box(0.12, 0.12, 0.14, 0.2, -0.32, -0.66, 0xd6b183, weaponGroup),
+      "hand",
+    );
+    moving(
+      box(0.15, 0.14, 0.24, 0.14, -0.4, -0.55, 0x416b63, weaponGroup),
+      "hand",
+    );
+    moving(
+      box(0.015, 0.04, 0.13, 0.3, -0.2, -0.55, 0x9baeb0, weaponGroup),
+      "bolt",
+    );
+    if (n === 2 || n === 6)
+      moving(
+        box(0.055, 0.055, 0.15, 0.14, -0.4, -0.55, 0xdfb86b, weaponGroup),
+        "shell",
+      );
     box(
       0.14,
       0.025,
@@ -343,7 +374,9 @@ function setWeaponModel(n: number) {
   }
   // Batch all solid weapon/hand pieces; preserve the separately animated flash.
   const parts = weaponGroup.children.filter(
-    (child) => child !== weaponGroup.userData.flash,
+    (child) =>
+      child !== weaponGroup.userData.flash &&
+      (!child.userData.kind || child.userData.kind === "fixed"),
   ) as THREE.Mesh[];
   const geometries = parts.map((mesh) => {
     mesh.updateMatrix();
@@ -371,6 +404,8 @@ function setWeaponModel(n: number) {
 }
 setWeaponModel(0);
 let modelWeapon = 0;
+let weaponSwitchedAt = 0;
+let presentedPose: ReturnType<typeof weaponPose> | null = null;
 let jumpFeedback = false;
 const remote = new Map<
   string,
@@ -711,7 +746,7 @@ async function refreshRooms() {
       const title = document.createElement("strong");
       title.textContent = r.name;
       const meta = document.createElement("small");
-      meta.textContent = `${r.bots ? `${r.bots} NPCs · ` : ""}${r.mode === "demolition" ? "Stronghold Demolition" : r.mode === "frontline" ? "Frontline Control" : r.mode === "tdm" ? "Team deathmatch" : r.mode === "relay" ? "Capture the relay" : "Humans vs Zombies"} · ${r.players}/${r.max} players\n${r.map} · ${r.arsenal === "specialists" ? "Specialists" : "Sandbox"} · Jetpacks ${r.jet}`;
+      meta.textContent = `${r.bots ? `${r.bots} NPCs · ` : ""}${r.mode === "ctf" ? "Capture the flag" : r.mode === "demolition" ? "Stronghold Demolition" : r.mode === "frontline" ? "Frontline Control" : r.mode === "tdm" ? "Team deathmatch" : r.mode === "relay" ? "Capture the relay" : "Humans vs Zombies"} · ${r.players}/${r.max} players\n${r.map} · ${r.arsenal === "specialists" ? "Specialists" : "Sandbox"} · Jetpacks ${r.jet}`;
       meta.style.whiteSpace = "pre-line";
       info.append(title, meta);
       const joinButton = document.createElement("button");
@@ -755,6 +790,7 @@ function message(msg: any) {
     joining = false;
     show("menu", false);
     show("browser", false);
+    show("solo-setup", false);
     show("hud");
     show("touch", touch);
     if (touch && !localStorage.getItem("br-touch-tip")) {
@@ -1090,11 +1126,13 @@ function updateHud() {
       ? "Team deathmatch"
       : mode === "relay"
         ? "Capture the relay"
-        : mode === "demolition"
-          ? "Stronghold Demolition"
-          : mode === "frontline"
-            ? "Frontline Control"
-            : "Humans vs Zombies";
+        : mode === "ctf"
+          ? "Capture the flag"
+          : mode === "demolition"
+            ? "Stronghold Demolition"
+            : mode === "frontline"
+              ? "Frontline Control"
+              : "Humans vs Zombies";
   $("scores").textContent =
     mode === "infection"
       ? `${state.humans} HUMANS`
@@ -1112,9 +1150,11 @@ function updateHud() {
         ? `${state.players.length - state.humans} infected · Round ${state.round}`
         : mode === "relay"
           ? "First to 3 relays"
-          : mode === "demolition"
-            ? `Round ${state.round} · Destroy 85% of the enemy stronghold`
-            : `Round ${state.round} · ${state.map} · First to ${state.target ?? 40}`;
+          : mode === "ctf"
+            ? "First to 3 flags · Your flag must be home to score"
+            : mode === "demolition"
+              ? `Round ${state.round} · Destroy 85% of the enemy stronghold`
+              : `Round ${state.round} · ${state.map} · First to ${state.target ?? 40}`;
   $("team-label").textContent = p.zombie
     ? "ZOMBIE"
     : mode === "infection"
@@ -1186,11 +1226,11 @@ function updateHud() {
                 `${point.name}: ${point.contested ? "CONTESTED" : point.progress > 0 ? `${Math.round(point.progress * 100)}%` : point.owner < 0 ? "neutral" : point.owner === 0 ? "Azure" : "Ember"}`,
             )
             .join(" · ")
-        : mode === "relay"
+        : mode === "relay" || mode === "ctf"
           ? state.flags
               .map(
                 (f: any) =>
-                  `${f.team === 0 ? "Azure" : "Ember"} relay: ${f.carrier ? (f.carrier === id ? "YOU HAVE IT" : "carried") : f.dropped ? "dropped" : "home"}`,
+                  `${f.team === 0 ? "Azure" : "Ember"} ${mode === "ctf" ? "flag" : "relay"}: ${f.carrier ? (f.carrier === id ? "YOU HAVE IT" : "carried") : f.dropped ? "dropped" : "home"}`,
               )
               .join(" · ")
           : mode === "infection"
@@ -1595,14 +1635,37 @@ for (const kind of ["pointerup", "pointercancel", "lostpointercapture"])
   fireButton.addEventListener(kind, (e) => {
     if ((e as PointerEvent).pointerId === firePointer) firePointer = -1;
   });
-$("practice").onclick = async () => {
-  const button = $<HTMLButtonElement>("practice");
+for (const preset of MAP_PRESETS) {
+  for (const selectId of ["solo-map", "map-preset"]) {
+    const option = document.createElement("option");
+    option.value = String(preset.seed);
+    option.textContent = preset.name;
+    $(selectId).append(option);
+  }
+}
+$("map-preset").onchange = () => {
+  $<HTMLInputElement>("seed").value = $<HTMLSelectElement>("map-preset").value;
+};
+$("practice").onclick = () => show("solo-setup");
+$("solo-start").onclick = async () => {
+  const button = $<HTMLButtonElement>("solo-start");
   button.disabled = true;
   try {
+    const mode = $<HTMLSelectElement>("solo-mode").value;
+    const bots = Number($<HTMLSelectElement>("solo-bots").value);
+    const map = $<HTMLSelectElement>("solo-map").value;
+    const seed = map ? Number(map) : Date.now() >>> 0;
+    const duration = Number($<HTMLSelectElement>("solo-duration").value);
+    const name = `Solo ${mode.toUpperCase()} ${seed}`.slice(0, 30);
     await refreshRooms();
     const existing = rooms.find(
       (r) =>
-        r.name === "Scout Practice" && r.mode === "tdm" && r.npcSlots === 4,
+        r.name === name &&
+        r.mode === mode &&
+        r.npcSlots === bots &&
+        r.humans === 0 &&
+        r.seed === seed &&
+        r.duration === duration,
     );
     const room =
       existing ??
@@ -1610,18 +1673,22 @@ $("practice").onclick = async () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: "Scout Practice",
-          mode: "tdm",
+          name,
+          mode,
           jet: "all",
-          bots: 4,
+          bots,
+          seed,
           limit: 16,
-          duration: 300,
+          duration,
+          arsenal: "sandbox",
+          practice: true,
         }),
       }));
     await refreshRooms();
     await join(room.id);
+    if (connected) show("solo-setup", false);
   } catch (e) {
-    $("status").textContent = (e as Error).message;
+    $("solo-status").textContent = (e as Error).message;
   } finally {
     button.disabled = false;
   }
@@ -1919,7 +1986,8 @@ function frame(now: number) {
       camera.position.set(view.position.x, view.position.y, view.position.z);
       camera.lookAt(view.focus.x, view.focus.y, view.focus.z);
     }
-    const scoped = input.aim && local.dead <= 0 && local.weapon === 3;
+    const scoped =
+      input.aim && local.dead <= 0 && local.weapon === 3 && local.reload <= 0;
     show("scope", scoped);
     show("crosshair", local.dead <= 0 && !scoped);
     const targetFov =
@@ -1942,13 +2010,38 @@ function frame(now: number) {
       Math.hypot(local.vx, local.vz),
       now,
       input.aim,
-      local.reload,
+      Math.max(0, local.reload - (now - lastStateAt) / 1000),
+      now - weaponSwitchedAt,
+      input.sprint,
     );
+    presentedPose = pose;
     weaponGroup.position.set(pose.x, pose.y, pose.z);
     weaponGroup.rotation.set(pose.pitch, 0, pose.roll);
     if (modelWeapon !== local.weapon) {
       modelWeapon = local.weapon;
+      weaponSwitchedAt = now;
       setWeaponModel(modelWeapon);
+    }
+    for (const part of weaponGroup.userData.dynamic as THREE.Mesh[]) {
+      part.position.copy(part.userData.home);
+      part.rotation.set(0, 0, 0);
+      const kind = part.userData.kind;
+      if (kind === "magazine") {
+        part.position.y -= pose.magazine * 0.23;
+        part.position.x -= pose.magazine * 0.08;
+        part.rotation.z = -pose.magazine * 0.25;
+      }
+      if (kind === "bolt" || kind === "pump")
+        part.position.z += pose.bolt * (kind === "pump" ? 0.12 : 0.055);
+      if (kind === "hand") {
+        part.position.y -= pose.leftHand * 0.16;
+        part.position.z +=
+          pose.leftHand * 0.08 + (local.weapon === 2 ? pose.bolt * 0.12 : 0);
+      }
+      if (kind === "shell") {
+        part.visible = local.reload > 0;
+        part.position.y += pose.shell * 0.12;
+      }
     }
     if (weaponGroup.userData.flash)
       weaponGroup.userData.flash.visible =
@@ -2066,11 +2159,17 @@ function frame(now: number) {
       r.label.style.left = `${(pp.x * 0.5 + 0.5) * innerWidth}px`;
       r.label.style.top = `${(-pp.y * 0.5 + 0.5) * innerHeight}px`;
       r.label.style.transform = "translate(-50%,-100%)";
+      r.label.textContent =
+        r.target.name +
+        (r.target.bot
+          ? ` [NPC${r.target.team === local.team && r.target.npcRole ? ` · ${r.target.npcRole}` : ""}]`
+          : "");
     }
     for (let n = 0; n < 2; n++) {
       const f = state.flags[n];
-      flagMeshes[n].visible = state.mode === "relay";
+      flagMeshes[n].visible = state.mode === "relay" || state.mode === "ctf";
       flagMeshes[n].position.set(f.pos.x, f.pos.y, f.pos.z);
+      flagMeshes[n].rotation.y = Math.sin(now * 0.0015 + n) * 0.12;
     }
     beacon.visible = state.jet === "pickup";
     beacon.rotation.y = now * 0.001;
@@ -2199,6 +2298,16 @@ setInterval(() => {
       particles: combatFX.particles.length,
       tracers: combatFX.tracers.length,
       projectiles: combatFX.projectiles.length,
+    };
+  },
+  get weaponAnimation() {
+    return {
+      weapon: modelWeapon,
+      pose: presentedPose,
+      parts: (weaponGroup.userData.dynamic ?? []).map((p: THREE.Mesh) => ({
+        kind: p.userData.kind,
+        position: p.position.toArray(),
+      })),
     };
   },
   get audio() {

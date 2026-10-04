@@ -7,6 +7,7 @@ import {
   palette,
   mapTheme,
   basePosition,
+  mapLayout,
 } from "../shared/game.js";
 import { Sector, SupplyStation } from "../shared/battlefield.js";
 type Dot = { id: string; x: number; z: number; team: number; dead: number };
@@ -37,7 +38,12 @@ export function surfacePixel(
   let y = H - 1;
   while (y > 0 && !world.blocks[x + W * z + y * stride]) y--;
   let color = palette[world.blocks[x + W * z + y * stride]] ?? 0x445b62;
-  if (y < 7 && x > W * 0.25 && x < W * 0.75 && Math.abs(z - D / 2) < 14)
+  if (
+    y < 7 &&
+    x > W * 0.25 &&
+    x < W * 0.75 &&
+    Math.abs(z - D / 2) < (mapLayout(world.seed) === 1 ? 25 : 14)
+  )
     color = mapTheme(world.seed).water;
   const shade = 0.72 + Math.min(1, y / 32) * 0.28;
   return [
@@ -149,7 +155,7 @@ export class MiniMap {
       ctx.fillRect(x - 6, z - 6, 12, 12);
       ctx.strokeRect(x - 6, z - 6, 12, 12);
     }
-    if (state.mode === "relay")
+    if (state.mode === "relay" || state.mode === "ctf")
       for (const flag of state.flags) {
         const [x, z] = point(flag.pos);
         ctx.beginPath();

@@ -4,7 +4,8 @@ export const W = 320,
   D = 320,
   CHUNK = 16,
   TICK = 1 / 30;
-export type Mode = "tdm" | "relay" | "infection" | "frontline" | "demolition";
+export type Mode =
+  "tdm" | "relay" | "ctf" | "infection" | "frontline" | "demolition";
 export type JetMode = "off" | "all" | "pickup" | "modes" | "classes";
 export type Vec = { x: number; y: number; z: number };
 export type Input = {
@@ -190,6 +191,7 @@ export type Player = Body & {
     routeGoal?: Vec;
     side?: number;
     nextStrafe?: number;
+    role?: string;
   };
   pendingActions?: Partial<Input>;
   epoch?: number;
@@ -209,12 +211,31 @@ export const basePosition = (team: number): Vec => ({
   y: 13.01,
   z: D / 2 + 0.5,
 });
+export const mapLayout = (seed: number) =>
+  (((Math.floor(seed / 3) + 2) % 3) + 3) % 3;
+export const MAP_PRESETS = [
+  {
+    seed: 7231,
+    name: "Copperwater Foundry",
+    description: "Four-building district, river road and watch terraces",
+  },
+  {
+    seed: 7233,
+    name: "Sunbreak Aqueduct",
+    description: "Wide river basin, three causeways and stone viaducts",
+  },
+  {
+    seed: 7238,
+    name: "Rimewater Ridgeline",
+    description: "High snowy ridges, separated bunkers and exposed sightlines",
+  },
+];
 export function mapTheme(seed: number) {
   const kind = ((seed % 3) + 3) % 3;
   return kind === 0
     ? {
         kind,
-        name: "Sunbreak Escarpment",
+        name: `Sunbreak ${["Foundry", "Aqueduct", "Ridgeline"][mapLayout(seed)]}`,
         sky: 0xf0c899,
         fog: 0xe3bd91,
         grass: 10,
@@ -226,7 +247,7 @@ export function mapTheme(seed: number) {
     : kind === 2
       ? {
           kind,
-          name: "Rimewater Highlands",
+          name: `Rimewater ${["Foundry", "Aqueduct", "Ridgeline"][mapLayout(seed)]}`,
           sky: 0xb9ddf1,
           fog: 0xd1e6ee,
           grass: 14,
@@ -237,7 +258,7 @@ export function mapTheme(seed: number) {
         }
       : {
           kind,
-          name: "Copperwater Frontier",
+          name: `Copperwater ${["Foundry", "Aqueduct", "Ridgeline"][mapLayout(seed)]}`,
           sky: 0x94ccec,
           fog: 0xb5d5da,
           grass: 1,
@@ -247,8 +268,11 @@ export function mapTheme(seed: number) {
           water: 0x318aa2,
         };
 }
-export const nextMapSeed = (seed: number, round: number) =>
-  (Math.imul(seed ^ round, 1664525) + 1013904223) >>> 0;
+export const nextMapSeed = (seed: number, round: number) => {
+  let next = (Math.imul(seed ^ round, 1664525) + 1013904223) >>> 0;
+  if (mapLayout(next) === mapLayout(seed)) next = (next + 3) >>> 0;
+  return next;
+};
 export const idx = (x: number, y: number, z: number) => x + W * (z + D * y);
 export function demolitionCells(team: number): [number, number, number][] {
   const b = basePosition(team),
@@ -306,6 +330,7 @@ export class World {
     };
     const phase = rnd() * 6,
       theme = mapTheme(this.seed);
+    const layout = mapLayout(this.seed);
     const center = D / 2;
     const raw = (x: number, y: number, z: number, v: number) => {
       if (x >= 0 && x < W && y >= 0 && y < H && z >= 0 && z < D)
@@ -335,7 +360,22 @@ export class World {
             3.1 * Math.sin((z * 0.083 * 192) / D + (x * 0.025 * 192) / W),
         );
         const river = center + Math.sin(x * 0.039) * 7;
-        if (Math.abs(z - river) < 5 && x > W * 0.25 && x < W * 0.75) height = 5;
+        if (layout === 2)
+          height += Math.floor(
+            7 * Math.exp(-Math.pow((z - 94) / 28, 2)) +
+              7 * Math.exp(-Math.pow((z - 226) / 28, 2)),
+          );
+        if (
+          Math.abs(z - river) < (layout === 1 ? 16 : 5) &&
+          x > W * 0.25 &&
+          x < W * 0.75
+        )
+          height = 5;
+        if (
+          layout === 1 &&
+          (Math.abs(z - center - 25) < 3 || Math.abs(z - center + 25) < 3)
+        )
+          height = 12;
         for (const team of [0, 1]) {
           const b = basePosition(team);
           const distance = Math.hypot(x - b.x, z - b.z);
@@ -414,16 +454,42 @@ export class World {
         }
       }
     };
-    landmark(W / 2, Math.floor(D * 0.22));
-    landmark(W / 2, Math.floor(D * 0.78));
+    if (layout === 1) {
+      // Two climbable original viaduct overlooks, with open ground-level passages.
+      for (const cx of [134, 186]) {
+        for (const z of [136, 148, 172, 184])
+          fill(cx - 2, 1, z - 2, 5, 16, 5, 6);
+        fill(cx - 3, 17, 132, 7, 1, 57, theme.rock);
+        // Start on the fixed-height northern causeway, not the variable hillside.
+        for (let step = 0; step < 5; step++) {
+          fill(cx - 8 + step, 12, 134, 1, 2 + step, 3, 6);
+          fill(cx - 8 + step, 14 + step, 134, 1, 3, 3, 0);
+        }
+      }
+    } else {
+      landmark(W / 2, layout === 2 ? 95 : Math.floor(D * 0.22));
+      landmark(W / 2, layout === 2 ? 225 : Math.floor(D * 0.78));
+    }
     // Original four-building foundry district. Traversable interiors, firing windows,
     // roof stairs and sheltered flank alleys, with a clear central road.
-    for (const [bx, bz] of [
-      [137, 124],
-      [183, 124],
-      [137, 196],
-      [183, 196],
-    ]) {
+    const buildings =
+      layout === 0
+        ? [
+            [137, 124],
+            [183, 124],
+            [137, 196],
+            [183, 196],
+          ]
+        : layout === 1
+          ? [
+              [130, 105],
+              [190, 215],
+            ]
+          : [
+              [113, 120],
+              [207, 200],
+            ];
+    for (const [bx, bz] of buildings) {
       const floor = 13;
       fill(bx - 8, 1, bz - 8, 17, floor - 1, 17, theme.rock);
       for (let x = bx - 8; x <= bx + 8; x++)
@@ -498,6 +564,13 @@ export class World {
       const x = 5 + Math.floor(rnd() * (W - 10)),
         z = 5 + Math.floor(rnd() * (D - 10));
       if (
+        buildings.some(
+          ([bx, bz]) => Math.abs(x - bx) < 13 && Math.abs(z - bz) < 14,
+        ) ||
+        (layout === 1 &&
+          [134, 186].some((cx) => Math.abs(x - cx) < 7) &&
+          z > 115 &&
+          z < 195) ||
         Math.abs(x - Math.floor(W * 0.29)) < 21 ||
         Math.abs(x - Math.floor(W * 0.7)) < 21 ||
         Math.abs(z - center) < 14 ||

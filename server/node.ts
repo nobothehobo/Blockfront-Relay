@@ -12,6 +12,7 @@ const rooms = new Map<string, Room>();
 for (const [id, mode, jet] of [
   ["valley", "tdm", "all"],
   ["relay", "relay", "pickup"],
+  ["ctf", "ctf", "all"],
   ["outbreak", "infection", "modes"],
   ["frontline", "frontline", "classes"],
   ["demolition", "demolition", "classes"],
@@ -24,11 +25,13 @@ for (const [id, mode, jet] of [
           ? "Copperwater Skirmish"
           : mode === "relay"
             ? "Relay Runners"
-            : mode === "demolition"
-              ? "Stronghold Demolition"
-              : mode === "frontline"
-                ? "Frontline Control"
-                : "Nightfall Outbreak",
+            : mode === "ctf"
+              ? "Banner Patrol"
+              : mode === "demolition"
+                ? "Stronghold Demolition"
+                : mode === "frontline"
+                  ? "Frontline Control"
+                  : "Nightfall Outbreak",
       mode,
       jet,
       seed: 7231,
@@ -98,7 +101,14 @@ const app = http.createServer(async (req, res) => {
       players: [...rooms.values()].reduce((n, r) => n + r.players.size, 0),
     });
   if (url.pathname === "/api/create" && req.method === "POST") {
-    if (rooms.size >= 8) return json(429, { error: "Room limit reached" });
+    for (const [id, room] of rooms)
+      if (
+        room.options.practice &&
+        !room.peers.size &&
+        Date.now() - room.emptySince > 300000
+      )
+        rooms.delete(id);
+    if (rooms.size >= 16) return json(429, { error: "Room limit reached" });
     let body = "";
     try {
       for await (const chunk of req) {
@@ -107,9 +117,14 @@ const app = http.createServer(async (req, res) => {
       }
       const o = JSON.parse(body);
       if (
-        !["tdm", "relay", "infection", "frontline", "demolition"].includes(
-          o.mode,
-        ) ||
+        ![
+          "tdm",
+          "relay",
+          "ctf",
+          "infection",
+          "frontline",
+          "demolition",
+        ].includes(o.mode) ||
         !["off", "all", "pickup", "modes", "classes"].includes(o.jet) ||
         (o.arsenal !== undefined &&
           !["sandbox", "specialists"].includes(o.arsenal))
@@ -126,6 +141,7 @@ const app = http.createServer(async (req, res) => {
           bots: Math.max(0, Math.min(8, Number(o.bots) || 0)) | 0,
           duration: Math.max(120, Math.min(900, Number(o.duration) || 300)),
           rewind,
+          practice: o.practice === true,
         };
       rooms.set(id, new Room(id, options));
       return json(201, { id });

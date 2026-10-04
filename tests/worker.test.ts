@@ -41,6 +41,97 @@ function fixture() {
   };
   return { db, call, DB };
 }
+test("expired empty practice rooms release capacity but active and normal rooms are preserved", async () => {
+  const { db, call } = fixture();
+  await call("/api/rooms");
+  const options = { name: "Practice", mode: "ctf", jet: "all", practice: true };
+  const idle = await call("/api/create", options);
+  const active = await call("/api/create", options);
+  await call("/api/join", { room: active.data.id, name: "Still here" });
+  const normal = await call("/api/create", { ...options, practice: false });
+  db.prepare("UPDATE game_rooms SET updated=?").run(Date.now() - 301000);
+  assert.equal((await call("/api/create", options)).status, 201);
+  const rooms = (await call("/api/rooms")).data;
+  assert.ok(!rooms.some((r: any) => r.id === idle.data.id));
+  assert.ok(rooms.some((r: any) => r.id === active.data.id && r.humans === 1));
+  assert.ok(rooms.some((r: any) => r.id === normal.data.id));
+});
+test("hosted CTF carries, drops and captures persist and synchronize across two sessions", async () => {
+  const { db, call } = fixture();
+  await call("/api/rooms");
+  const created = await call("/api/create", {
+    name: "Solo CTF",
+    mode: "ctf",
+    jet: "off",
+    bots: 3,
+    seed: 7233,
+    duration: 480,
+  });
+  assert.equal(created.status, 201);
+  const room = created.data.id;
+  const a = await call("/api/join", { room, name: "A" });
+  const b = await call("/api/join", { room, name: "B" });
+  const row = db.prepare("SELECT data FROM game_rooms WHERE id=?");
+  const mutate = (fn: (stored: any) => void) => {
+    const stored = JSON.parse((row.get(room) as any).data);
+    stored.room.phase = "active";
+    stored.clock = Date.now() - 200;
+    for (const p of stored.players)
+      Object.assign(p, { x: 40, y: 13.01, z: 170, vx: 0, vy: 0, vz: 0 });
+    for (const session of Object.values(stored.sessions) as any[])
+      session.seen = Date.now() - 100;
+    fn(stored);
+    db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(
+      JSON.stringify(stored),
+      room,
+    );
+  };
+  const poll = async (session: any) => {
+    await new Promise((r) => setTimeout(r, 70));
+    const response = await call("/api/input", {
+      room,
+      token: session.data.token,
+      commands: [],
+      epoch: 1,
+      round: 1,
+    });
+    assert.equal(response.status, 200);
+    return response.data.messages.filter((m: any) => m.type === "state").at(-1)
+      .state;
+  };
+  mutate((stored) =>
+    Object.assign(
+      stored.players.find((p: any) => p.id === a.data.welcome.id),
+      stored.room.flags[1].home,
+    ),
+  );
+  assert.equal((await poll(a)).flags[1].carrier, a.data.welcome.id);
+  assert.equal((await poll(b)).flags[1].carrier, a.data.welcome.id);
+  const late = await call("/api/join", { room, name: "Late" });
+  assert.equal(late.data.welcome.state.flags[1].carrier, a.data.welcome.id);
+  mutate((stored) => {
+    const player = stored.players.find((p: any) => p.id === a.data.welcome.id);
+    Object.assign(player, stored.room.flags[0].home);
+  });
+  assert.equal((await poll(a)).scores[0], 1);
+  assert.equal((await poll(b)).scores[0], 1);
+  mutate((stored) => {
+    stored.room.flags[1].carrier = a.data.welcome.id;
+    stored.room.flags[1].pos = { x: 100, y: 13.01, z: 170 };
+    Object.assign(
+      stored.players.find((p: any) => p.id === a.data.welcome.id),
+      stored.room.flags[1].pos,
+    );
+  });
+  assert.equal(
+    (await call("/api/leave", { room, token: a.data.token })).status,
+    200,
+  );
+  assert.ok((await poll(b)).flags[1].dropped > 0);
+  assert.equal((await poll(b)).flags[1].carrier, null);
+  const rooms = await call("/api/rooms");
+  assert.equal(rooms.data.find((r: any) => r.id === room).duration, 480);
+});
 test("hosted Demolition edits and collapse queue survive restoration without polluting another mode's terrain", async () => {
   const { db, call } = fixture();
   await call("/api/rooms");
@@ -248,7 +339,7 @@ test("hosted sessions persist selected classes, active grenades and replicated b
 test("hosted transport shares authoritative state and never accepts another session token", async () => {
   const { call, db } = fixture();
   const list = await call("/api/rooms");
-  assert.equal(list.data.length, 5);
+  assert.equal(list.data.length, 6);
   const a = await call("/api/join", { room: "valley", name: "A" }),
     b = await call("/api/join", { room: "valley", name: "B" });
   assert.equal(a.status, 200);

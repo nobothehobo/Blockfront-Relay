@@ -285,7 +285,11 @@ test("weapon presentation is bounded, settles without firing and does not mutate
   for (let weapon = 0; weapon < 7; weapon++) {
     const atShot = weaponPose(0, weapon, 12, 0, false, 0),
       settled = weaponPose(500, weapon, 0, 0, false, 0);
-    assert.ok(Object.values(atShot).every(Number.isFinite));
+    assert.ok(
+      Object.values(atShot)
+        .filter((v) => typeof v === "number")
+        .every(Number.isFinite),
+    );
     assert.ok(atShot.z <= 0.1);
     assert.equal(settled.z, 0);
     assert.equal(settled.pitch, 0);

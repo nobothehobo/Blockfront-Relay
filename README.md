@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.6 — Fieldcraft.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.7 — Squad Update.**
+
+**2.7:** controlled snow highlights and biome exposure, smoother NPC poses and matching contact shadows, corrected step navigation and throttled jump fallback. Solo and custom rooms now offer up to 15 NPCs: 8 vs 8 including you. See [changes and verification](docs/UPDATE-27.md).
 
 **2.6:** rebuilt original class and infected character models, physically based materials, improved sun/bounce lighting and nearby shadows, twilight Outbreak sky, and a fifth excavation role. Medboxes, light beacons, timed charges and proximity mines are playable server-authoritative class equipment. See [Fieldcraft details, controls and limits](docs/UPDATE-26.md).
 
@@ -39,7 +41,7 @@ Audio uses original synthesized retro gun reports, mechanical reloads, crunchy b
 
 Maps span 320 × 320 blocks. **Copperwater Foundry**, **Sunbreak Aqueduct**, and **Rimewater Ridgeline** presets offer an industrial district, a broad river with causeways/viaducts, and elevated ridges with separated bunkers. Layout families also combine with woodland/desert/snow palettes and seeded variations. Every next round generates a fresh seed in a different layout family. Create a room with 5/8/10-minute rounds and 16/32 slots; 32 slots require the dedicated WebSocket server. Hosted rooms remain capped at 16 players.
 
-Choose **Solo practice / NPC squad**, then select one of six modes, a map preset or random seed, 3/5/7 NPCs, and a 5/8/10-minute round. Seven NPCs plus you create a balanced 4-v-4 match. This is **server-backed practice, not offline play or a private campaign**; friends can join its named room from the browser. Custom rooms still allow 0/2/4/6/8 NPCs. Scouts use the same combat, damage, reload, respawn, objective and infection rules as players. NPCs yield full-room slots to humans and disappear after the last human leaves. They use bounded local obstacle routing, sight-based targets, short last-seen memory and cover-seeking retreats. In CTF, squads divide defense, raids, carrier escorts and nearby recovery/interception rather than all chasing one objective. They can still struggle with elaborate constructions.
+Choose **Solo practice / NPC squad**, then select one of six modes, a map preset or random seed, 3/5/7/11/15 NPCs, and a 5/8/10-minute round. Seven, eleven or fifteen NPCs plus you create balanced 4-v-4, 6-v-6 or 8-v-8 matches. This is **server-backed practice, not offline play or a private campaign**; friends can join its named room from the browser. Custom rooms still allow 0/2/4/6/8/11/15 NPCs. Scouts use the same combat, damage, reload, respawn, objective and infection rules as players. NPCs yield full-room slots to humans and disappear after the last human leaves. They use bounded local obstacle routing, sight-based targets, short last-seen memory and cover-seeking retreats. In CTF, squads divide defense, raids, carrier escorts and nearby recovery/interception rather than all chasing one objective. They can still struggle with elaborate constructions.
 
 Alpha 0.7 adds original drifting cloud layers, a soft sun and atmospheric horizon, biome-specific lighting and filmic tone mapping. Remote characters (including NPCs) use a single skinned anatomy mesh with articulated walking, airborne, aiming, reload, zombie-reaching and firing poses. Improved AI keeps the deliberately imperfect accuracy from alpha 0.5. See `docs/UPDATE-07.md` for details.
 

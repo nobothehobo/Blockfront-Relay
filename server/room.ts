@@ -205,7 +205,7 @@ export class Room {
   ensureBots() {
     const humans = [...this.players.values()].filter((p) => !p.bot).length;
     const wanted = humans
-      ? Math.min(8, this.options.bots ?? 0, this.limit - humans)
+      ? Math.min(31, this.options.bots ?? 0, this.limit - humans)
       : 0;
     const bots = [...this.players.values()].filter((p) => p.bot);
     for (const p of bots.slice(wanted)) this.remove(p.id);

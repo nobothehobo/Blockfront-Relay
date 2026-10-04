@@ -119,3 +119,35 @@ test("NPCs obey terrain occlusion and share infection and relay rules", () => {
   relay.objectives();
   assert.equal(relay.scores[runner.team], 1);
 });
+
+test("eight-a-side practice fills fifteen NPCs, yields a human slot, and refills without crowding spawns", () => {
+  const r = room("tdm", 15, 16);
+  const h = r.add("h", "Human", { send() {} });
+  assert.equal(r.players.size, 16);
+  assert.deepEqual(
+    [0, 1].map(
+      (team) => [...r.players.values()].filter((p) => p.team === team).length,
+    ),
+    [8, 8],
+  );
+  const peer = r.add("peer", "Friend", { send() {} });
+  assert.equal(r.players.size, 16);
+  assert.equal([...r.players.values()].filter((p) => p.bot).length, 14);
+  for (const p of r.players.values())
+    for (const other of r.players.values()) {
+      if (p.id !== other.id && Math.abs(p.y - other.y) < 1)
+        assert.ok(Math.hypot(p.x - other.x, p.z - other.z) >= 0.85);
+    }
+  for (let i = 0; i < 120; i++) r.tick();
+  assert.ok(r.state().players.every((p) => Number.isFinite(p.x + p.y + p.z)));
+  r.remove(peer.id);
+  assert.equal(r.players.size, 16);
+  r.remove(h.id);
+  assert.equal(r.players.size, 0);
+});
+test("dedicated room NPC capacity respects a configured 32-player ceiling", () => {
+  const r = room("tdm", 999, 32);
+  r.add("h", "Human", { send() {} });
+  assert.equal(r.players.size, 32);
+  assert.equal([...r.players.values()].filter((p) => p.bot).length, 31);
+});

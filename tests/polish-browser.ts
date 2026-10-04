@@ -95,7 +95,7 @@ sockets.on("connection", (ws, request) => {
   });
   ws.on("close", () => room.remove(player.id));
 });
-const ticks = setInterval(() => room.tick(), 1000 / 30);
+let ticks = setInterval(() => room.tick(), 1000 / 30);
 await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
 const browser = await chromium.launch({
   executablePath:
@@ -153,6 +153,29 @@ try {
     "gait advances from authoritative movement",
   );
   assert.ok(Math.abs(b.leftLeg + b.rightLeg) < 1e-6, "feet alternate");
+  // Network silence must not keep animating the last known walking velocity.
+  clearInterval(ticks);
+  await page.waitForFunction(
+    () => (window as any).BR.network.snapshotAge > 1200,
+  );
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  const stoppedPhase = await page.evaluate(
+    () => (window as any).BR.animation.find((p: any) => p.bot).phase,
+  );
+  await page.waitForTimeout(300);
+  assert.equal(
+    await page.evaluate(
+      () => (window as any).BR.animation.find((p: any) => p.bot).phase,
+    ),
+    stoppedPhase,
+    "NPC gait freezes when no new positions are presented",
+  );
+  ticks = setInterval(() => room.tick(), 1000 / 30);
   await page.waitForFunction(() => (window as any).BR.map.tilesLeft === 0);
   await mkdir("artifacts", { recursive: true });
   await page.screenshot({ path: "artifacts/sky-npc.png" });

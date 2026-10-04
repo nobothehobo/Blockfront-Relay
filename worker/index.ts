@@ -247,7 +247,7 @@ export default {
             arsenal: body.arsenal ?? "sandbox",
             seed: Number.isInteger(body.seed) ? body.seed : Date.now() >>> 0,
             limit: 16,
-            bots: Math.max(0, Math.min(8, Number(body.bots) || 0)) | 0,
+            bots: Math.max(0, Math.min(15, Number(body.bots) || 0)) | 0,
             duration: Math.max(
               120,
               Math.min(900, Number(body.duration) || 300),

@@ -36,3 +36,9 @@ Alpha 0.4 expands terrain to 320 × 56 × 320 cells (5.47 MiB per typed array). 
 ## Fieldcraft graphics costs
 
 2.6 uses Standard materials and nearby sun shadows on balanced/high presets. Desktop balanced uses a 1024px map refreshed at most every 180ms; desktop high uses 2048px/120ms. Touch balanced/high use 512px/300ms. Mobile preset has no sun shadow map, retains optional one-draw-call contact shadows, and omits beacon lights. High effects cap beacon illumination at the two nearest visible-range lights, without shadow maps. Equipment uses two batched draws for up to 32 entities. Anatomy stays one skinned draw per character, below 6000 vertices per original model. Shader/material errors and layouts are checked in actual Chromium WebGL; this is not a measured FPS result on hardware or Safari. The new compressed client is approximately 158 KB.
+
+## 2.7 NPC squads
+
+Hosted rooms remain capped at 16 total participants; the new 15-NPC option fills the unused slots instead of increasing that ceiling. Friends replace NPCs when a room is full. Dedicated rooms can request up to 31 NPCs at a 32-participant ceiling; the client offers up to 15. Keep the smaller solo preset on slower mobile devices.
+
+A local CTF workload of one human and fifteen NPCs ran 1,200 ticks on each map preset. Mean simulation tick time ranged from 0.34–0.63 ms; p95 ranged from 1.01–2.24 ms. All bodies remained finite. This measures Room simulation in this container, not D1 latency, concurrent internet matches or mobile FPS. Bounded local planning and five-Hz thinking remain unchanged. Pose interpolation and contact shadows use the same presented positions; stalled snapshots no longer produce running-in-place gait.

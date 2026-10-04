@@ -590,3 +590,47 @@ test("hosted NPC rooms persist server bots and share them with another human ses
   );
   assert.equal(stored.players.length, 0);
 });
+
+test("hosted eight-a-side practice persists fifteen NPCs and replaces one for a joining friend", async () => {
+  const { call } = fixture();
+  const created = await call("/api/create", {
+    name: "8 vs 8",
+    mode: "ctf",
+    jet: "classes",
+    seed: 7238,
+    bots: 99,
+    practice: true,
+  });
+  assert.equal(created.status, 201);
+  const room = created.data.id;
+  const a = await call("/api/join", { room, name: "A" });
+  const state = a.data.welcome.state;
+  assert.equal(state.players.filter((p: any) => p.bot).length, 15);
+  assert.deepEqual(
+    [0, 1].map(
+      (team) => state.players.filter((p: any) => p.team === team).length,
+    ),
+    [8, 8],
+  );
+  const b = await call("/api/join", { room, name: "B" });
+  assert.equal(b.status, 200);
+  assert.equal(b.data.welcome.state.players.length, 16);
+  assert.equal(
+    b.data.welcome.state.players.filter((p: any) => p.bot).length,
+    14,
+  );
+  const poll = await call("/api/input", {
+    room,
+    token: a.data.token,
+    round: state.round,
+    epoch: state.players.find((p: any) => p.id === a.data.welcome.id).epoch,
+    commands: [],
+  });
+  assert.equal(poll.status, 200);
+  assert.ok(
+    poll.data.messages
+      .at(-1)
+      .state.players.some((p: any) => p.id === b.data.welcome.id),
+  );
+  assert.equal(poll.data.messages.at(-1).state.players.length, 16);
+});

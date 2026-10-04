@@ -337,6 +337,7 @@ try {
   await a.bringToFront();
   await a.locator("#resume").click();
   await a.locator("#game").click();
+  await faceNorth(a);
   await a.keyboard.down("KeyW");
   await a.waitForTimeout(800);
   await a.keyboard.up("KeyW");

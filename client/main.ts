@@ -657,6 +657,10 @@ async function refreshRooms() {
       serverCapabilities = await api("/api/health");
     } catch {}
     networkMode = serverCapabilities.transport === "http" ? "http" : "ws";
+    const capacity = $<HTMLSelectElement>("capacity");
+    capacity.querySelector<HTMLOptionElement>('option[value="32"]')!.disabled =
+      networkMode === "http";
+    if (networkMode === "http") capacity.value = "16";
     $("transport-note").textContent =
       networkMode === "http"
         ? "Hosted rooms use the authoritative HTTP transport. A dedicated WebSocket server offers smoother matches."

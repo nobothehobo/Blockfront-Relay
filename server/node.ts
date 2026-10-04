@@ -138,7 +138,7 @@ const app = http.createServer(async (req, res) => {
           arsenal: o.arsenal ?? "sandbox",
           seed: Number.isInteger(o.seed) ? o.seed : Date.now() >>> 0,
           limit: Math.max(2, Math.min(32, Number(o.limit) || 32)),
-          bots: Math.max(0, Math.min(8, Number(o.bots) || 0)) | 0,
+          bots: Math.max(0, Math.min(31, Number(o.bots) || 0)) | 0,
           duration: Math.max(120, Math.min(900, Number(o.duration) || 300)),
           rewind,
           practice: o.practice === true,

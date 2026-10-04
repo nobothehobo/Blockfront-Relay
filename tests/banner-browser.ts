@@ -56,7 +56,7 @@ try {
   assert.equal(await a.locator("#solo-map option").count(), 4);
   await a.locator("#solo-mode").selectOption("ctf");
   await a.locator("#solo-map").selectOption("7233");
-  await a.locator("#solo-bots").selectOption("7");
+  await a.locator("#solo-bots").selectOption("15");
   await a.locator("#solo-duration").selectOption("480");
   await a.locator("#solo-start").tap();
   console.log("Waiting for CTF warmup");
@@ -68,7 +68,7 @@ try {
   assert.equal(await a.locator("#solo-setup").isVisible(), false);
   assert.equal(
     await a.evaluate(() => (window as any).BR.state.players.length),
-    8,
+    16,
   );
   assert.equal(await a.evaluate(() => (window as any).BR.state.mode), "ctf");
   await a.waitForFunction(() =>
@@ -112,6 +112,18 @@ try {
           (p: any) => p.name === "Solo captain",
         ),
     );
+  for (const page of [a, b]) {
+    assert.equal(
+      await page.evaluate(() => (window as any).BR.state.players.length),
+      16,
+    );
+    assert.equal(
+      await page.evaluate(
+        () => (window as any).BR.state.players.filter((p: any) => p.bot).length,
+      ),
+      14,
+    );
+  }
   if (!(await b.evaluate(() => document.pointerLockElement)))
     await b.locator("#game").click();
   await b.waitForFunction(() => !!document.pointerLockElement);
@@ -233,7 +245,7 @@ try {
   }
   assert.deepEqual(errors, []);
   console.log(
-    `PASS ${process.env.BR_TRANSPORT ?? "ws"}: phone solo CTF setup, seven cooperating bots, friend joins same match, keyboard/touch reload moving parts, three map presets`,
+    `PASS ${process.env.BR_TRANSPORT ?? "ws"}: phone solo CTF setup, fifteen cooperating bots, friend joins same match, keyboard/touch reload moving parts, three map presets`,
   );
 } finally {
   await browser.close();

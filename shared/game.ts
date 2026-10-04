@@ -4,7 +4,7 @@ export const W = 320,
   D = 320,
   CHUNK = 16,
   TICK = 1 / 30;
-export type Mode = "tdm" | "relay" | "infection" | "frontline";
+export type Mode = "tdm" | "relay" | "infection" | "frontline" | "demolition";
 export type JetMode = "off" | "all" | "pickup" | "modes" | "classes";
 export type Vec = { x: number; y: number; z: number };
 export type Input = {
@@ -249,6 +249,26 @@ export function mapTheme(seed: number) {
 export const nextMapSeed = (seed: number, round: number) =>
   (Math.imul(seed ^ round, 1664525) + 1013904223) >>> 0;
 export const idx = (x: number, y: number, z: number) => x + W * (z + D * y);
+export function demolitionCells(team: number): [number, number, number][] {
+  const b = basePosition(team),
+    x = Math.floor(b.x) + (team === 0 ? 14 : -14),
+    z = Math.floor(b.z) + 18;
+  const cells: [number, number, number][] = [];
+  for (let dx = -4; dx <= 4; dx++)
+    for (let dz = -4; dz <= 4; dz++)
+      for (let y = 13; y <= 20; y++) {
+        const door = dz === -4 && Math.abs(dx) <= 1 && y < 16;
+        const window =
+          Math.abs(dx) === 4 && Math.abs(dz) <= 1 && y >= 16 && y <= 17;
+        if (
+          !door &&
+          !window &&
+          (Math.abs(dx) === 4 || Math.abs(dz) === 4 || y === 20)
+        )
+          cells.push([x + dx, y, z + dz]);
+      }
+  return cells;
+}
 export class World {
   blocks = new Uint8Array(W * H * D);
   edits = new Map<number, number>();
@@ -390,6 +410,46 @@ export class World {
     };
     landmark(W / 2, Math.floor(D * 0.22));
     landmark(W / 2, Math.floor(D * 0.78));
+    // Original four-building foundry district. Traversable interiors, firing windows,
+    // roof stairs and sheltered flank alleys, with a clear central road.
+    for (const [bx, bz] of [
+      [137, 124],
+      [183, 124],
+      [137, 196],
+      [183, 196],
+    ]) {
+      const floor = 13;
+      fill(bx - 8, 1, bz - 8, 17, floor - 1, 17, theme.rock);
+      for (let x = bx - 8; x <= bx + 8; x++)
+        for (let z = bz - 8; z <= bz + 8; z++) {
+          for (let y = floor; y <= floor + 11; y++) raw(x, y, z, 0);
+          raw(x, floor - 1, z, 6);
+        }
+      for (let x = bx - 7; x <= bx + 7; x++)
+        for (let z = bz - 7; z <= bz + 7; z++)
+          for (let y = floor; y <= floor + 9; y++) {
+            const wall = Math.abs(x - bx) === 7 || Math.abs(z - bz) === 7;
+            const doorway =
+              Math.abs(z - bz) === 7 && Math.abs(x - bx) <= 1 && y < floor + 3;
+            const window =
+              wall &&
+              y >= floor + 3 &&
+              y <= floor + 4 &&
+              (Math.abs(x - bx) % 5 <= 1 || Math.abs(z - bz) % 5 <= 1);
+            if ((wall && !doorway && !window) || y === floor + 7)
+              raw(x, y, z, y === floor + 7 ? 6 : theme.rock);
+          }
+      for (let step = 0; step < 8; step++)
+        fill(bx - 5, floor + step, bz - 5 + step, 3, 1, 1, 6);
+      for (let step = 0; step < 7; step++)
+        for (let dx = 0; dx < 3; dx++)
+          raw(bx - 5 + dx, floor + 7, bz - 5 + step, 0);
+      // Ground access stairs keep every district usable without a jetpack.
+      for (let step = 0; step < 5; step++)
+        fill(bx - 1, 8 + step, bz - 12 + step, 3, 1, 1, 6);
+      for (const dx of [-4, 4])
+        fill(bx + dx, floor + 8, bz + 7, 1, 2, 1, theme.earth);
+    }
     // Extra flanking shelters make the larger perimeter useful for maneuvering.
     for (const [x, z] of [
       [Math.floor(W * 0.32), Math.floor(D * 0.32)],

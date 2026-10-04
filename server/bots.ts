@@ -121,10 +121,19 @@ export function thinkBot(p: Player, arena: Arena): Input {
     const available = arena.controlPoints.filter(
       (point) => point.owner !== p.team,
     );
-    const point = (available.length ? available : arena.controlPoints)[
-      personality % (available.length || arena.controlPoints.length)
-    ];
+    const point = [
+      ...(available.length ? available : arena.controlPoints),
+    ].sort((a, b) => horizontal(a.pos, p) - horizontal(b.pos, p))[0];
     goal = point.pos;
+    objective = true;
+  }
+  if (arena.options.mode === "demolition") {
+    const base = basePosition(1 - p.team);
+    goal = {
+      x: Math.floor(base.x) + (p.team === 0 ? -14 : 14),
+      y: 13,
+      z: base.z + 18,
+    };
     objective = true;
   }
   if (

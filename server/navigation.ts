@@ -21,7 +21,7 @@ export function planRoute(
     score: 0,
   };
   const distance = (n: Vec) => Math.hypot(n.x - goal.x, n.z - goal.z);
-  const key = (n: Vec) => `${n.x},${n.z}`;
+  const key = (n: Vec) => `${n.x},${Math.floor(n.y)},${n.z}`;
   const open = [start],
     costs = new Map([[key(start), 0]]),
     closed = new Set<string>();

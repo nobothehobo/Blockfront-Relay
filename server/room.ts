@@ -17,6 +17,11 @@ import {
 } from "../shared/fortifications.js";
 import { stepProjectile, blastCells } from "./explosives.js";
 import {
+  neighboringCells,
+  detachedComponent,
+  coordinates,
+} from "./structures.js";
+import {
   World,
   Player,
   Input,
@@ -36,6 +41,7 @@ import {
   TICK,
   Projectile,
   isFirearm,
+  demolitionCells,
 } from "../shared/game.js";
 export type Peer = { send: (data: string) => void; close?: () => void };
 export type RoomOptions = {
@@ -63,6 +69,8 @@ export class Room {
   events: any[] = [];
   projectiles: Projectile[] = [];
   nextProjectile = 0;
+  collapseSeeds: number[] = [];
+  demolitionOriginal = [demolitionCells(0), demolitionCells(1)];
   flags: {
     team: number;
     home: Vec;
@@ -84,15 +92,75 @@ export class Room {
     cachedWorld?: World,
   ) {
     this.world = cachedWorld ?? new World(options.seed);
+    if (options.mode === "demolition") this.prepareDemolition();
     this.limit = Math.min(32, options.limit ?? 32);
     this.duration = options.duration ?? 300;
     this.target =
       options.target ??
-      (options.mode === "relay" ? 3 : options.mode === "frontline" ? 300 : 40);
+      (options.mode === "relay"
+        ? 3
+        : options.mode === "frontline"
+          ? 300
+          : options.mode === "demolition"
+            ? 100
+            : 40);
     this.resetFlags();
   }
   base(team: number): Vec {
     return basePosition(team);
+  }
+  prepareDemolition() {
+    for (const team of [0, 1]) {
+      const cells = this.demolitionOriginal[team];
+      const [cx, , cz] = cells[0];
+      for (let x = cx; x <= cx + 8; x++)
+        for (let z = cz; z <= cz + 8; z++) {
+          for (let y = 1; y < 13; y++)
+            this.world.blocks[x + W * (z + D * y)] = 3;
+          for (let y = 13; y < 25; y++)
+            this.world.blocks[x + W * (z + D * y)] = 0;
+        }
+      for (const [x, y, z] of cells)
+        this.world.blocks[x + W * (z + D * y)] = team === 0 ? 7 : 8;
+    }
+  }
+  demolitionStatus() {
+    return this.demolitionOriginal.map((cells, team) => ({
+      team,
+      total: cells.length,
+      remaining: cells.filter(
+        ([x, y, z]) => this.world.get(x, y, z) === (team === 0 ? 7 : 8),
+      ).length,
+      pos: {
+        x: Math.floor(this.base(team).x) + (team === 0 ? 14 : -14),
+        y: 21,
+        z: D / 2 + 18,
+      },
+    }));
+  }
+  queueCollapse(x: number, y: number, z: number) {
+    this.collapseSeeds.push(...neighboringCells(x, y, z));
+    this.collapseSeeds = [...new Set(this.collapseSeeds)].slice(-256);
+  }
+  collapse() {
+    const seed = this.collapseSeeds.shift();
+    if (seed === undefined) return;
+    const cells = detachedComponent(this.world, seed);
+    if (!cells.length) return;
+    const edits = cells.map(
+      (i) => [...coordinates(i), 0] as [number, number, number, number],
+    );
+    const debris = edits
+      .slice(0, 24)
+      .map(([x, y, z]) => ({ x, y, z, color: this.world.get(x, y, z) }));
+    for (const [x, y, z] of edits) {
+      this.world.set(x, y, z, 0);
+      this.revision++;
+    }
+    this.broadcast({ type: "edits", edits, revision: this.revision });
+    this.event("collapse", `${cells.length} blocks collapsed`, undefined, {
+      debris,
+    });
   }
   resetFlags() {
     this.controlPoints = sectors(this.world);
@@ -368,6 +436,8 @@ export class Room {
     this.round++;
     this.options.seed = nextMapSeed(this.options.seed, this.round);
     this.world = new World(this.options.seed);
+    if (this.options.mode === "demolition") this.prepareDemolition();
+    this.collapseSeeds = [];
     this.revision = 0;
     this.phase = "waiting";
     this.warmup = 8;
@@ -417,6 +487,8 @@ export class Room {
       controlPoints: this.controlPoints,
       supplyStations: this.supplyStations,
       target: this.target,
+      demolition:
+        this.options.mode === "demolition" ? this.demolitionStatus() : [],
       projectiles: this.projectiles.map((p) => ({ ...p })),
       players: [...this.players.values()].map(
         ({
@@ -611,7 +683,19 @@ export class Room {
         this.explode(projectile);
       }
     }
+    if (this.phase !== "finished") this.collapse();
     if (this.phase === "active") {
+      if (this.options.mode === "demolition") {
+        const status = this.demolitionStatus();
+        this.scores = status
+          .map((s) => Math.round((1 - s.remaining / s.total) * 100))
+          .reverse();
+        const destroyed = status.find((s) => s.remaining <= s.total * 0.15);
+        if (destroyed)
+          this.end(
+            `${destroyed.team === 0 ? "Ember" : "Azure"} demolished the enemy stronghold`,
+          );
+      }
       if (this.options.mode === "frontline") this.controlSectors(dt);
       if (this.options.mode === "relay") this.objectives();
       if (this.options.mode === "infection") {
@@ -697,6 +781,7 @@ export class Room {
       return;
     }
     const damage = new Map<Player, number>();
+    const headshots = new Set<Player>();
     const traces: Vec[] = [];
     for (let n = 0; n < w.pellets; n++) {
       const spread =
@@ -727,11 +812,19 @@ export class Room {
           target = v;
         }
       }
-      if (target)
+      if (target) {
+        const head =
+          isFirearm(p.weapon) &&
+          origin.y + d.y * distance >= target.y + (target.crouch ? 0.9 : 1.4);
+        if (head) headshots.add(target);
         damage.set(
           target,
-          (damage.get(target) ?? 0) + w.damage * (p.zombie ? 1.4 : 1),
+          (damage.get(target) ?? 0) +
+            w.damage *
+              (p.zombie ? 1.4 : 1) *
+              (head ? (p.weapon === 2 ? 1.15 : 1.5) : 1),
         );
+      }
       if (isFirearm(p.weapon))
         traces.push({
           x: origin.x + d.x * distance,
@@ -746,6 +839,7 @@ export class Room {
       traces,
     });
     for (const [v, amount] of damage) this.damage(v, amount, p);
+    if (headshots.size) this.event("headshot", "", p.id);
   }
   launch(p: Player, kind: "grenade" | "rocket") {
     if (this.projectiles.length >= 128) return;
@@ -802,6 +896,38 @@ export class Room {
     else if (p.classId === 2) {
       p.blocks = Math.min(200, p.blocks + 35);
       p.grenades = Math.min(role.grenades, (p.grenades ?? 0) + 1);
+      const hit = ray(this.world, eye(p), direction(p.yaw, p.pitch), 8);
+      if (hit) {
+        const edits: [number, number, number, number][] = [];
+        for (let x = hit.x - 1; x <= hit.x + 1; x++)
+          for (let y = hit.y - 1; y <= hit.y + 1; y++)
+            for (let z = hit.z - 1; z <= hit.z + 1; z++) {
+              if (
+                x <= 0 ||
+                x >= W - 1 ||
+                z <= 0 ||
+                z >= D - 1 ||
+                y <= 0 ||
+                y >= H - 1 ||
+                !this.world.get(x, y, z)
+              )
+                continue;
+              if (
+                [0, 1].some((t) => {
+                  const b = this.base(t);
+                  return y < 15 && Math.hypot(x + 0.5 - b.x, z + 0.5 - b.z) < 3;
+                })
+              )
+                continue;
+              this.world.set(x, y, z, 0);
+              this.revision++;
+              this.queueCollapse(x, y, z);
+              edits.push([x, y, z, 0]);
+            }
+        if (edits.length)
+          this.broadcast({ type: "edits", edits, revision: this.revision });
+        this.event("breach", `${p.name} opened a breach`, p.id, { pos: hit });
+      }
     } else p.abilityTime = p.classId === 1 ? 4 : 5;
     this.event("ability", `${p.name}: ${role.ability}`, p.id, {
       pos: eye(p),
@@ -842,6 +968,7 @@ export class Room {
     for (const [x, y, z, value] of edits) {
       this.world.set(x, y, z, value);
       this.revision++;
+      this.queueCollapse(x, y, z);
     }
     if (edits.length)
       this.broadcast({ type: "edits", edits, revision: this.revision });
@@ -903,6 +1030,7 @@ export class Room {
         ? 0.1
         : 0.22;
     this.world.set(b.x, b.y, b.z, place ? (p.team === 0 ? 7 : 8) : 0);
+    if (!place) this.queueCollapse(b.x, b.y, b.z);
     this.revision++;
     this.broadcast({
       type: "edit",

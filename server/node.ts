@@ -10,6 +10,7 @@ for (const [id, mode, jet] of [
   ["relay", "relay", "pickup"],
   ["outbreak", "infection", "modes"],
   ["frontline", "frontline", "classes"],
+  ["demolition", "demolition", "classes"],
 ] as const)
   rooms.set(
     id,
@@ -19,13 +20,18 @@ for (const [id, mode, jet] of [
           ? "Copperwater Skirmish"
           : mode === "relay"
             ? "Relay Runners"
-            : mode === "frontline"
-              ? "Frontline Control"
-              : "Nightfall Outbreak",
+            : mode === "demolition"
+              ? "Stronghold Demolition"
+              : mode === "frontline"
+                ? "Frontline Control"
+                : "Nightfall Outbreak",
       mode,
       jet,
       seed: 7231,
-      arsenal: mode === "frontline" ? "specialists" : "sandbox",
+      arsenal:
+        mode === "frontline" || mode === "demolition"
+          ? "specialists"
+          : "sandbox",
     }),
   );
 const origins = (process.env.ALLOWED_ORIGINS ?? "").split(",").filter(Boolean);
@@ -75,7 +81,9 @@ const app = http.createServer(async (req, res) => {
       }
       const o = JSON.parse(body);
       if (
-        !["tdm", "relay", "infection", "frontline"].includes(o.mode) ||
+        !["tdm", "relay", "infection", "frontline", "demolition"].includes(
+          o.mode,
+        ) ||
         !["off", "all", "pickup", "modes", "classes"].includes(o.jet) ||
         (o.arsenal !== undefined &&
           !["sandbox", "specialists"].includes(o.arsenal))

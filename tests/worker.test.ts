@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync } from "node:fs";
 import worker from "../worker/index.js";
-import { emptyInput } from "../shared/game.js";
+import { emptyInput, demolitionCells, idx } from "../shared/game.js";
 function fixture() {
   const db = new DatabaseSync(":memory:");
   db.exec(readFileSync("drizzle/0000_blushing_zombie.sql", "utf8"));
@@ -41,6 +41,32 @@ function fixture() {
   };
   return { db, call, DB };
 }
+test("hosted Demolition edits and collapse queue survive restoration without polluting another mode's terrain",async()=>{
+  const {db,call}=fixture();await call("/api/rooms");
+  const a=await call("/api/join",{room:"demolition",name:"A"});
+  const b=await call("/api/join",{room:"demolition",name:"B"});
+  const row=db.prepare("SELECT data FROM game_rooms WHERE id=?");
+  const stored=JSON.parse((row.get("demolition") as any).data);
+  const [x,y,z]=demolitionCells(1)[0];
+  stored.edits.push([idx(x,y,z),0]);stored.room.collapseSeeds=[idx(250,40,220)];
+  stored.clock=Date.now()-200;stored.room.phase="active";
+  db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(JSON.stringify(stored),"demolition");
+  for(const joined of [a,b]) {
+    const result=await call("/api/input",{room:"demolition",token:joined.data.token,commands:[],epoch:1});
+    assert.equal(result.status,200);
+    const state=result.data.messages.find((m:any)=>m.type==="state").state;
+    assert.equal(state.demolition[1].remaining,state.demolition[1].total-1);
+  }
+  const persisted=JSON.parse((row.get("demolition") as any).data);
+  assert.ok(persisted.edits.some((e:number[])=>e[0]===idx(x,y,z)&&e[1]===0));
+  assert.deepEqual(persisted.room.collapseSeeds,[]);
+  const tdm=await call("/api/join",{room:"valley",name:"Other mode"});
+  assert.equal(tdm.status,200);
+  // A mode's objective stamping must never become a globally cached base map.
+  const {World}=await import("../shared/game.js");
+  const terrain=new World(7231),received=new World(1,false);received.decode(tdm.data.welcome.map);
+  assert.equal(received.get(x,y,z),terrain.get(x,y,z));
+});
 test("hosted Frontline ownership, progress and score survive independent requests and reach both peers", async () => {
   const { db, call } = fixture();
   await call("/api/rooms");
@@ -205,7 +231,7 @@ test("hosted sessions persist selected classes, active grenades and replicated b
 test("hosted transport shares authoritative state and never accepts another session token", async () => {
   const { call, db } = fixture();
   const list = await call("/api/rooms");
-  assert.equal(list.data.length, 4);
+  assert.equal(list.data.length, 5);
   const a = await call("/api/join", { room: "valley", name: "A" }),
     b = await call("/api/join", { room: "valley", name: "B" });
   assert.equal(a.status, 200);

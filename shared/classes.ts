@@ -31,7 +31,7 @@ export const CLASSES = [
     grenades: 3,
     ability: "Resupply",
     cooldown: 30,
-    description: "Blast launcher · replenish blocks and one grenade",
+    description: "Shotgun / launcher · breach terrain and replenish supplies",
   },
   {
     name: "Surveyor",

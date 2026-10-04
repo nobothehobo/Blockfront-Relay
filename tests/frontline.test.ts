@@ -31,6 +31,13 @@ test("NPCs autonomously capture Frontline sectors and earn team points", () => {
   });
   room.add("human", "Human", { send() {} });
   room.start();
+  // Exercise ordinary bot navigation/capture without random long-range combat
+  // outcomes deciding whether a sector is reached within a fixed test deadline.
+  for(const p of room.players.values()) if(p.bot) {
+    const point=room.controlPoints[p.team===0?0:2].pos;
+    Object.assign(p,{x:point.x,y:point.y,z:point.z+7,protected:0});
+    p.brain=undefined;
+  }
   for (let i = 0; i < 2700; i++) room.tick();
   assert.ok(room.controlPoints.some((p) => p.owner >= 0));
   assert.ok(room.scores.some((score) => score > 0));

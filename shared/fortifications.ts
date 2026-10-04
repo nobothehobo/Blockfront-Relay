@@ -2,7 +2,12 @@ import { World, Vec, W, H, D, basePosition } from "./game.js";
 type Cell = [number, number, number];
 const cover: Cell[] = [],
   ramp: Cell[] = [],
-  shelter: Cell[] = [];
+  shelter: Cell[] = [],
+  bridge: Cell[] = [];
+for (let z = 0; z < 8; z++) {
+  for (let x = -1; x <= 2; x++) bridge.push([x, 0, z]);
+  bridge.push([-1, 1, z], [2, 1, z]);
+}
 for (let x = -1; x <= 1; x++) for (let y = 0; y < 2; y++) cover.push([x, y, 0]);
 for (let z = 0; z < 4; z++)
   for (let x = -1; x <= 1; x++)
@@ -41,6 +46,11 @@ export const KITS = [
     name: "Field shelter",
     cells: shelter,
     description: "Open doorway, firing ports and a roof",
+  },
+  {
+    name: "Span bridge",
+    cells: bridge,
+    description: "Eight-block crossing with protective rails",
   },
 ] as const;
 export const kitCells = (id: number, anchor: Vec, quarter: number): Vec[] => {

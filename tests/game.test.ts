@@ -71,6 +71,7 @@ test("movement speed is server-owned and malicious numeric values are rejected",
 });
 test("hitscan damage, ammunition, fire rate, death, TDM score and respawn", () => {
   const { r, a, b } = fixture();
+  a.pitch = -0.12; // Torso aim; headshot behavior has its own authority test.
   a.input = { ...emptyInput(), fire: true };
   r.fire(a);
   assert.equal(b.health, 70);

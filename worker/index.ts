@@ -27,19 +27,20 @@ const defaults = [
   ["relay", "Relay Runners", "relay", "pickup"],
   ["outbreak", "Nightfall Outbreak", "infection", "modes"],
   ["frontline", "Frontline Control", "frontline", "classes"],
+  ["demolition", "Stronghold Demolition", "demolition", "classes"],
 ] as const;
 const terrainCache = new Map<number, Uint8Array>();
 function restore(id: string, data: Data) {
   let seed = terrainCache.get(data.options.seed);
   const world = new World(data.options.seed, !seed);
   if (seed) world.blocks.set(seed);
-  const r = new Room(id, data.options, world);
   if (!seed) {
-    seed = r.world.blocks.slice();
+    seed = world.blocks.slice();
     if (terrainCache.size >= 3)
       terrainCache.delete(terrainCache.keys().next().value!);
     terrainCache.set(data.options.seed, seed);
   }
+  const r = new Room(id, data.options, world);
   Object.assign(r, data.room);
   r.players = new Map(data.players.map((p) => [p.id, p]));
   for (const [i, v] of data.edits) {
@@ -56,7 +57,7 @@ function save(
   clock: number,
 ): Data {
   return {
-    format: 5,
+    format: 6,
     options: r.options,
     clock,
     room: {
@@ -74,6 +75,7 @@ function save(
       lastBroadcast: r.lastBroadcast,
       projectiles: r.projectiles,
       nextProjectile: r.nextProjectile,
+      collapseSeeds: r.collapseSeeds,
     },
     players: [...r.players.values()],
     edits: [...r.world.edits],
@@ -112,7 +114,10 @@ async function ensure(db: DB) {
             jet,
             seed: 7231,
             limit: 16,
-            arsenal: mode === "frontline" ? "specialists" : "sandbox",
+            arsenal:
+              mode === "frontline" || mode === "demolition"
+                ? "specialists"
+                : "sandbox",
           }),
         ),
         Date.now(),
@@ -188,7 +193,9 @@ export default {
         if (count.total >= 8)
           return response({ error: "Room limit reached" }, 429);
         if (
-          !["tdm", "relay", "infection", "frontline"].includes(body.mode) ||
+          !["tdm", "relay", "infection", "frontline", "demolition"].includes(
+            body.mode,
+          ) ||
           !["off", "all", "pickup", "modes", "classes"].includes(body.jet) ||
           (body.arsenal !== undefined &&
             !["sandbox", "specialists"].includes(body.arsenal))
@@ -226,7 +233,7 @@ export default {
         if (!row) return response({ error: "Room not found" }, 404);
         const stored = JSON.parse(row.data) as Data;
         const data =
-          stored.format === 5
+          stored.format === 6
             ? stored
             : fresh(String(body.room), { ...stored.options, limit: 16 });
         const r = restore(String(body.room), data),

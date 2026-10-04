@@ -62,6 +62,26 @@ test("three-wide trench access stays supported, clear and climbable across noisy
           }
         }
       }
+      for (const [entryZ, sign] of [
+        [64, -1],
+        [255, 1],
+      ]) {
+        const entryX = x0 + Math.floor(Math.sin(entryZ * 0.055 + phase) * 3);
+        for (let dx = 0; dx < 3; dx++) {
+          let y = 9.01;
+          for (let step = 0; step < 24; step++) {
+            const next = walkHeight(
+              w,
+              entryX + dx + 0.5,
+              entryZ + sign * step + 0.5,
+              y,
+            );
+            assert.notEqual(next, null, `trench end ${seed}:${entryZ}:${step}`);
+            assert.ok(Math.abs(next! - y) <= 1.001);
+            y = next!;
+          }
+        }
+      }
     }
   }
 });
@@ -165,4 +185,104 @@ test("reload cues follow accepted progress once, skip stale stages and reset on 
   assert.equal(cues.update(2, WEAPONS[2].reload), "reload-open");
   assert.equal(cues.update(2, WEAPONS[2].reload * 0.77), "reload-shell");
   assert.equal(cues.update(2, 0), null);
+});
+
+test("isolated NPCs regroup toward living support when multiple opponents are visible", () => {
+  const { r, human, allies } = arena();
+  const bot = allies.at(-1)!;
+  r.options.mode = "tdm";
+  human.team = 1 - bot.team;
+  Object.assign(human, { x: 100.5, z: 80.5 });
+  for (const p of r.players.values()) {
+    if (p === bot || p === human) continue;
+    Object.assign(p, {
+      x: p.team === bot.team ? 120.5 : 105.5,
+      z: p.team === bot.team ? 100.5 : 80.5,
+    });
+  }
+  const command = thinkBot(bot, r);
+  const dx =
+    -Math.sin(command.yaw) * command.forward +
+    Math.cos(command.yaw) * command.strafe;
+  assert.ok(
+    dx > 0.5,
+    "moves east toward support, rather than north into the enemies",
+  );
+});
+
+test("SMG NPCs pause between bursts while retaining server weapon and health statistics", () => {
+  const { r, human, allies } = arena();
+  const bot = allies.at(-1)!;
+  r.options.mode = "tdm";
+  human.team = 1 - bot.team;
+  Object.assign(human, { x: 100.5, z: 80.5 });
+  for (const p of r.players.values()) if (p !== bot && p !== human) p.dead = 10;
+  bot.classId = 1;
+  bot.yaw = 0;
+  thinkBot(bot, r);
+  r.time = 0.6;
+  assert.equal(thinkBot(bot, r).fire, true);
+  r.time = 1.02;
+  assert.equal(thinkBot(bot, r).fire, false);
+  r.time = 1.4;
+  assert.equal(thinkBot(bot, r).fire, true);
+  assert.equal(bot.health, 100);
+  assert.equal(WEAPONS[1].damage, 14);
+});
+
+test("NPCs blocked by an unwalkable wall progress from a safe stop to authoritative digging", () => {
+  const { r, allies } = arena();
+  const bot = allies.at(-1)!;
+  r.options.mode = "tdm";
+  for (const p of r.players.values()) if (p !== bot) p.dead = 100;
+  for (let x = 85; x < 116; x++)
+    for (let y = 1; y < 7; y++) r.world.set(x, y, 99, 3);
+  bot.brain = {
+    nextThink: 0,
+    lastX: bot.x,
+    lastZ: bot.z,
+    stuck: 0,
+    target: "remembered",
+    acquired: 0,
+    lastSeen: { x: 100.5, y: 1.01, z: 90.5 },
+    seenAt: 0,
+  };
+  let dug = false;
+  bot.yaw = 0;
+  for (let i = 0; i < 100; i++) {
+    r.tick();
+    dug ||= bot.input.dig && bot.input.weapon === 4;
+  }
+  assert.equal(
+    dug,
+    true,
+    "stopping before the wall must not erase the recovery timer",
+  );
+  assert.ok(
+    [1, 2, 3].some((y) => r.world.get(100, y, 99) === 0),
+    "Room actually accepts digging and removes an obstructing block",
+  );
+});
+
+test("nearby infected take opposite approach lanes and remain melee-only", () => {
+  const { r, human, allies } = arena();
+  const [a, b] = allies;
+  r.options.mode = "infection";
+  human.team = 1 - a.team;
+  human.z = 90.5;
+  for (const p of r.players.values())
+    if (p !== a && p !== b && p !== human) p.dead = 100;
+  a.zombie = b.zombie = true;
+  const first = thinkBot(a, r),
+    second = thinkBot(b, r);
+  const x = (input: typeof first) =>
+    -Math.sin(input.yaw) * input.forward + Math.cos(input.yaw) * input.strafe;
+  assert.ok(
+    x(first) * x(second) < 0,
+    "same-team NPC IDs must not all choose the same side",
+  );
+  assert.equal(first.weapon, 4);
+  assert.equal(second.weapon, 4);
+  assert.equal(first.fire, false);
+  assert.equal(second.fire, false);
 });

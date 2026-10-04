@@ -248,7 +248,8 @@ export function thinkBot(p: Player, arena: Arena): Input {
         horizontal(v, p) < 4,
     )
   ) {
-    const side = personality % 2 ? 2.5 : -2.5;
+    // Team assignment alternates NPC IDs, so use the next bit rather than parity.
+    const side = (personality >>> 1) % 2 ? 2.5 : -2.5;
     goal = {
       x: target.x + ((target.z - p.z) / distance) * side,
       y: target.y,
@@ -257,7 +258,9 @@ export function thinkBot(p: Player, arena: Arena): Input {
   }
   const moved = Math.hypot(p.x - brain.lastX, p.z - brain.lastZ);
   brain.stuck =
-    Math.abs(p.input.forward) + Math.abs(p.input.strafe) > 0.2 && moved < 0.12
+    (Math.abs(p.input.forward) + Math.abs(p.input.strafe) > 0.2 ||
+      brain.obstructed) &&
+    moved < 0.12
       ? brain.stuck + dt
       : 0;
   brain.lastX = p.x;
@@ -362,10 +365,14 @@ export function thinkBot(p: Player, arena: Arena): Input {
   }
   const steerX = -Math.sin(yaw) * forward + Math.cos(yaw) * strafe;
   const steerZ = -Math.cos(yaw) * forward - Math.sin(yaw) * strafe;
+  brain.obstructed = false;
   if (
     walkHeight(arena.world, p.x + steerX, p.z + steerZ, p.y) === null &&
     !brain.route?.length
   ) {
+    // A deliberately stopped move still needs a recovery timer. Previously this
+    // reset "stuck" forever, so a tall wall could strand the bot without digging.
+    brain.obstructed = !!navFront && Math.hypot(forward, strafe) > 0.2;
     forward = 0;
     strafe = 0;
   }

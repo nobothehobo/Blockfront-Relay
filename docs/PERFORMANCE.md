@@ -1,5 +1,9 @@
 # Performance notes — alpha 0.4
 
+## 2.10 squad and handling budget
+
+Weapon recovery, reload cue progress and class-specific tilts add no rendering passes or textures; the compressed client is about 164 KB. Recent squad reports expire using their original timestamp. Existing eight-candidate sight checks, roughly five-Hz NPC thinking and bounded local path planning remain. The new obstruction timer lets safely stopped NPCs reach normal validated digging instead of resetting their recovery indefinitely. A 1,800-tick local CTF run per map with one human/fifteen NPCs measured mean 0.366–0.427 ms and p95 0.997–1.349 ms, with all bodies finite. These are container simulation figures, not physical iOS or geographic network results. See UPDATE-210.md for release checks and limitations.
+
 ## 2.9 presentation budget
 
 The client is approximately 163 KB gzipped. Exposed-face occlusion is computed while meshing and participates in greedy merging; unobstructed floors remain a single quad. The additional corner detail increases geometry near walls/overhangs, as quantified in UPDATE-29.md. Anti-aliased seams use derivatives in the existing terrain material. Bodies remain one skinned mesh each, under 6000 vertices. Held weapons/tools remain one solid batch per character. Casings use a reused 64-element pool, capped at sixteen on low effects; soft smoke is capped at 96 instances. Those effects add at most two active draws, without shadow maps or postprocess buffers. Physical-device performance remains unmeasured.

@@ -205,6 +205,7 @@ export type Player = Body & {
     role?: string;
     nextBurst?: number;
     burstUntil?: number;
+    obstructed?: boolean;
   };
   pendingActions?: Partial<Input>;
   epoch?: number;

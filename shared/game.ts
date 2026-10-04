@@ -129,6 +129,12 @@ export const WEAPONS = [
   },
 ];
 export const isFirearm = (weapon: number) => weapon < 4 || weapon === 6;
+export type ShotImpact = {
+  pos: Vec;
+  normal: Vec;
+  block: number;
+  kind: "terrain" | "player";
+};
 export type Projectile = Vec & {
   id: number;
   owner: string;

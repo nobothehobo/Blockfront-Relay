@@ -19,12 +19,12 @@ export function playerPose(
         ? 0.85 - swing * 0.14
         : aiming
           ? 0.5
-          : -swing * 0.32,
+          : 0.5 - swing * 0.07,
     rightArm: reloading
       ? 0.8
       : zombie
         ? 0.85 + swing * 0.14
-        : 0.35 + swing * 0.1 + recoil,
+        : 0.35 + swing * 0.06 + recoil,
     bob: grounded ? Math.abs(Math.sin(phase)) * stride * 0.035 : 0,
     lean: zombie ? 0.16 + stride * 0.05 : grounded ? -stride * 0.06 : 0.05,
     recoil,

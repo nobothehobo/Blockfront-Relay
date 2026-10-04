@@ -42,6 +42,7 @@ import { jetVoices } from "./audio-mix.js";
 import { Sky } from "./sky.js";
 import { playerPose } from "./animation.js";
 import { createCharacter } from "./character.js";
+import { setCharacterEquipment } from "./equipment.js";
 import { CombatFX } from "./combat-fx.js";
 import {
   CLASSES,
@@ -52,6 +53,7 @@ import {
 import { KITS } from "../shared/fortifications.js";
 import { FortificationView } from "./fortification-view.js";
 import { weaponPose } from "./weapon-pose.js";
+import { ViewMotion, crosshairRadius } from "./view-motion.js";
 import { BattlefieldView, WaterSurface } from "./battlefield-view.js";
 import { ContactShadows } from "./contact-shadows.js";
 import { shadowQuality, sceneLighting } from "./lighting.js";
@@ -268,6 +270,7 @@ function updateAtmosphere(now: number) {
   const baseLight = sceneLighting(theme.kind, outbreak),
     a = currentAtmosphere;
   sky.atmosphere(a.day, a.twilight, a.sun);
+  combatFX.fogColor.copy(sky.material.uniforms.horizon.value);
   water.atmosphere(a.day, sky.material.uniforms.horizon.value);
   (scene.fog as THREE.Fog).color.copy(sky.material.uniforms.horizon.value);
   atmosphereDayColor.setHex(
@@ -308,6 +311,9 @@ function updateAtmosphere(now: number) {
 }
 const weaponGroup = new THREE.Group();
 camera.add(weaponGroup);
+const viewMotion = new ViewMotion();
+const weaponOffset = new THREE.Vector3();
+const remoteMuzzle = new THREE.Vector3();
 const mat = (color: number) =>
   new THREE.MeshStandardMaterial({ color, roughness: 0.75, metalness: 0.18 });
 function box(
@@ -404,6 +410,48 @@ function setWeaponModel(n: number) {
     if (n === 3)
       box(0.08, 0.08, 0.25, 0.23, -0.11, -0.49, 0x142b32, weaponGroup);
     else box(0.04, 0.05, 0.04, 0.23, -0.14, -0.68, 0x132c34, weaponGroup);
+    // Stepped receiver, sights and cooling ribs remain in the solid batch.
+    box(
+      0.13,
+      0.025,
+      n === 1 ? 0.25 : 0.37,
+      0.23,
+      -0.148,
+      -0.51,
+      0x667b7f,
+      weaponGroup,
+    );
+    box(0.13, 0.08, 0.035, 0.23, -0.23, -0.09, 0x263b43, weaponGroup);
+    box(0.015, 0.07, 0.23, 0.162, -0.215, -0.5, 0x506b72, weaponGroup);
+    for (let i = 0; i < (n === 1 ? 3 : 4); i++)
+      box(
+        0.072,
+        0.018,
+        0.012,
+        0.23,
+        -0.148,
+        -0.77 - i * 0.032,
+        0x3c5059,
+        weaponGroup,
+      );
+    box(0.08, 0.025, 0.04, 0.23, -0.13, -0.63, 0x889b97, weaponGroup);
+    if (n === 3) {
+      box(0.105, 0.1, 0.045, 0.23, -0.11, -0.65, 0x31454e, weaponGroup);
+      box(0.065, 0.052, 0.014, 0.23, -0.11, -0.68, 0x5b929e, weaponGroup);
+      box(0.018, 0.045, 0.025, 0.288, -0.11, -0.47, 0x798f8e, weaponGroup);
+    }
+    if (n === 2)
+      for (let i = 0; i < 3; i++)
+        box(
+          0.014,
+          0.035,
+          0.085,
+          0.297,
+          -0.22,
+          -0.35 - i * 0.065,
+          0xc79d59,
+          weaponGroup,
+        );
   } else if (n === 4 && local?.classId === 4 && !local.zombie) {
     box(0.22, 0.2, 0.43, 0.26, -0.2, -0.58, 0xe3ac59, weaponGroup);
     box(0.1, 0.23, 0.1, 0.26, -0.37, -0.4, 0x30434c, weaponGroup);
@@ -607,7 +655,12 @@ function applySettings() {
         : settings.scale,
     ),
   );
-  $("crosshair").textContent = settings.crosshair;
+  $("crosshair").textContent =
+    settings.crosshair === "+" ? "" : settings.crosshair;
+  $("crosshair").classList.toggle("dynamic", settings.crosshair === "+");
+  if (settings.crosshair === "+")
+    for (let i = 0; i < 4; i++)
+      $("crosshair").appendChild(document.createElement("i"));
 }
 function settingsUi() {
   const container = $("settings-fields");
@@ -743,6 +796,7 @@ function message(msg: any) {
     predictionBlocked = false;
     lastStateAt = performance.now();
     combatFX.clear();
+    viewMotion.reset();
     id = msg.id;
     roomId = msg.room.id;
     world.seed = msg.seed ?? msg.room?.seed ?? world.seed;
@@ -998,8 +1052,27 @@ function handleEvent(e: any) {
       Math.hypot(local.x - e.origin.x, local.z - e.origin.z) < 40
     )
       sound.play("shot", 0.25, e.weapon);
-    if (isFirearm(e.weapon) && e.origin)
-      combatFX.shot(e.origin, e.traces ?? []);
+    if (isFirearm(e.weapon) && e.origin) {
+      let origin = e.origin;
+      const gun = shooter?.group.userData.gun as THREE.Mesh | undefined;
+      if (gun?.userData.muzzle) {
+        remoteMuzzle.copy(gun.userData.muzzle);
+        gun.localToWorld(remoteMuzzle);
+        origin = remoteMuzzle;
+      }
+      combatFX.shot(origin, e.traces ?? [], e.impacts ?? []);
+    }
+    if (
+      e.id !== id &&
+      e.origin &&
+      local &&
+      Math.hypot(
+        local.x - e.origin.x,
+        local.y - e.origin.y,
+        local.z - e.origin.z,
+      ) < 40
+    )
+      combatFX.eject(e.origin, e.dir, e.weapon);
     if (local && e.traces?.length) {
       const distance = Math.min(
         ...e.traces.map((p: any) =>
@@ -1010,6 +1083,8 @@ function handleEvent(e: any) {
     }
   }
   if (e.kind === "launch" && local) {
+    const shooter = remote.get(e.id);
+    if (shooter) shooter.group.userData.shotAt = performance.now();
     predictedShotTimes = predictedShotTimes.filter(
       (at) => performance.now() - at < 1500,
     );
@@ -1074,6 +1149,7 @@ function handleEvent(e: any) {
     if (e.id === id) {
       sound.play("hit");
       hitUntil = performance.now() + 150;
+      $("hitmarker").dataset.kind = "hit";
     }
     if (e.target === id) {
       sound.play("damage");
@@ -1082,11 +1158,16 @@ function handleEvent(e: any) {
   }
   if (e.kind === "headshot" && e.id === id) {
     hitUntil = performance.now() + 220;
+    $("hitmarker").dataset.kind = "head";
     sound.play("hit", 0.6);
   }
   if (e.id === id && ["dig", "place", "reload", "pickup"].includes(e.kind))
     sound.play(e.kind);
-  if (e.kind === "kill" && e.id === id) sound.play("kill");
+  if (e.kind === "kill" && e.id === id) {
+    sound.play("kill");
+    hitUntil = performance.now() + 300;
+    $("hitmarker").dataset.kind = "kill";
+  }
   if (
     ["join", "kill", "objective", "infection", "victory", "pickup"].includes(
       e.kind,
@@ -1943,6 +2024,7 @@ function frame(now: number) {
       // Immediate cosmetic response; hits, damage and ammo remain authoritative.
       sound.play("shot", 1, input.weapon);
       lastShot = now;
+      combatFX.eject(eye(local), direction(yaw, pitch), input.weapon);
       predictedShotTimes.push(now);
       nextShotFeedback = now + WEAPONS[input.weapon].interval * 1000;
     }
@@ -2021,8 +2103,29 @@ function frame(now: number) {
       input.sprint,
     );
     presentedPose = pose;
-    weaponGroup.position.set(pose.x, pose.y, pose.z);
-    weaponGroup.rotation.set(pose.pitch, 0, pose.roll);
+    const motion = viewMotion.update(
+      yaw,
+      pitch,
+      local.vy,
+      local.ground,
+      input.aim,
+      dt,
+    );
+    weaponOffset.set(
+      pose.x + motion.lookX,
+      pose.y + motion.lookY - motion.landing,
+      pose.z,
+    );
+    weaponGroup.position.lerp(weaponOffset, 1 - Math.exp(-dt * 28));
+    weaponGroup.rotation.set(
+      pose.pitch + motion.lookY,
+      motion.lookX,
+      pose.roll - motion.lookX,
+    );
+    $("crosshair").style.setProperty(
+      "--spread",
+      `${crosshairRadius(WEAPONS[local.weapon].spread, input.aim, camera.fov, innerHeight, (now - lastShot) / 1000, local.classId === 3 && (local.abilityTime ?? 0) > 0)}px`,
+    );
     if (modelWeapon !== local.weapon || modelClass !== local.classId) {
       modelClass = local.classId ?? 0;
       modelWeapon = local.weapon;
@@ -2052,9 +2155,12 @@ function frame(now: number) {
         part.position.y += pose.shell * 0.12;
       }
     }
-    if (weaponGroup.userData.flash)
-      weaponGroup.userData.flash.visible =
-        now - lastShot < 65 && local.reload <= 0;
+    if (weaponGroup.userData.flash) {
+      const flash = weaponGroup.userData.flash;
+      flash.visible = now - lastShot < 65 && local.reload <= 0;
+      flash.scale.set(0.7 + Math.sin(lastShot) * 0.25, 1.1, 1.4);
+      flash.rotation.z = Math.sin(lastShot * 0.1) * 0.55;
+    }
     if (
       local.dead <= 0 &&
       !paused &&
@@ -2170,8 +2276,15 @@ function frame(now: number) {
       r.group.visible =
         r.target.dead <= 0 &&
         r.group.position.distanceTo(camera.position) < settings.distance;
+      if (!r.target.zombie)
+        setCharacterEquipment(
+          r.group,
+          r.target.weapon,
+          r.target.team,
+          r.target.classId ?? 0,
+        );
       if (r.group.userData.gun) {
-        r.group.userData.gun.visible = isFirearm(r.target.weapon);
+        r.group.userData.gun.visible = !r.target.zombie;
         r.group.userData.gun.rotation.x = lookPitch * 0.5 - 0.35;
       }
       for (const flame of r.group.userData.flames ?? [])
@@ -2368,12 +2481,22 @@ setInterval(() => {
       particles: combatFX.particles.length,
       tracers: combatFX.tracers.length,
       projectiles: combatFX.projectiles.length,
+      casings: combatFX.casings.length,
+      smoke: combatFX.smoke.count,
+      impactsPresented: combatFX.impactsPresented,
+      ejections: combatFX.ejections,
+      lastImpact: combatFX.lastImpact,
     };
   },
   get weaponAnimation() {
     return {
       weapon: modelWeapon,
       pose: presentedPose,
+      sway: {
+        x: viewMotion.lookX,
+        y: viewMotion.lookY,
+        landing: viewMotion.landing,
+      },
       parts: (weaponGroup.userData.dynamic ?? []).map((p: THREE.Mesh) => ({
         kind: p.userData.kind,
         position: p.position.toArray(),
@@ -2401,6 +2524,13 @@ setInterval(() => {
       leftLeg: r.group.userData.rig.leftLeg.rotation.x,
       rightLeg: r.group.userData.rig.rightLeg.rotation.x,
       rightArm: r.group.userData.rig.rightArm.rotation.x,
+      equipment: r.group.userData.gun
+        ? {
+            weapon: r.group.userData.gun.userData.weapon,
+            parts: r.group.userData.gun.userData.parts,
+            visible: r.group.userData.gun.visible,
+          }
+        : null,
       skinned: r.group.children.some((c) => c instanceof THREE.SkinnedMesh),
     }));
   },

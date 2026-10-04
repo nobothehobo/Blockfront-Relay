@@ -1,10 +1,12 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import { setCharacterEquipment } from "./equipment.js";
 type Appearance = {
   id: string;
   team: number;
   zombie: boolean;
   classId?: number;
+  weapon?: number;
 };
 export const zombieVariant = (id: string) =>
   [...id].reduce((n, c) => (n * 31 + c.charCodeAt(0)) >>> 0, 7) % 3;
@@ -149,6 +151,16 @@ export function createCharacter(p: Appearance) {
     for (const x of [-0.105, 0.105])
       part(2, 0.075, 0.04, 0.018, x, 1.7, -0.223, 0xb8d0c1);
     part(2, 0.17, 0.045, 0.025, 0, 1.56, -0.2, 0x977058);
+    // Earpieces, collar, harness and belt pouches share the same skinned batch.
+    for (const x of [-0.225, 0.225]) {
+      part(2, 0.035, 0.095, 0.095, x, 1.64, -0.01, skin);
+      part(2, 0.045, 0.075, 0.105, x, 1.73, -0.01, dark);
+      part(1, 0.035, 0.36, 0.055, x, 1.15, -0.235, cream);
+      part(1, 0.12, 0.15, 0.085, x, 0.85, -0.26, dark);
+      part(1, 0.1, 0.025, 0.09, x, 0.92, -0.26, team);
+    }
+    part(1, 0.42, 0.09, 0.44, 0, 1.39, 0.015, dark);
+    part(1, 0.08, 0.12, 0.025, 0, 1.33, -0.245, cream);
     part(
       2,
       role === 3 ? 0.48 : 0.46,
@@ -259,7 +271,7 @@ export function createCharacter(p: Appearance) {
       "varying float selfLight;\n" + shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <emissivemap_fragment>",
-      "#include <emissivemap_fragment>\ntotalEmissiveRadiance += selfLight * vColor.rgb * 1.5;",
+      "#include <emissivemap_fragment>\ntotalEmissiveRadiance += (selfLight * 1.5 + 0.025) * vColor.rgb;",
     );
   };
   const body = new THREE.SkinnedMesh(geometry, material);
@@ -269,24 +281,6 @@ export function createCharacter(p: Appearance) {
   group.updateMatrixWorld(true);
   body.bind(new THREE.Skeleton(bones));
   body.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 1, 0), 2.2);
-  if (!p.zombie) {
-    const gun = new THREE.Mesh(
-      new THREE.BoxGeometry(
-        role === 2 ? 0.18 : 0.1,
-        role === 2 ? 0.17 : 0.12,
-        role === 3 ? 0.83 : role === 4 ? 0.54 : 0.62,
-      ),
-      new THREE.MeshStandardMaterial({
-        color: dark,
-        roughness: 0.7,
-        metalness: 0.3,
-      }),
-    );
-    gun.position.set(-0.04, -0.21, -0.27);
-    gun.castShadow = true;
-    rightArm.add(gun);
-    group.userData.gun = gun;
-  }
   group.userData.rig = {
     root,
     torso,
@@ -297,6 +291,13 @@ export function createCharacter(p: Appearance) {
     rightArm,
     phase: 0,
   };
+  if (!p.zombie)
+    setCharacterEquipment(
+      group,
+      p.weapon ?? (role === 2 ? 6 : role === 3 ? 3 : 0),
+      p.team,
+      role,
+    );
   group.userData.model = {
     role,
     zombie: p.zombie,

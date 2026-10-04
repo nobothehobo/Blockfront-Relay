@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { World, W, H, D, CHUNK, palette } from "../shared/game.js";
+import { faceOcclusion } from "./voxel-shading.js";
 // Greedy merge adjacent coplanar faces with identical material; one mesh per column chunk.
 export function meshChunk(world: World, cx: number, cz: number) {
   const dims = [CHUNK, H, CHUNK],
@@ -16,7 +17,7 @@ export function meshChunk(world: World, cx: number, cz: number) {
       x = [0, 0, 0],
       q = [0, 0, 0];
     q[axis] = 1;
-    const mask = new Int16Array(dims[u] * dims[v]);
+    const mask = new Int32Array(dims[u] * dims[v]);
     for (x[axis] = -1; x[axis] < dims[axis];) {
       let n = 0;
       for (x[v] = 0; x[v] < dims[v]; x[v]++)
@@ -27,12 +28,25 @@ export function meshChunk(world: World, cx: number, cz: number) {
               x[1] + off[1] + q[1],
               x[2] + off[2] + q[2],
             );
-          mask[n++] =
+          const face =
             a && !b && x[axis] >= 0
               ? a
               : !a && b && x[axis] < dims[axis] - 1
                 ? -b
                 : 0;
+          if (!face) mask[n++] = 0;
+          else {
+            const sign = face > 0 ? 1 : -1;
+            const ao = faceOcclusion(
+              world,
+              x[0] + off[0] + (axis === 0 && sign < 0 ? 1 : 0),
+              x[1] + (axis === 1 && sign < 0 ? 1 : 0),
+              x[2] + off[2] + (axis === 2 && sign < 0 ? 1 : 0),
+              axis,
+              sign,
+            );
+            mask[n++] = sign * (Math.abs(face) | (ao << 8));
+          }
         }
       x[axis]++;
       n = 0;
@@ -63,28 +77,17 @@ export function meshChunk(world: World, cx: number, cz: number) {
             x.map((a, k) => a + du[k] + dv[k]),
             x.map((a, k) => a + dv[k]),
           ];
-          color.setHex(palette[Math.abs(m)]);
+          const block = Math.abs(m) & 255,
+            ao = Math.abs(m) >>> 8;
+          color.setHex(palette[block]);
           const shade =
             axis === 1 ? (m > 0 ? 1 : 0.66) : axis === 0 ? 0.94 : 0.97;
           for (let corner = 0; corner < pts.length; corner++) {
-            const pt = pts[corner],
-              sample = pt.map((a, k) => a + off[k]);
-            sample[axis] += m > 0 ? 0 : -1;
-            const su = corner === 1 || corner === 2 ? 1 : -1,
-              sv = corner >= 2 ? 1 : -1;
-            sample[u] += su > 0 ? -1 : 0;
-            sample[v] += sv > 0 ? -1 : 0;
-            const occupied = (a: number, b: number) => {
-              const cell = sample.slice();
-              cell[u] += a;
-              cell[v] += b;
-              return world.get(cell[0], cell[1], cell[2]) ? 1 : 0;
-            };
-            const occlusion =
-              occupied(su, 0) + occupied(0, sv) + occupied(su, sv);
-            const cornerShade = shade * (1 - occlusion * 0.085);
+            const pt = pts[corner];
+            const occlusion = (ao >>> (corner * 2)) & 3;
+            const cornerShade = shade * (0.92 - occlusion * 0.1);
             positions.push(pt[0] + off[0], pt[1] + off[1], pt[2] + off[2]);
-            emissions.push(Math.abs(m) >= 22 && Math.abs(m) <= 25 ? 0.85 : 0);
+            emissions.push(block >= 22 && block <= 25 ? 0.85 : 0);
             const normal = [0, 0, 0];
             normal[axis] = m > 0 ? 1 : -1;
             normals.push(...normal);
@@ -165,9 +168,13 @@ export class Terrain {
         // Subtle cube-edge shading survives greedy merging without extra geometry.
         vec3 f = fract(voxelPosition);
         vec3 edge = min(f,1.0-f) + abs(voxelNormal);
-        float seam = smoothstep(0.0,0.035, min(min(edge.x,edge.y),edge.z));
-        // Fine bevel highlights preserve clean cube readability at long range.
-        diffuseColor.rgb *= (0.96 + grain * 0.08) * mix(0.90,1.0,seam);
+        vec3 pixel = fwidth(voxelPosition);
+        float footprint = max(max(pixel.x,pixel.y),pixel.z);
+        float detail = 1.0-smoothstep(.12,.6,footprint);
+        float seam = 1.0-smoothstep(0.015,0.055+footprint*.45,min(min(edge.x,edge.y),edge.z));
+        float bevel = smoothstep(.035,.065,min(min(edge.x,edge.y),edge.z))*(1.0-smoothstep(.065,.1,min(min(edge.x,edge.y),edge.z)));
+        // Screen derivatives fade fine edges at distance; no postprocess or extra faces.
+        diffuseColor.rgb *= (1.0 + (grain-.5)*.13*detail) * (1.0-seam*.09*detail+bevel*.025*detail);
       `,
       );
       shader.fragmentShader = shader.fragmentShader.replace(

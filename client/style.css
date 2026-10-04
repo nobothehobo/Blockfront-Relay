@@ -359,6 +359,45 @@ summary {
   color: var(--orange);
   font-size: 40px;
 }
+#crosshair.dynamic {
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  box-shadow: 0 0 2px #15252d;
+  border-radius: 1px;
+}
+#crosshair.dynamic i {
+  position: absolute;
+  display: block;
+  width: 2px;
+  height: 6px;
+  background: #f3f8ef;
+  box-shadow: 0 0 2px #15252d;
+}
+#crosshair.dynamic i:nth-child(1) {
+  bottom: var(--spread, 4px);
+}
+#crosshair.dynamic i:nth-child(2) {
+  top: calc(var(--spread, 4px) + 2px);
+}
+#crosshair.dynamic i:nth-child(3) {
+  width: 6px;
+  height: 2px;
+  right: var(--spread, 4px);
+}
+#crosshair.dynamic i:nth-child(4) {
+  width: 6px;
+  height: 2px;
+  left: calc(var(--spread, 4px) + 2px);
+}
+#hitmarker[data-kind="head"] {
+  color: #ffd083;
+  text-shadow: 0 0 5px #6f401c;
+}
+#hitmarker[data-kind="kill"] {
+  color: #f8faf0;
+  text-shadow: 0 0 7px #ffd083;
+}
 #vitals {
   position: absolute;
   left: max(28px, env(safe-area-inset-left));

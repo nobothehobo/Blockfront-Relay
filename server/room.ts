@@ -837,6 +837,12 @@ export class Room {
         );
     const headshots = new Set<Player>();
     const traces: Vec[] = [];
+    const impacts: {
+      pos: Vec;
+      normal: Vec;
+      block: number;
+      kind: "terrain" | "player";
+    }[] = [];
     for (let n = 0; n < w.pellets; n++) {
       const spread =
           w.spread *
@@ -851,7 +857,8 @@ export class Room {
       d.x /= length;
       d.y /= length;
       d.z /= length;
-      let distance = ray(this.world, origin, d, w.range)?.distance ?? w.range;
+      const terrainHit = ray(this.world, origin, d, w.range);
+      let distance = terrainHit?.distance ?? w.range;
       let target: Player | undefined;
       for (const [v, pose] of poses) {
         const hit = rayBox(
@@ -883,18 +890,39 @@ export class Room {
               (head ? (p.weapon === 2 ? 1.15 : 1.5) : 1),
         );
       }
-      if (isFirearm(p.weapon))
-        traces.push({
+      if (isFirearm(p.weapon)) {
+        const pos = {
           x: origin.x + d.x * distance,
           y: origin.y + d.y * distance,
           z: origin.z + d.z * distance,
-        });
+        };
+        traces.push(pos);
+        if (target)
+          impacts.push({
+            pos,
+            normal: { x: -d.x, y: -d.y, z: -d.z },
+            block: 0,
+            kind: "player",
+          });
+        else if (terrainHit)
+          impacts.push({
+            pos,
+            normal: {
+              x: terrainHit.previous.x - terrainHit.x,
+              y: terrainHit.previous.y - terrainHit.y,
+              z: terrainHit.previous.z - terrainHit.z,
+            },
+            block: this.world.get(terrainHit.x, terrainHit.y, terrainHit.z),
+            kind: "terrain",
+          });
+      }
     }
     this.event("shot", "", p.id, {
       origin,
       dir: base,
       weapon: p.weapon,
       traces,
+      impacts,
     });
     for (const [v, amount] of damage) this.damage(v, amount, p);
     if (headshots.size) this.event("headshot", "", p.id);

@@ -56,6 +56,7 @@ test("hosted outdoor rooms preserve prior-release sessions and share the day/nig
   const row = db.prepare("SELECT data FROM game_rooms WHERE id=?");
   const stored = JSON.parse((row.get(room) as any).data);
   stored.format = 7;
+  delete stored.terrainVersion;
   stored.room.time = 180;
   stored.clock = Date.now() - 100;
   Object.values(stored.sessions).forEach((s: any) => {
@@ -83,7 +84,79 @@ test("hosted outdoor rooms preserve prior-release sessions and share the day/nig
   assert.equal(b.status, 200);
   assert.equal(b.data.welcome.state.atmosphere.day, 0);
   assert.ok(Math.abs(first.time - b.data.welcome.state.time) < 1);
-  assert.equal(JSON.parse((row.get(room) as any).data).format, 8);
+  assert.equal(JSON.parse((row.get(room) as any).data).format, 9);
+  assert.equal(JSON.parse((row.get(room) as any).data).terrainVersion, 0);
+});
+
+test("2.10 hosted rounds retain terrain and sessions until the next round adopts branching layouts", async () => {
+  const { db, call } = fixture();
+  const created = await call("/api/create", {
+    name: "Migration",
+    mode: "ctf",
+    seed: 7231,
+    jet: "all",
+  });
+  const room = created.data.id;
+  const a = await call("/api/join", { room, name: "A" });
+  const b = await call("/api/join", { room, name: "B" });
+  const row = db.prepare("SELECT data FROM game_rooms WHERE id=?");
+  const legacy = JSON.parse((row.get(room) as any).data);
+  legacy.format = 8;
+  delete legacy.terrainVersion;
+  legacy.room.phase = "active";
+  legacy.edits = [[idx(74, 14, 165), 6]];
+  legacy.room.revision = 1;
+  legacy.clock = Date.now() - 100;
+  for (const s of Object.values(legacy.sessions) as any[])
+    s.seen = Date.now() - 100;
+  db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(
+    JSON.stringify(legacy),
+    room,
+  );
+  const late = await call("/api/join", { room, name: "Late" });
+  const old = new World(7231, false);
+  old.decode(late.data.welcome.map);
+  assert.equal(
+    old.get(104, 15, 160),
+    new World(7231, true, 0).get(104, 15, 160),
+  );
+  assert.equal(old.get(74, 14, 165), 6);
+  assert.equal(late.data.welcome.state.revision, 1);
+  assert.equal(late.data.welcome.state.players.length, 3);
+  const stored = JSON.parse((row.get(room) as any).data);
+  assert.equal(stored.terrainVersion, 0);
+  stored.room.phase = "finished";
+  stored.room.remaining = 0.01;
+  stored.clock = Date.now() - 100;
+  for (const s of Object.values(stored.sessions) as any[])
+    s.seen = Date.now() - 100;
+  db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(
+    JSON.stringify(stored),
+    room,
+  );
+  const player = stored.players.find((p: any) => p.id === a.data.welcome.id);
+  const next = await call("/api/input", {
+    room,
+    token: a.data.token,
+    epoch: player.epoch,
+    round: 1,
+    cursor: late.data.cursor,
+    commands: [],
+  });
+  assert.equal(next.status, 200);
+  assert.equal(next.data.round, 2);
+  const updated = JSON.parse((row.get(room) as any).data);
+  assert.equal(updated.terrainVersion, 1);
+  assert.deepEqual(updated.edits, []);
+  assert.equal(updated.sessions[a.data.token].id, player.id);
+  assert.equal(updated.sessions[b.data.token].id, b.data.welcome.id);
+  const state = next.data.messages.find((m: any) => m.type === "state").state;
+  assert.ok(
+    state.players.find((p: any) => p.id === player.id).epoch > player.epoch,
+  );
+  const nextWorld = new World(updated.options.seed, false);
+  nextWorld.decode(next.data.map);
+  assert.deepEqual(nextWorld.blocks, new World(updated.options.seed).blocks);
 });
 
 test("hosted city terrain edits and midnight survive restoration; old reserved-seed terrain resets safely", async () => {
@@ -111,7 +184,7 @@ test("hosted city terrain edits and midnight survive restoration; old reserved-s
   const map = new World(CITY_SEED, false);
   map.decode(b.data.welcome.map);
   assert.equal(map.get(48, 17, 148), 0);
-  assert.equal(map.get(160, 12, 160), 30);
+  assert.equal(map.get(160, 12, 160), 27, "new central station foundation");
   const previous = JSON.parse((row.get(room) as any).data);
   previous.format = 7;
   db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(

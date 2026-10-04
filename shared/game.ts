@@ -1,5 +1,6 @@
 import { classInfo } from "./classes.js";
 import { citySeed, generateCity, CITY_SEED } from "./city.js";
+import { applyBattleLayout, routeField, LAYOUT_VERSION } from "./layout.js";
 export const W = 320,
   H = 56,
   D = 320,
@@ -206,6 +207,7 @@ export type Player = Body & {
     nextBurst?: number;
     burstUntil?: number;
     obstructed?: boolean;
+    approach?: { lane: number; goal: Vec };
   };
   pendingActions?: Partial<Input>;
   epoch?: number;
@@ -339,6 +341,7 @@ export class World {
   constructor(
     public seed = 7231,
     generate = true,
+    public layoutVersion = LAYOUT_VERSION,
   ) {
     if (generate) this.generate();
   }
@@ -359,6 +362,7 @@ export class World {
   generate() {
     if (citySeed(this.seed)) {
       generateCity(this.blocks, this.seed);
+      if (this.layoutVersion) applyBattleLayout(this.blocks, this.seed);
       return;
     }
     let n = this.seed >>> 0;
@@ -369,6 +373,7 @@ export class World {
     const phase = rnd() * 6,
       theme = mapTheme(this.seed);
     const layout = mapLayout(this.seed);
+    const approaches = this.layoutVersion ? routeField(this.seed) : null;
     const center = D / 2;
     const raw = (x: number, y: number, z: number, v: number) => {
       if (x >= 0 && x < W && y >= 0 && y < H && z >= 0 && z < D)
@@ -420,7 +425,7 @@ export class World {
           if (distance < 22) height = 12;
         }
         // A gentle central crossing and two flanking routes keep objectives reachable on foot.
-        if (Math.abs(z - center) < 4) height = 12;
+        if (!this.layoutVersion && Math.abs(z - center) < 4) height = 12;
         heights[x + W * z] = height;
         for (let y = 0; y <= height; y++)
           raw(
@@ -638,6 +643,7 @@ export class World {
       const x = 5 + Math.floor(rnd() * (W - 10)),
         z = 5 + Math.floor(rnd() * (D - 10));
       if (
+        approaches?.[x + W * z] ||
         buildings.some(
           ([bx, bz]) => Math.abs(x - bx) < 13 && Math.abs(z - bz) < 14,
         ) ||
@@ -683,6 +689,7 @@ export class World {
               );
       }
     }
+    if (this.layoutVersion) applyBattleLayout(this.blocks, this.seed);
   }
   encode() {
     const runs: number[] = [];

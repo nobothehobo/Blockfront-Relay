@@ -14,6 +14,7 @@ type DB = {
 };
 type Data = {
   format: number;
+  terrainVersion?: number;
   options: RoomOptions;
   clock: number;
   room: any;
@@ -31,16 +32,17 @@ const defaults = [
   ["frontline", "Frontline Control", "frontline", "classes"],
   ["demolition", "Stronghold Demolition", "demolition", "classes"],
 ] as const;
-const terrainCache = new Map<number, Uint8Array>();
+const terrainCache = new Map<string, Uint8Array>();
 function restore(id: string, data: Data) {
-  let seed = terrainCache.get(data.options.seed);
-  const world = new World(data.options.seed, !seed);
+  const key = `${data.options.seed}:${data.terrainVersion ?? 0}`;
+  let seed = terrainCache.get(key);
+  const world = new World(data.options.seed, !seed, data.terrainVersion ?? 0);
   if (seed) world.blocks.set(seed);
   if (!seed) {
     seed = world.blocks.slice();
     if (terrainCache.size >= 3)
       terrainCache.delete(terrainCache.keys().next().value!);
-    terrainCache.set(data.options.seed, seed);
+    terrainCache.set(key, seed);
   }
   const r = new Room(id, data.options, world);
   Object.assign(r, data.room);
@@ -65,7 +67,8 @@ function save(
   clock: number,
 ): Data {
   return {
-    format: 8,
+    format: 9,
+    terrainVersion: r.world.layoutVersion,
     options: r.options,
     clock,
     room: {
@@ -271,6 +274,7 @@ export default {
         if (!row) return response({ error: "Room not found" }, 404);
         const stored = JSON.parse(row.data) as Data;
         const data =
+          stored.format === 9 ||
           stored.format === 8 ||
           (stored.format === 7 && mapLayout(stored.options.seed) !== 3)
             ? stored

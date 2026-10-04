@@ -16,6 +16,7 @@ import {
 } from "../shared/game.js";
 import { planRoute, walkHeight } from "./navigation.js";
 import { flagAssignment } from "./ctf-tactics.js";
+import { approachWaypoint } from "./approaches.js";
 export type BotBrain = NonNullable<Player["brain"]>;
 type Arena = {
   time: number;
@@ -265,7 +266,10 @@ export function thinkBot(p: Player, arena: Arena): Input {
       : 0;
   brain.lastX = p.x;
   brain.lastZ = p.z;
-  const desired = Math.atan2(-(goal.x - p.x), -(goal.z - p.z));
+  const planningGoal = objective
+    ? approachWaypoint(p, arena.world, goal, (personality >>> 3) % 3)
+    : goal;
+  const desired = Math.atan2(-(planningGoal.x - p.x), -(planningGoal.z - p.z));
   const front = ray(
     arena.world,
     { ...origin, y: p.y + 0.65 },
@@ -282,7 +286,7 @@ export function thinkBot(p: Player, arena: Arena): Input {
   // leave a bot following an obsolete route until the old planner timer expires.
   const waypoint = brain.route?.[0];
   if (
-    (brain.routeGoal && horizontal(brain.routeGoal, goal) > 6) ||
+    (brain.routeGoal && horizontal(brain.routeGoal, planningGoal) > 6) ||
     (waypoint && walkHeight(arena.world, waypoint.x, waypoint.z, p.y) === null)
   ) {
     brain.route = [];
@@ -295,13 +299,13 @@ export function thinkBot(p: Player, arena: Arena): Input {
       brain.route?.length) &&
     arena.time >= (brain.nextPlan ?? 0)
   ) {
-    brain.route = planRoute(arena.world, p, goal);
-    brain.routeGoal = { ...goal };
+    brain.route = planRoute(arena.world, p, planningGoal);
+    brain.routeGoal = { ...planningGoal };
     brain.nextPlan = arena.time + 1.1 + (personality % 7) * 0.05;
   }
   while (brain.route?.length && horizontal(brain.route[0], p) < 0.45)
     brain.route.shift();
-  const navigation = brain.route?.[0] ?? goal;
+  const navigation = brain.route?.[0] ?? planningGoal;
   const navYaw = Math.atan2(-(navigation.x - p.x), -(navigation.z - p.z));
   const navFront = ray(
     arena.world,

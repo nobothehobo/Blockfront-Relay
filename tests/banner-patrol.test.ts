@@ -12,6 +12,7 @@ import {
   nextMapSeed,
   WEAPONS,
   collides,
+  basePosition,
 } from "../shared/game.js";
 import { weaponPose } from "../client/weapon-pose.js";
 
@@ -153,8 +154,10 @@ test("four deterministic map families differ structurally and round rotation cha
     const clone = new World(1, false);
     clone.decode(w.encode());
     assert.deepEqual(clone.blocks, w.blocks);
-    for (const x of [40, 280])
-      assert.equal(collides(w, x, 13.01, 160), false, `base clear ${i}`);
+    for (const team of [0, 1]) {
+      const b = basePosition(team);
+      assert.equal(collides(w, b.x, b.y, b.z), false, `base clear ${i}`);
+    }
     let seed = w.seed;
     for (let round = 2; round < 12; round++) {
       const next = nextMapSeed(seed, round);

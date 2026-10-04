@@ -74,14 +74,23 @@ test("city lanes, doorways and supported bridge stairs have walkable headroom", 
       false,
       "accessible objectives and supplies",
     );
-  for (let x = 1; x < 319; x++) {
-    assert.ok(world.get(x, 12, 160), "continuous road surface");
+  assert.ok(
+    collides(world, 96.5, 13.01, 160.5),
+    "approach screen breaks the old central lane",
+  );
+  for (const [x, z] of [
+    [80, 160],
+    [96, 140],
+    [112, 112],
+    [160, 112],
+    [208, 140],
+    [232, 176],
+  ])
     assert.equal(
-      collides(world, x + 0.5, 13.01, 160.5),
+      collides(world, x + 0.5, 13.01, z + 0.5),
       false,
-      "clear central lane",
+      "branching streets remain open",
     );
-  }
   for (const cx of [40, 88, 136, 184, 232, 280])
     for (const cz of [48, 96, 128, 192, 224, 272])
       for (let z = cz - 11; z <= cz + 11; z++)

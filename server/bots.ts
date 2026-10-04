@@ -74,6 +74,15 @@ export function thinkBot(p: Player, arena: Arena): Input {
   const visible = candidates.filter(
     (v) => horizontal(v, p) < 140 && canSee(arena.world, origin, eye(v)),
   );
+  const friendlyCarrier = arena.flags.find(
+    (f) => f.carrier && arena.players.get(f.carrier)?.team === p.team,
+  )?.carrier;
+  const escorted = friendlyCarrier
+    ? arena.players.get(friendlyCarrier)
+    : undefined;
+  // Escorts prioritize visible threats near their carrier; no wall vision is granted.
+  if (escorted && brain.role === "escort")
+    visible.sort((a, b) => horizontal(a, escorted) - horizontal(b, escorted));
   const target = visible.find((v) => v.id === brain.target) ?? visible[0];
   if (target) {
     if (brain.target !== target.id) {
@@ -85,6 +94,22 @@ export function thinkBot(p: Player, arena: Arena): Input {
   } else if (arena.time - (brain.seenAt ?? -10) > 2.5) {
     brain.target = "";
     brain.lastSeen = undefined;
+  }
+  if (!target && !brain.lastSeen) {
+    const report = [...arena.players.values()].find(
+      (v) =>
+        v.id !== p.id &&
+        v.team === p.team &&
+        v.dead <= 0 &&
+        horizontal(v, p) < 24 &&
+        v.brain?.lastSeen &&
+        arena.time - (v.brain.seenAt ?? -10) < 1.2,
+    );
+    if (report?.brain?.lastSeen) {
+      brain.lastSeen = { ...report.brain.lastSeen };
+      brain.seenAt = report.brain.seenAt;
+      // Investigate the reported location; firing still requires this bot's own sight.
+    }
   }
   let goal: Vec = brain.lastSeen ?? basePosition(1 - p.team);
   if (!target && !brain.lastSeen && horizontal(goal, p) < 8)
@@ -198,6 +223,38 @@ export function thinkBot(p: Player, arena: Arena): Input {
       }
     }
   }
+  if (target && !p.zombie && visible.length >= 2 && friendlyCarrier !== p.id) {
+    const support = [...arena.players.values()]
+      .filter(
+        (v) => v.id !== p.id && v.team === p.team && v.dead <= 0 && !v.zombie,
+      )
+      .sort((a, b) => horizontal(a, p) - horizontal(b, p))[0];
+    if (support && horizontal(support, p) > 10 && horizontal(support, p) < 35) {
+      goal = { x: support.x, y: support.y, z: support.z };
+      objective = true;
+    }
+  }
+  if (
+    target &&
+    p.zombie &&
+    distance > 6 &&
+    distance < 24 &&
+    [...arena.players.values()].some(
+      (v) =>
+        v.id !== p.id &&
+        v.zombie &&
+        v.team === p.team &&
+        v.dead <= 0 &&
+        horizontal(v, p) < 4,
+    )
+  ) {
+    const side = personality % 2 ? 2.5 : -2.5;
+    goal = {
+      x: target.x + ((target.z - p.z) / distance) * side,
+      y: target.y,
+      z: target.z - ((target.x - p.x) / distance) * side,
+    };
+  }
   const moved = Math.hypot(p.x - brain.lastX, p.z - brain.lastZ);
   brain.stuck =
     Math.abs(p.input.forward) + Math.abs(p.input.strafe) > 0.2 && moved < 0.12
@@ -218,6 +275,16 @@ export function thinkBot(p: Player, arena: Arena): Input {
     p.z - Math.cos(desired) * 1.2,
     p.y,
   );
+  // Invalidate before planning, so moving objectives and newly built walls don't
+  // leave a bot following an obsolete route until the old planner timer expires.
+  const waypoint = brain.route?.[0];
+  if (
+    (brain.routeGoal && horizontal(brain.routeGoal, goal) > 6) ||
+    (waypoint && walkHeight(arena.world, waypoint.x, waypoint.z, p.y) === null)
+  ) {
+    brain.route = [];
+    brain.nextPlan = 0;
+  }
   if (
     (!!front ||
       nextFloor === null ||
@@ -229,12 +296,16 @@ export function thinkBot(p: Player, arena: Arena): Input {
     brain.routeGoal = { ...goal };
     brain.nextPlan = arena.time + 1.1 + (personality % 7) * 0.05;
   }
-  if (brain.routeGoal && horizontal(brain.routeGoal, goal) > 6)
-    brain.route = [];
   while (brain.route?.length && horizontal(brain.route[0], p) < 0.45)
     brain.route.shift();
   const navigation = brain.route?.[0] ?? goal;
   const navYaw = Math.atan2(-(navigation.x - p.x), -(navigation.z - p.z));
+  const navFront = ray(
+    arena.world,
+    { ...origin, y: p.y + 0.65 },
+    direction(navYaw, 0),
+    1.6,
+  );
   const attack = ready && distance < (p.zombie ? 3.8 : 125);
   let aimYaw = navYaw,
     pitch = 0;
@@ -247,10 +318,13 @@ export function thinkBot(p: Player, arena: Arena): Input {
       pitch += Math.cos(arena.time * 1.7 + personality) * 0.008;
     }
   }
+  const tool = brain.stuck > 1.2 && !attack && !!navFront;
+  if (tool) {
+    aimYaw = navYaw;
+    pitch = -0.35;
+  }
   const yaw =
     p.yaw + Math.max(-dt * 3.5, Math.min(dt * 3.5, wrap(aimYaw - p.yaw)));
-  const tool = brain.stuck > 1.2 && !attack && !!front;
-  if (tool) pitch = -0.35;
   const travel =
     horizontal(goal, p) > 2 &&
     (objective || !attack || retreat || p.zombie || distance > 30);
@@ -315,9 +389,15 @@ export function thinkBot(p: Player, arena: Arena): Input {
     moving &&
     p.ground &&
     brain.stuck > 0.5 &&
-    !!front &&
+    !!navFront &&
     arena.time >= (brain.nextJump ?? 0);
   if (jump) brain.nextJump = arena.time + 1.35;
+  // Controlled bursts keep suppression readable and avoid uninterrupted SMG beams.
+  // Health, weapon stats and the deliberate aim error remain unchanged.
+  if (attack && !p.zombie && arena.time >= (brain.nextBurst ?? 0)) {
+    brain.burstUntil = arena.time + (primary === 1 ? 0.38 : 0.65);
+    brain.nextBurst = brain.burstUntil + 0.18 + (personality % 3) * 0.04;
+  }
   return {
     ...emptyInput(),
     seq: p.lastSeq + 1,
@@ -329,7 +409,7 @@ export function thinkBot(p: Player, arena: Arena): Input {
     sprint: !attack && !retreat,
     jump,
     dig: tool,
-    jet: p.jetpack && !!front && brain.stuck > 0.8 && p.fuel > 30,
+    jet: p.jetpack && !!navFront && brain.stuck > 0.8 && p.fuel > 30,
     aim: attack && !p.zombie && !retreat,
     grenade:
       attack &&
@@ -362,6 +442,7 @@ export function thinkBot(p: Player, arena: Arena): Input {
     fire:
       attack &&
       arena.phase === "active" &&
+      (p.zombie || arena.time < (brain.burstUntil ?? 0)) &&
       !teammateBlocked &&
       Math.abs(wrap(aimYaw - yaw)) < 0.12,
     reload: !p.zombie && !p.reload && ammoLow && p.reserve[primary] > 0,

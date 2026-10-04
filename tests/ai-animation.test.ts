@@ -142,8 +142,9 @@ test("navigation recognizes one-block ascents from physics-settled feet", () => 
 });
 test("stuck NPC jump is grounded and throttled across repeated think cycles", () => {
   const { room, world, human, bot } = setup();
-  for (let x = 77; x < 84; x++)
-    for (let y = 1; y < 5; y++) world.set(x, y, 99, 3);
+  // A low ledge in the actual routed direction; flankable tall walls avoid jumping.
+  for (let x = 64; x < 97; x++)
+    world.set(x, 1, 99, 3);
   bot.brain = {
     nextThink: 0,
     lastX: bot.x,

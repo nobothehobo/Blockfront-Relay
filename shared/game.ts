@@ -203,6 +203,8 @@ export type Player = Body & {
     nextStrafe?: number;
     nextJump?: number;
     role?: string;
+    nextBurst?: number;
+    burstUntil?: number;
   };
   pendingActions?: Partial<Input>;
   epoch?: number;
@@ -585,16 +587,52 @@ export class World {
             raw(xx, 11, z, theme.grass);
           }
         }
-        // Regular side stairs provide exits without requiring a jetpack.
-        if (z % 32 < 3 && Math.abs(z - center) > 16) {
-          for (let step = 0; step < 14; step++) {
-            const xx = x - 1 - step;
-            const floor = Math.min(8 + step, Math.max(8, heights[xx + W * z]));
+      }
+    // Carve entrances AFTER both trench banks: each three-wide flight shares a
+    // floor height and rises at most one cube per step, independent of hillside noise.
+    for (const x0 of [Math.floor(W * 0.29), Math.floor(W * 0.7)]) {
+      for (const z0 of [64, 96, 128, 192, 224]) {
+        const starts = [0, 1, 2].map(
+          (dz) => x0 + Math.floor(Math.sin((z0 + dz) * 0.055 + phase) * 3),
+        );
+        const entry = Math.min(...starts) - 1;
+        const end = entry - 23;
+        const top = Math.max(
+          8,
+          ...[0, 1, 2].map((dz) => heights[end + W * (z0 + dz)]),
+        );
+        for (let step = 0; step < 24; step++)
+          for (let dz = 0; dz < 3; dz++) {
+            const xx = entry - step,
+              z = z0 + dz,
+              floor = Math.min(8 + step, top);
             fill(xx, 1, z, 1, floor, 1, theme.earth);
             for (let y = floor + 1; y < H; y++) raw(xx, y, z, 0);
+            raw(xx, floor, z, theme.grass);
           }
-        }
       }
+      // Gradual end entrances remove abrupt dead ends at the trench perimeter.
+      for (const [entryZ, sign] of [
+        [64, -1],
+        [255, 1],
+      ]) {
+        const entryX = x0 + Math.floor(Math.sin(entryZ * 0.055 + phase) * 3);
+        const endZ = entryZ + sign * 23;
+        const top = Math.max(
+          8,
+          ...[0, 1, 2].map((dx) => heights[entryX + dx + W * endZ]),
+        );
+        for (let step = 0; step < 24; step++)
+          for (let dx = 0; dx < 3; dx++) {
+            const x = entryX + dx,
+              z = entryZ + sign * step,
+              floor = Math.min(8 + step, top);
+            fill(x, 1, z, 1, floor, 1, theme.earth);
+            for (let y = floor + 1; y < H; y++) raw(x, y, z, 0);
+            raw(x, floor, z, theme.grass);
+          }
+      }
+    }
     for (let t = 0; t < Math.floor((W * D) / 194); t++) {
       const x = 5 + Math.floor(rnd() * (W - 10)),
         z = 5 + Math.floor(rnd() * (D - 10));
@@ -606,8 +644,8 @@ export class World {
           [134, 186].some((cx) => Math.abs(x - cx) < 7) &&
           z > 115 &&
           z < 195) ||
-        Math.abs(x - Math.floor(W * 0.29)) < 21 ||
-        Math.abs(x - Math.floor(W * 0.7)) < 21 ||
+        Math.abs(x - Math.floor(W * 0.29)) < 31 ||
+        Math.abs(x - Math.floor(W * 0.7)) < 31 ||
         Math.abs(z - center) < 14 ||
         (Math.abs(x - W / 2) < 18 && Math.abs(z - D / 2) > D * 0.2) ||
         [0, 1].some((team) => {

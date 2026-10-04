@@ -184,6 +184,42 @@ export class Sound {
       this.tone(v * 0.035, 0.07, 220, 85, "triangle", 0, pan);
       return;
     }
+    if (
+      [
+        "reload-open",
+        "reload-seat",
+        "reload-shell",
+        "reload-close",
+        "action",
+      ].includes(kind)
+    ) {
+      const frequency =
+        kind === "reload-open"
+          ? 1200
+          : kind === "reload-shell"
+            ? 2100
+            : kind === "reload-seat"
+              ? 1600
+              : 2900;
+      this.burst(
+        v * 0.09,
+        kind === "reload-close" ? 0.07 : 0.045,
+        frequency,
+        0,
+        true,
+        pan,
+      );
+      this.tone(
+        v * 0.025,
+        0.045,
+        weapon === 2 ? 145 : 210,
+        85,
+        "triangle",
+        0,
+        pan,
+      );
+      return;
+    }
     if (kind === "reload") {
       for (const [delay, freq] of [
         [0, 1500],

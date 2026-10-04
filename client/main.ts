@@ -53,6 +53,7 @@ import {
 import { KITS } from "../shared/fortifications.js";
 import { FortificationView } from "./fortification-view.js";
 import { weaponPose } from "./weapon-pose.js";
+import { ReloadCues } from "./reload-cues.js";
 import { ViewMotion, crosshairRadius } from "./view-motion.js";
 import { BattlefieldView, WaterSurface } from "./battlefield-view.js";
 import { ContactShadows } from "./contact-shadows.js";
@@ -312,6 +313,9 @@ function updateAtmosphere(now: number) {
 const weaponGroup = new THREE.Group();
 camera.add(weaponGroup);
 const viewMotion = new ViewMotion();
+const reloadCues = new ReloadCues();
+let actionShot = 0;
+let lastShotWeapon = -1;
 const weaponOffset = new THREE.Vector3();
 const remoteMuzzle = new THREE.Vector3();
 const mat = (color: number) =>
@@ -824,6 +828,9 @@ function message(msg: any) {
     lastStateAt = performance.now();
     combatFX.clear();
     viewMotion.reset();
+    reloadCues.reset();
+    actionShot = 0;
+    lastShotWeapon = -1;
     id = msg.id;
     roomId = msg.room.id;
     world.seed = msg.seed ?? msg.room?.seed ?? world.seed;
@@ -1072,6 +1079,7 @@ function handleEvent(e: any) {
       else {
         sound.play("shot", 1, e.weapon);
         lastShot = performance.now();
+        lastShotWeapon = e.weapon;
       }
     } else if (
       local &&
@@ -1131,6 +1139,7 @@ function handleEvent(e: any) {
       if (e.id === id && !predictedShotTimes.length) {
         sound.play("shot", 0.8, 6);
         lastShot = performance.now();
+        lastShotWeapon = 6;
       } else if (e.id === id) predictedShotTimes.shift();
     }
   }
@@ -1188,7 +1197,7 @@ function handleEvent(e: any) {
     $("hitmarker").dataset.kind = "head";
     sound.play("hit", 0.6);
   }
-  if (e.id === id && ["dig", "place", "reload", "pickup"].includes(e.kind))
+  if (e.id === id && ["dig", "place", "pickup"].includes(e.kind))
     sound.play(e.kind);
   if (e.kind === "kill" && e.id === id) {
     sound.play("kill");
@@ -2051,6 +2060,7 @@ function frame(now: number) {
       // Immediate cosmetic response; hits, damage and ammo remain authoritative.
       sound.play("shot", 1, input.weapon);
       lastShot = now;
+      lastShotWeapon = input.weapon;
       combatFX.eject(eye(local), direction(yaw, pitch), input.weapon);
       predictedShotTimes.push(now);
       nextShotFeedback = now + WEAPONS[input.weapon].interval * 1000;
@@ -2120,7 +2130,7 @@ function frame(now: number) {
     camera.updateProjectionMatrix();
     weaponGroup.visible = local.dead <= 0 && !scoped;
     const pose = weaponPose(
-      now - lastShot,
+      lastShotWeapon === local.weapon ? now - lastShot : 1000,
       local.weapon,
       Math.hypot(local.vx, local.vz),
       now,
@@ -2130,6 +2140,29 @@ function frame(now: number) {
       input.sprint,
     );
     presentedPose = pose;
+    const audible = local.dead <= 0 && !paused && !document.hidden;
+    if (audible) {
+      const cue = reloadCues.update(
+        local.weapon,
+        Math.max(0, local.reload - (now - lastStateAt) / 1000),
+      );
+      if (cue) sound.play(cue, 0.8, local.weapon);
+      const actionDelay =
+        local.weapon === 2 ? 160 : local.weapon === 3 ? 260 : Infinity;
+      if (
+        lastShot > actionShot &&
+        lastShotWeapon === local.weapon &&
+        now - lastShot >= actionDelay &&
+        now - lastShot < actionDelay + 300 &&
+        local.reload <= 0
+      ) {
+        sound.play("action", 0.65, local.weapon);
+        actionShot = lastShot;
+      }
+    } else {
+      reloadCues.reset();
+      actionShot = lastShot;
+    }
     const motion = viewMotion.update(
       yaw,
       pitch,
@@ -2184,7 +2217,10 @@ function frame(now: number) {
     }
     if (weaponGroup.userData.flash) {
       const flash = weaponGroup.userData.flash;
-      flash.visible = now - lastShot < 65 && local.reload <= 0;
+      flash.visible =
+        lastShotWeapon === local.weapon &&
+        now - lastShot < 65 &&
+        local.reload <= 0;
       flash.scale.set(0.7 + Math.sin(lastShot) * 0.25, 1.1, 1.4);
       flash.rotation.z = Math.sin(lastShot * 0.1) * 0.55;
     }

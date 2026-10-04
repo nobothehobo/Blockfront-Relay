@@ -135,6 +135,28 @@ try {
       0,
       "one-shots release their nodes",
     );
+    for (const kind of [
+      "reload-open",
+      "reload-seat",
+      "reload-shell",
+      "reload-close",
+      "action",
+    ]) {
+      await p.evaluate(
+        (kind) => (window as any).sound.play(kind, 0.8, 2),
+        kind,
+      );
+      assert.ok(
+        await p.evaluate(() => (window as any).sound.diagnostics.voices > 0),
+        `${kind} creates audio voices`,
+      );
+      await p.waitForTimeout(140);
+      assert.equal(
+        await p.evaluate(() => (window as any).sound.diagnostics.voices),
+        0,
+        `${kind} releases nodes`,
+      );
+    }
     assert.equal(
       await p.evaluate(() => (window as any).sound.diagnostics.cachedBuffers),
       2,

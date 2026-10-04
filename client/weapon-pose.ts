@@ -19,8 +19,10 @@ export function weaponPose(
 ) {
   const strength = [1, 0.65, 1.8, 1.55, 0, 0, 2.1][weapon] ?? 0;
   const age = Math.max(0, ageMs);
-  const kick = Math.max(0, 1 - age / 180) * strength;
-  const bob = Math.min(0.018, speed * 0.002);
+  const recovery = [160, 95, 250, 230, 180, 180, 300][weapon] ?? 180;
+  const envelope = Math.max(0, 1 - age / recovery);
+  const kick = envelope * envelope * strength * (aim ? 0.65 : 1);
+  const bob = Math.min(0.018, speed * 0.002) * (aim ? 0.22 : 1);
   const reloading = reload > 0;
   const progress = reloading
     ? clamp(1 - reload / (WEAPONS[weapon]?.reload || 1))
@@ -44,6 +46,8 @@ export function weaponPose(
         : pulse(age / 1000, 0, 0.1);
   const swap = 1 - smooth(Math.max(0, switchAge) / 240);
   const run = sprint && !aim && !reloading ? Math.min(1, speed / 7) : 0;
+  const reloadRoll = [0.32, -0.24, 0.2, 0.4, 0, 0, -0.18][weapon] ?? 0.32;
+  const reloadPitch = [0.22, 0.16, 0.1, 0.28, 0, 0, 0.18][weapon] ?? 0.22;
   const toolSwing = weapon === 4 ? pulse(age / 1000, 0, 0.28) : 0;
   return {
     x: aim ? -0.22 : Math.cos(timeMs * 0.005) * bob * 0.5,
@@ -54,8 +58,11 @@ export function weaponPose(
       swap * 0.3 -
       run * 0.055,
     z: kick * 0.045 + swap * 0.06,
-    pitch: kick * 0.065 - tilt * 0.22 + run * 0.09 + toolSwing * 0.65,
-    roll: Math.sin(timeMs * 0.005) * bob * 0.6 + tilt * 0.32 - toolSwing * 0.3,
+    pitch: kick * 0.065 - tilt * reloadPitch + run * 0.09 + toolSwing * 0.65,
+    roll:
+      Math.sin(timeMs * 0.005) * bob * 0.6 +
+      tilt * reloadRoll -
+      toolSwing * 0.3,
     magazine,
     shell,
     bolt: Math.max(boltCycle, boltReload),

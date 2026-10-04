@@ -16,11 +16,13 @@ export function flagAssignment(
   const own = flags[p.team],
     enemy = flags[1 - p.team];
   const squad = [...players.values()]
-    .filter((v) => v.bot && v.team === p.team)
+    .filter((v) => v.bot && v.team === p.team && v.dead <= 0)
     .sort((a, b) => a.id.localeCompare(b.id));
   const slot = squad.findIndex((v) => v.id === p.id);
+  const defenders =
+    squad.length >= 2 ? Math.max(1, Math.floor(squad.length / 4)) : 0;
   const role =
-    squad.length >= 2 && slot === 0
+    slot < defenders
       ? "defender"
       : squad.length >= 3 && slot === 1
         ? "escort"
@@ -44,8 +46,19 @@ export function flagAssignment(
       };
   }
   const carrier = enemy.carrier ? players.get(enemy.carrier) : undefined;
-  if (carrier?.team === p.team && role !== "defender") {
-    const side = slot % 2 ? 2.5 : -2.5;
+  const escorts =
+    carrier?.team === p.team
+      ? squad
+          .filter((v) => v.id !== carrier.id && squad.indexOf(v) >= defenders)
+          .sort(
+            (a, b) =>
+              distance(a, carrier) - distance(b, carrier) ||
+              a.id.localeCompare(b.id),
+          )
+          .slice(0, 2)
+      : [];
+  if (carrier?.team === p.team && escorts.some((v) => v.id === p.id)) {
+    const side = escorts.findIndex((v) => v.id === p.id) === 0 ? 3 : -3;
     return {
       role: "escort",
       goal: {
@@ -65,5 +78,12 @@ export function flagAssignment(
       },
     };
   // An escort becomes a raider until there is a friendly flag carrier to protect.
-  return { role: "raider", goal: enemy.pos };
+  // Extra attackers cover separate approach lanes rather than piling onto a carrier.
+  return {
+    role: "raider",
+    goal:
+      carrier?.team === p.team
+        ? { ...enemy.home, z: enemy.home.z + (slot % 2 ? 8 : -8) }
+        : enemy.pos,
+  };
 }

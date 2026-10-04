@@ -73,3 +73,11 @@ CTF reuses authoritative relay possession/drop/return/capture rules with separat
 ## 2.7 refinements
 
 Snow albedo, sky haze and per-biome exposure preserve highlight headroom. Sun strength is reduced while retaining fill on shaded faces. Animation eases between poses, interpolates look pitch, and resets gait at spawn epochs. Navigation accounts for the collision skin when determining step elevations; grounded jump fallback is throttled and nearby squadmates influence ordinary steering. These changes do not relocate NPC bodies or bypass server physics. Hosted NPC requests cap at fifteen within sixteen total players; dedicated requests cap at thirty-one within the configured room ceiling. Existing format-7 records remain compatible.
+
+## 2.11 battlefield approaches
+
+`shared/layout.ts` defines three original branching routes per map family, a cached standing-height field, base screens and central landmarks. Generation reserves vegetation-free access and carves supported walking corridors after structures. Outdoor trench floors/headroom and existing side/end stairs remain. The routes guide navigation; humans can still traverse, excavate or build anywhere permitted by the original rules. Frontline sector courts use the same standing field rather than accidentally selecting a landmark roof.
+
+`server/approaches.ts` selects a persistent strategic lane from position, destination and NPC preference, then provides sparse corners to the existing bounded local navigator. Short-range goals remain direct. Private lane state stays outside player snapshots. NPCs submit normal inputs and cannot override collision or teleport to a waypoint.
+
+Hosted format 9 stores `terrainVersion`. Existing format-8 rounds without that field restore the exact version-0 generator and their terrain edits, players and session tokens. Cache keys include both seed and terrain version. A normal next-round reset generates version 1, clears edits and sends clients the fresh compact map plus new spawn epochs. This avoids applying old edits or predicted movement to a changed map underneath active players.

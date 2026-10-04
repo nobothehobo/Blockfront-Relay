@@ -235,23 +235,23 @@ export const MAP_PRESETS = [
   {
     seed: 7231,
     name: "Copperwater Foundry",
-    description: "Four-building district, river road and watch terraces",
+    description: "Industrial flanks, offset yard and watch terraces",
   },
   {
     seed: 7233,
     name: "Sunbreak Aqueduct",
-    description: "Wide river basin, three causeways and stone viaducts",
+    description: "River causeways, contested gatehouse and stone viaducts",
   },
   {
     seed: 7238,
     name: "Rimewater Ridgeline",
-    description: "High snowy ridges, separated bunkers and exposed sightlines",
+    description: "Raised flanking passes, snowy bunkers and a central bastion",
   },
   {
     seed: CITY_SEED,
     name: "Lumen Quay Afterdark",
     description:
-      "Neon-night city, open interiors, rooftop bridges and broad team lanes",
+      "Neon alleys, offset station, open interiors and rooftop bridges",
   },
 ];
 export function mapTheme(seed: number) {

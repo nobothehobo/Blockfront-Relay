@@ -1,8 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.10 — Squad & Handling Update.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.11 — Branching Battlegrounds Update.**
 
-**2.10:** distinct weapon recoil recovery and reload tilts, progress-driven mechanical reload/pump/bolt audio, living defender replacements, two-bot carrier escorts, recent teammate sighting reports, regrouping against multiple visible enemies, infected approach spacing, stale route invalidation and wider connected trench stairs/end entrances. See [changes and testing](docs/UPDATE-210.md). Refresh/rejoin to load the update.
+**2.11:** three branching approaches per map, offset base screens, original central landmarks, connected objective courtyards and NPC strategic lane routing. The direct base-to-base road is replaced with flanks and contested cover. Existing hosted matches preserve their terrain and sessions until the next round. See [changes and testing](docs/UPDATE-211.md). Refresh/rejoin to load the update.
 
 **2.9:** corrected terrain corner occlusion, quieter anti-aliased voxel edges, more detailed class gear and first-person weapons, real held NPC weapons/tools, smoother weapon sway/landing, shell casings, softer explosion smoke and server-confirmed material-colored impact chips. The default crosshair responds to weapon spread and aiming; headshots and eliminations have distinct feedback. See [changes, references and verification](docs/UPDATE-29.md). Refresh/rejoin to load the update.
 

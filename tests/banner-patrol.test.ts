@@ -142,10 +142,10 @@ test("solo outbreak starts the human as a survivor against infected NPCs", () =>
     [...room.players.values()].some((p) => p.bot && p.zombie && p.weapon === 4),
   );
 });
-test("three deterministic map families differ structurally and round rotation changes family", () => {
+test("four deterministic map families differ structurally and round rotation changes family", () => {
   assert.deepEqual(
     MAP_PRESETS.map((p) => mapLayout(p.seed)),
-    [0, 1, 2],
+    [0, 1, 2, 3],
   );
   const worlds = MAP_PRESETS.map((p) => new World(p.seed));
   for (const [i, w] of worlds.entries()) {

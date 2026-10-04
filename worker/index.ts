@@ -1,6 +1,6 @@
 import { gearInfo } from "../shared/gear.js";
 import { Room, RoomOptions } from "../server/room.js";
-import { World, W, D, mapTheme } from "../shared/game.js";
+import { World, W, D, mapTheme, mapLayout } from "../shared/game.js";
 import { assets } from "./assets.generated.js";
 // Sites-compatible authoritative fallback: SQL CAS serializes room mutations across isolates.
 // The dedicated Node transport remains the primary 30 Hz WebSocket architecture.
@@ -65,7 +65,7 @@ function save(
   clock: number,
 ): Data {
   return {
-    format: 7,
+    format: 8,
     options: r.options,
     clock,
     room: {
@@ -271,7 +271,7 @@ export default {
         if (!row) return response({ error: "Room not found" }, 404);
         const stored = JSON.parse(row.data) as Data;
         const data =
-          stored.format === 7
+          (stored.format === 8 || (stored.format === 7 && mapLayout(stored.options.seed) !== 3))
             ? stored
             : fresh(String(body.room), { ...stored.options, limit: 16 });
         const r = restore(String(body.room), data),

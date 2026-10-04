@@ -1,4 +1,5 @@
 import { classInfo } from "./classes.js";
+import { citySeed, generateCity, CITY_SEED } from "./city.js";
 export const W = 320,
   H = 56,
   D = 320,
@@ -209,6 +210,7 @@ export const palette = [
   0, 0x78ae42, 0x997044, 0x78828a, 0x77503b, 0x467f34, 0xead2a0, 0x259ca8,
   0xd95c39, 0xe4dba9, 0xd2ad53, 0xb58a56, 0xab8261, 0x7b9253, 0xd0dce2,
   0x8d989c, 0x6d8396, 0x96c5b0, 0xc8cbd0, 0x414d5b, 0xad7149, 0x809881,
+  0x3dccce, 0xd54791, 0xf1b853, 0x85b3c2, 0x273445, 0x53647b, 0x183350, 0x5b4563, 0x97b6b9,
 ];
 export const basePosition = (team: number): Vec => ({
   x: team === 0 ? Math.floor(W * 0.2) + 0.5 : W - Math.floor(W * 0.2) - 0.5,
@@ -216,7 +218,7 @@ export const basePosition = (team: number): Vec => ({
   z: D / 2 + 0.5,
 });
 export const mapLayout = (seed: number) =>
-  (((Math.floor(seed / 3) + 2) % 3) + 3) % 3;
+  citySeed(seed) ? 3 : (((Math.floor(seed / 3) + 2) % 3) + 3) % 3;
 export const MAP_PRESETS = [
   {
     seed: 7231,
@@ -233,8 +235,10 @@ export const MAP_PRESETS = [
     name: "Rimewater Ridgeline",
     description: "High snowy ridges, separated bunkers and exposed sightlines",
   },
+  { seed: CITY_SEED, name: "Lumen Quay Afterdark", description: "Neon-night city, open interiors, rooftop bridges and broad team lanes" },
 ];
 export function mapTheme(seed: number) {
+  if (citySeed(seed)) return { kind: 3, name: "Lumen Quay Afterdark", sky: 0x101a35, fog: 0x202c47, grass: 26, earth: 27, rock: 27, leaf: 22, water: 0x285874 };
   const kind = ((seed % 3) + 3) % 3;
   return kind === 0
     ? {
@@ -327,6 +331,7 @@ export class World {
     return true;
   }
   generate() {
+    if (citySeed(this.seed)) { generateCity(this.blocks, this.seed); return; }
     let n = this.seed >>> 0;
     const rnd = () => {
       n = (Math.imul(n, 1664525) + 1013904223) >>> 0;

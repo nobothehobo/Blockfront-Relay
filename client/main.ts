@@ -52,6 +52,8 @@ import { BattlefieldView, WaterSurface } from "./battlefield-view.js";
 import { ContactShadows } from "./contact-shadows.js";
 import { shadowQuality, sceneLighting } from "./lighting.js";
 import { GearView } from "./gear-view.js";
+import { NeonView } from "./neon-view.js";
+import { atmosphere } from "../shared/environment.js";
 import { gearInfo } from "../shared/gear.js";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -185,6 +187,7 @@ const scene = new THREE.Scene();
 const combatFX = new CombatFX(scene);
 const fortifications = new FortificationView(scene);
 const fieldGear = new GearView(scene);
+const neon = new NeonView(scene);
 scene.fog = new THREE.Fog(0xa9c3bd, 30, 100);
 scene.add(terrain.group);
 const ambient = new THREE.HemisphereLight(0xe4efff, 0x899a6c, 0.85);
@@ -228,6 +231,7 @@ function applyTheme(mode = state?.mode) {
   sky.theme(world.seed, outbreak);
   (scene.fog as THREE.Fog).color.copy(sky.material.uniforms.horizon.value);
   water.theme(theme.water);
+  water.mesh.visible = theme.kind !== 3;
   water.mesh.scale.y = mapLayout(world.seed) === 1 ? 1.8 : 1;
   sun.color.setHex(
     outbreak ? 0xc7d8e5 : theme.kind === 0 ? 0xffdfad : 0xfff0d5,
@@ -237,11 +241,41 @@ function applyTheme(mode = state?.mode) {
   sun.intensity = lighting.sun;
   ambient.intensity = lighting.ambient;
   bounce.intensity = lighting.bounce;
+  renderer.shadowMap.needsUpdate = true;
   ambient.groundColor.setHex(
     theme.kind === 2 ? 0x9aa6bc : theme.kind === 0 ? 0x9f8666 : 0x899a6c,
   );
 }
 applyTheme();
+let currentAtmosphere = atmosphere(world.seed, 0);
+const atmosphereDayColor = new THREE.Color(), atmosphereMoonColor = new THREE.Color(0x9ebde7),
+  atmosphereWarmColor = new THREE.Color(0xf4b57a), atmosphereNightFill = new THREE.Color(0xaec0e1),
+  atmosphereDayFill = new THREE.Color(0xe4efff), atmosphereDirection = new THREE.Vector3();
+function updateAtmosphere(now: number) {
+  const seconds = connected && state ? state.time + Math.min(2, (now - lastStateAt) / 1000) : 0;
+  currentAtmosphere = atmosphere(world.seed, seconds);
+  const theme = mapTheme(world.seed), outbreak = state?.mode === "infection";
+  const baseLight = sceneLighting(theme.kind, outbreak), a = currentAtmosphere;
+  sky.atmosphere(a.day, a.twilight, a.sun);
+  (scene.fog as THREE.Fog).color.copy(sky.material.uniforms.horizon.value);
+  atmosphereDayColor.setHex(outbreak ? 0xc7d8e5 : theme.kind === 0 ? 0xffdfad : 0xfff0d5);
+  sun.color.copy(atmosphereMoonColor).lerp(atmosphereDayColor, a.day).lerp(atmosphereWarmColor, a.twilight * .35);
+  sun.intensity = THREE.MathUtils.lerp(.65, baseLight.sun, a.day);
+  ambient.intensity = THREE.MathUtils.lerp(.8, baseLight.ambient, a.day);
+  ambient.color.copy(atmosphereNightFill).lerp(atmosphereDayFill, a.day);
+  bounce.intensity = THREE.MathUtils.lerp(.42, baseLight.bounce, a.day);
+  renderer.toneMappingExposure = THREE.MathUtils.lerp(.94, baseLight.exposure, a.day);
+  // Keep the light transform and cached shadow depth on the same update cadence.
+  // Moving the light every frame against an older depth map produces swimming shadows.
+  if (!renderer.shadowMap.enabled || renderer.shadowMap.needsUpdate) {
+  const x = connected && local ? Math.floor(local.x / 8) * 8 : W / 2,
+    y = connected && local ? local.y : 13, z = connected && local ? Math.floor(local.z / 8) * 8 : D / 2;
+  const direction = atmosphereDirection.set(a.sun.x * 84 * (2 * a.day - 1), Math.abs(a.sun.y) * 70, a.sun.z * 84 * (2 * a.day - 1));
+  sun.target.position.set(x, y, z);
+  sun.position.set(x + direction.x, y + Math.max(16, direction.y), z + direction.z);
+  sun.target.updateMatrixWorld();
+  }
+}
 const weaponGroup = new THREE.Group();
 camera.add(weaponGroup);
 const mat = (color: number) =>
@@ -2009,11 +2043,6 @@ function frame(now: number) {
         shadowQuality(settings.preset, touch, settings.shadows).interval
     ) {
       lastShadow = now;
-      const x = Math.floor(local.x / 8) * 8,
-        z = Math.floor(local.z / 8) * 8;
-      sun.target.position.set(x, local.y, z);
-      sun.position.set(x - 48, local.y + 64, z - 60);
-      sun.target.updateMatrixWorld();
       renderer.shadowMap.needsUpdate = true;
     }
     if (now - lastNet > (networkMode === "http" ? 100 : 50)) {
@@ -2163,7 +2192,9 @@ function frame(now: number) {
     camera.position.x += Math.sin(now * 0.049) * combatFX.shake;
     camera.position.y += Math.cos(now * 0.053) * combatFX.shake;
   }
+  updateAtmosphere(now);
   sky.update(camera, now / 1000);
+  neon.update(world, camera.position, connected && settings.effects === "high", now);
   water.update(now / 1000, settings.effects !== "low");
   fieldGear.update(
     connected ? (state?.fieldGear ?? []) : [],
@@ -2267,6 +2298,8 @@ setInterval(() => {
       exposure: renderer.toneMappingExposure,
       sun: sun.intensity,
       ambient: ambient.intensity,
+      atmosphere: currentAtmosphere,
+      neonLights: neon.lights.filter(l => l.visible && l.intensity > 0).length,
       gearInstances: fieldGear.solid.count,
       beaconLights: fieldGear.lights.filter((l) => l.intensity > 0).length,
     };

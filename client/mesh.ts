@@ -6,6 +6,7 @@ export function meshChunk(world: World, cx: number, cz: number) {
     off = [cx * CHUNK, 0, cz * CHUNK],
     positions: number[] = [],
     normals: number[] = [],
+    emissions: number[] = [],
     colors: number[] = [],
     indices: number[] = [];
   const color = new THREE.Color();
@@ -83,6 +84,7 @@ export function meshChunk(world: World, cx: number, cz: number) {
               occupied(su, 0) + occupied(0, sv) + occupied(su, sv);
             const cornerShade = shade * (1 - occlusion * 0.085);
             positions.push(pt[0] + off[0], pt[1] + off[1], pt[2] + off[2]);
+            emissions.push(Math.abs(m) >= 22 && Math.abs(m) <= 25 ? 0.85 : 0);
             const normal = [0, 0, 0];
             normal[axis] = m > 0 ? 1 : -1;
             normals.push(...normal);
@@ -124,6 +126,7 @@ export function meshChunk(world: World, cx: number, cz: number) {
   );
   geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
   geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setAttribute("emission", new THREE.Float32BufferAttribute(emissions, 1));
   geometry.setIndex(indices);
   geometry.computeBoundingSphere();
   return geometry;
@@ -142,14 +145,14 @@ export class Terrain {
   constructor(public world: World) {
     this.material.onBeforeCompile = (shader) => {
       shader.vertexShader =
-        "varying vec3 voxelPosition; varying vec3 voxelNormal;\n" +
+        "attribute float emission; varying float voxelEmission; varying vec3 voxelPosition; varying vec3 voxelNormal;\n" +
         shader.vertexShader;
       shader.vertexShader = shader.vertexShader.replace(
         "#include <begin_vertex>",
-        "#include <begin_vertex>\nvoxelPosition = position - normal * 0.001; voxelNormal = normal;",
+        "#include <begin_vertex>\nvoxelPosition = position - normal * 0.001; voxelNormal = normal; voxelEmission = emission;",
       );
       shader.fragmentShader =
-        "varying vec3 voxelPosition; varying vec3 voxelNormal;\n" +
+        "varying float voxelEmission; varying vec3 voxelPosition; varying vec3 voxelNormal;\n" +
         shader.fragmentShader;
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <color_fragment>",
@@ -161,9 +164,11 @@ export class Terrain {
         vec3 edge = min(f,1.0-f) + abs(voxelNormal);
         float seam = smoothstep(0.0,0.035, min(min(edge.x,edge.y),edge.z));
         // Fine bevel highlights preserve clean cube readability at long range.
-        diffuseColor.rgb *= (0.96 + grain * 0.08) * mix(0.84,1.0,seam);
+        diffuseColor.rgb *= (0.96 + grain * 0.08) * mix(0.90,1.0,seam);
       `,
       );
+      shader.fragmentShader = shader.fragmentShader.replace("#include <emissivemap_fragment>",
+        "#include <emissivemap_fragment>\ntotalEmissiveRadiance += voxelEmission * vColor.rgb * 1.8;");
     };
     this.rebuild();
   }

@@ -3,6 +3,7 @@ import { sectors, supplies, Sector } from "../shared/battlefield.js";
 import { thinkBot } from "./bots.js";
 import { sanitizeInput } from "../shared/prediction.js";
 import { FieldGear, gearInfo } from "../shared/gear.js";
+import { atmosphere } from "../shared/environment.js";
 import { HitHistory, HitPose } from "./rewind.js";
 import {
   CLASSES,
@@ -500,6 +501,7 @@ export class Room {
     return {
       fieldGear: this.fieldGear,
       time: this.time,
+      atmosphere: atmosphere(this.options.seed, this.time),
       lagCompensation: this.options.rewind === true,
       remaining: this.remaining,
       phase: this.phase,

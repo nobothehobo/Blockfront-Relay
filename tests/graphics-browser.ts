@@ -359,6 +359,9 @@ try {
   await a.screenshot({ path: "artifacts/fieldcraft-zombies.png" });
   // Same authoritative courtyard under a snow palette: preserve surface contrast.
   room.world.seed = room.options.seed = 7238;
+  // Move forward to noon, preserving monotonic network timestamps while testing
+  // the snow palette independently of how long this software-GPU suite takes.
+  room.time = Math.ceil(room.time / 360) * 360;
   for (let x = 148; x <= 176; x++)
     for (let z = 144; z <= 185; z++) room.world.blocks[idx(x, 12, z)] = 14;
   room.broadcast({

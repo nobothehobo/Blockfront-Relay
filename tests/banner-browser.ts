@@ -245,7 +245,7 @@ try {
   }
   assert.deepEqual(errors, []);
   console.log(
-    `PASS ${process.env.BR_TRANSPORT ?? "ws"}: phone solo CTF setup, fifteen cooperating bots, friend joins same match, keyboard/touch reload moving parts, three map presets`,
+    `PASS ${process.env.BR_TRANSPORT ?? "ws"}: phone solo CTF setup, fifteen cooperating bots, friend joins same match, keyboard/touch reload moving parts, four map presets`,
   );
 } finally {
   await browser.close();

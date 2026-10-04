@@ -50,6 +50,11 @@ function cloudTexture() {
   return texture;
 }
 export class Sky {
+  dayTop = new THREE.Color();
+  dayHorizon = new THREE.Color();
+  nightTop = new THREE.Color(0x101a36);
+  nightHorizon = new THREE.Color(0x303e5b);
+  dusk = new THREE.Color(0xd9906a);
   material = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
@@ -61,29 +66,37 @@ export class Sky {
       sunColor: { value: new THREE.Color() },
       sunDirection: { value: new THREE.Vector3(-0.48, 0.64, -0.6).normalize() },
       cloudCoverage: { value: 0.5 },
+      night: { value: 0 },
     },
     vertexShader: `varying vec3 skyDirection;
       void main(){skyDirection=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
     fragmentShader: `uniform sampler2D clouds; uniform float time; uniform float cloudCoverage;
       uniform vec3 top; uniform vec3 horizon; uniform vec3 sunColor; uniform vec3 sunDirection;
-      varying vec3 skyDirection;
+      uniform float night; varying vec3 skyDirection;
       void main(){
         vec3 d=normalize(skyDirection);
         float elevation=max(0.0,d.y);
         vec3 color=mix(horizon,top,smoothstep(0.0,.82,elevation));
         float sunlight=max(0.0,dot(d,sunDirection));
-        color+=sunColor*(pow(sunlight,18.0)*.10+pow(sunlight,180.0)*.25);
+        color+=sunColor*(pow(sunlight,18.0)*.10+pow(sunlight,180.0)*.25)*(1.0-night);
         vec2 uv=d.xz/(.32+elevation)*.24+vec2(time*.0018,time*.0007);
         float n=texture2D(clouds,uv).r*.76+texture2D(clouds,uv*1.93-vec2(time*.0012)).r*.24;
         float body=smoothstep(cloudCoverage,cloudCoverage+.14,n);
         body*=smoothstep(.03,.20,elevation);
         float shade=texture2D(clouds,uv+sunDirection.xz*.025).r;
         float rim=smoothstep(.0,.10,n-shade)*.16*pow(sunlight,4.0);
-        vec3 cloud=mix(horizon*.64,vec3(1.0,.97,.90),smoothstep(cloudCoverage+.03,cloudCoverage+.20,n));
+        vec3 cloud=mix(horizon*.64,mix(vec3(1.0,.97,.90),vec3(.10,.14,.24),night),smoothstep(cloudCoverage+.03,cloudCoverage+.20,n));
         cloud+=sunColor*rim;
         color=mix(color,cloud,body*.90);
-        float disc=smoothstep(.99935,.99965,sunlight)*(1.0-body*.80);
+        float disc=smoothstep(.99935,.99965,sunlight)*(1.0-body*.80)*(1.0-night);
         color=mix(color,sunColor*2.0,disc);
+        float moon=max(0.0,dot(d,-sunDirection));
+        float moonDisc=smoothstep(.9993,.9996,moon)*night*(1.0-body*.9);
+        color=mix(color,vec3(.55,.67,.85),moonDisc);
+        vec3 starCell=floor(d*260.0);
+        float starHash=fract(sin(dot(starCell,vec3(12.9898,78.233,37.719)))*43758.5453);
+        float star=step(.992,starHash)*pow(max(0.0,1.0-length(fract(d*260.0)-.5)*2.0),8.0);
+        color+=vec3(.62,.75,.92)*star*night*smoothstep(.06,.25,elevation)*(1.0-body);
         // Hazy distant scenery lives outside the playable world, never obscures nearby voxels.
         float angle=atan(d.z,d.x);
         float ridge=.025+.013*sin(angle*7.0)+.009*sin(angle*17.0+1.4);
@@ -116,6 +129,18 @@ export class Sky {
       u.sunColor.value.setHex(0xe9d1a2);
       u.cloudCoverage.value = 0.49;
     }
+    this.dayTop.copy(u.top.value);
+    this.dayHorizon.copy(u.horizon.value);
+    this.nightTop.setHex(theme.kind === 3 ? 0x090f2a : 0x101a36);
+    this.nightHorizon.setHex(theme.kind === 3 ? 0x202944 : 0x303e5b);
+  }
+  atmosphere(day: number, twilight: number, sun: {x:number;y:number;z:number}) {
+    const u = this.material.uniforms;
+    u.top.value.copy(this.nightTop).lerp(this.dayTop, day);
+    u.horizon.value.copy(this.nightHorizon).lerp(this.dayHorizon, day);
+    u.horizon.value.lerp(this.dusk, twilight * .34);
+    u.sunDirection.value.set(sun.x, sun.y, sun.z).normalize();
+    u.night.value = 1 - day;
   }
   update(camera: THREE.Camera, seconds: number) {
     this.mesh.position.copy(camera.position);

@@ -1,5 +1,11 @@
 # Performance notes — alpha 0.4
 
+## 2.8 atmosphere budget
+
+The complete compressed client is about 160 KB. Day/night is shader/uniform presentation from the existing room clock, without new network messages or a second simulation timer; snapshots include a small derived atmosphere description. Emissive terrain adds one float per meshed vertex, not independent voxel meshes. Stars/clouds use the existing sky draw, with three cloud-texture samples per fragment and procedural star hashing. High effects cap additional street lighting at two nearby shadowless point lights, refreshed at four Hz; mobile/low uses emissive materials only. The single sun/moon shadow map retains its previous bounded preset/refresh budgets. Color/vector temporaries are reused in frame updates. Physical mobile frame rate remains unmeasured.
+
+A local 1,200-tick CTF workload with one human and fifteen NPCs on the new city measured a 0.411 ms mean and 1.064 ms p95 simulation tick. All sixteen bodies stayed finite. Initial city map JSON was 333,271 bytes and the measured snapshot was 13,309 bytes. These are container simulation/serialization figures, not D1 latency, network throughput, combat balance or phone GPU FPS; see the general limits below.
+
 The previous client pulled its current predicted position 28% toward an old server snapshot. This created systematic backward corrections while moving. Prediction now replays unacknowledged fixed-step inputs, and spawn epochs reset the history. Remote players still interpolate; local movement no longer interpolates toward stale positions. Camera smoothing handles actual terrain/collision corrections separately.
 
 The hosted adapter previously constructed generated terrain twice for each restored room and generated all three default worlds during every room-list request. It now copies a cached typed array, applies edit deltas, and reads room-list metadata directly. Round-map event logs store small markers rather than repeating full maps in the database. Nearby chunks build first, and player geometry batches static body parts.

@@ -45,7 +45,12 @@ function fixture() {
 }
 test("hosted outdoor rooms preserve prior-release sessions and share the day/night clock with late joins", async () => {
   const { db, call } = fixture();
-  const created = await call("/api/create", { name: "Cycle", mode: "tdm", seed: 7231, jet: "all" });
+  const created = await call("/api/create", {
+    name: "Cycle",
+    mode: "tdm",
+    seed: 7231,
+    jet: "all",
+  });
   const room = created.data.id;
   const a = await call("/api/join", { room, name: "A" });
   const row = db.prepare("SELECT data FROM game_rooms WHERE id=?");
@@ -53,10 +58,23 @@ test("hosted outdoor rooms preserve prior-release sessions and share the day/nig
   stored.format = 7;
   stored.room.time = 180;
   stored.clock = Date.now() - 100;
-  Object.values(stored.sessions).forEach((s: any) => { s.seen = Date.now() - 100; });
-  db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(JSON.stringify(stored), room);
-  const p = a.data.welcome.state.players.find((p: any) => p.id === a.data.welcome.id);
-  const poll = await call("/api/input", { room, token: a.data.token, epoch: p.epoch, round: 1, commands: [] });
+  Object.values(stored.sessions).forEach((s: any) => {
+    s.seen = Date.now() - 100;
+  });
+  db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(
+    JSON.stringify(stored),
+    room,
+  );
+  const p = a.data.welcome.state.players.find(
+    (p: any) => p.id === a.data.welcome.id,
+  );
+  const poll = await call("/api/input", {
+    room,
+    token: a.data.token,
+    epoch: p.epoch,
+    round: 1,
+    commands: [],
+  });
   assert.equal(poll.status, 200);
   const first = poll.data.messages.find((m: any) => m.type === "state").state;
   assert.deepEqual(first.atmosphere, atmosphere(7231, first.time));
@@ -70,7 +88,12 @@ test("hosted outdoor rooms preserve prior-release sessions and share the day/nig
 
 test("hosted city terrain edits and midnight survive restoration; old reserved-seed terrain resets safely", async () => {
   const { db, call } = fixture();
-  const created = await call("/api/create", { name: "City", mode: "ctf", seed: CITY_SEED, jet: "all" });
+  const created = await call("/api/create", {
+    name: "City",
+    mode: "ctf",
+    seed: CITY_SEED,
+    jet: "all",
+  });
   const room = created.data.id;
   await call("/api/join", { room, name: "A" });
   const row = db.prepare("SELECT data FROM game_rooms WHERE id=?");
@@ -78,17 +101,23 @@ test("hosted city terrain edits and midnight survive restoration; old reserved-s
   saved.edits.push([idx(48, 17, 148), 0]);
   saved.room.revision++;
   saved.room.time = 93;
-  db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(JSON.stringify(saved), room);
+  db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(
+    JSON.stringify(saved),
+    room,
+  );
   const b = await call("/api/join", { room, name: "Late" });
   assert.equal(b.status, 200);
-  assert.equal(b.data.welcome.state.atmosphere.phase, .75);
+  assert.equal(b.data.welcome.state.atmosphere.phase, 0.75);
   const map = new World(CITY_SEED, false);
   map.decode(b.data.welcome.map);
   assert.equal(map.get(48, 17, 148), 0);
   assert.equal(map.get(160, 12, 160), 30);
   const previous = JSON.parse((row.get(room) as any).data);
   previous.format = 7;
-  db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(JSON.stringify(previous), room);
+  db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(
+    JSON.stringify(previous),
+    room,
+  );
   const fresh = await call("/api/join", { room, name: "New" });
   assert.equal(fresh.status, 200);
   const rebuilt = new World(CITY_SEED, false);

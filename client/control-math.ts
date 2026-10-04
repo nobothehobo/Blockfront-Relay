@@ -16,3 +16,8 @@ export function stickInput(
 export function touchLookGain(aiming: boolean, weapon: number) {
   return aiming ? (weapon === 3 ? 0.34 : 0.58) : 1;
 }
+
+// Consult the browser's current lock target. A cached pointerlockchange flag can
+// lag a just-acquired lock and discard the first click after joining/resuming.
+export const pointerLockActive = (target: Element | null, canvas: Element) =>
+  target === canvas;

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { mapTheme } from "../shared/game.js";
 
-// Original deterministic cloud texture, generated once. Two texture samples per pixel,
+// Original deterministic cloud texture, generated once. Three cloud samples per pixel,
 // no raymarching, downloaded sky assets, postprocessing or additional scene lights.
 function cloudTexture() {
   const size = 128,
@@ -90,6 +90,7 @@ export class Sky {
         color=mix(color,cloud,body*.90);
         float disc=smoothstep(.99935,.99965,sunlight)*(1.0-body*.80)*(1.0-night);
         color=mix(color,sunColor*2.0,disc);
+        if (night > .001) {
         float moon=max(0.0,dot(d,-sunDirection));
         float moonDisc=smoothstep(.9993,.9996,moon)*night*(1.0-body*.9);
         color=mix(color,vec3(.55,.67,.85),moonDisc);
@@ -97,6 +98,7 @@ export class Sky {
         float starHash=fract(sin(dot(starCell,vec3(12.9898,78.233,37.719)))*43758.5453);
         float star=step(.992,starHash)*pow(max(0.0,1.0-length(fract(d*260.0)-.5)*2.0),8.0);
         color+=vec3(.62,.75,.92)*star*night*smoothstep(.06,.25,elevation)*(1.0-body);
+        }
         // Hazy distant scenery lives outside the playable world, never obscures nearby voxels.
         float angle=atan(d.z,d.x);
         float ridge=.025+.013*sin(angle*7.0)+.009*sin(angle*17.0+1.4);
@@ -134,11 +136,15 @@ export class Sky {
     this.nightTop.setHex(theme.kind === 3 ? 0x090f2a : 0x101a36);
     this.nightHorizon.setHex(theme.kind === 3 ? 0x202944 : 0x303e5b);
   }
-  atmosphere(day: number, twilight: number, sun: {x:number;y:number;z:number}) {
+  atmosphere(
+    day: number,
+    twilight: number,
+    sun: { x: number; y: number; z: number },
+  ) {
     const u = this.material.uniforms;
     u.top.value.copy(this.nightTop).lerp(this.dayTop, day);
     u.horizon.value.copy(this.nightHorizon).lerp(this.dayHorizon, day);
-    u.horizon.value.lerp(this.dusk, twilight * .34);
+    u.horizon.value.lerp(this.dusk, twilight * 0.34);
     u.sunDirection.value.set(sun.x, sun.y, sun.z).normalize();
     u.night.value = 1 - day;
   }

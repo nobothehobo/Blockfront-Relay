@@ -161,6 +161,10 @@ export function createCharacter(p: Appearance) {
     );
     part(2, 0.49, 0.045, 0.49, 0, 1.79, -0.02, role === 4 ? 0x846c43 : dark);
     part(2, 0.08, 0.055, 0.44, 0, 1.97, 0, cream);
+    // Small original team markers remain readable under moonlight. They reuse
+    // the batched emissive model shader, not lights or extra scene meshes.
+    for (const x of [-0.244, 0.244])
+      part(2, 0.025, 0.055, 0.28, x, 1.87, -0.015, team, 0.22);
     part(1, 0.64, 0.1, 0.42, 0, 0.79, 0, dark);
     part(1, 0.3, 0.32, 0.04, 0, 1.13, -0.222, dark);
     for (const [x, bone] of [

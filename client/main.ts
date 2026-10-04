@@ -30,7 +30,11 @@ import {
   MAP_PRESETS,
 } from "../shared/game.js";
 import { MiniMap } from "./minimap.js";
-import { stickInput, touchLookGain } from "./control-math.js";
+import {
+  stickInput,
+  touchLookGain,
+  pointerLockActive,
+} from "./control-math.js";
 import { eliminationCamera } from "./elimination.js";
 import { Terrain } from "./mesh.js";
 import { Sound } from "./audio.js";
@@ -129,7 +133,6 @@ let yaw = 0,
   hitUntil = 0,
   damageUntil = 0,
   stepAt = 0,
-  mouseLocked = false,
   firstState = true,
   networkMode = "ws",
   httpToken = "",
@@ -248,32 +251,59 @@ function applyTheme(mode = state?.mode) {
 }
 applyTheme();
 let currentAtmosphere = atmosphere(world.seed, 0);
-const atmosphereDayColor = new THREE.Color(), atmosphereMoonColor = new THREE.Color(0x9ebde7),
-  atmosphereWarmColor = new THREE.Color(0xf4b57a), atmosphereNightFill = new THREE.Color(0xaec0e1),
-  atmosphereDayFill = new THREE.Color(0xe4efff), atmosphereDirection = new THREE.Vector3();
+const atmosphereDayColor = new THREE.Color(),
+  atmosphereMoonColor = new THREE.Color(0x9ebde7),
+  atmosphereWarmColor = new THREE.Color(0xf4b57a),
+  atmosphereNightFill = new THREE.Color(0xaec0e1),
+  atmosphereDayFill = new THREE.Color(0xe4efff),
+  atmosphereDirection = new THREE.Vector3();
 function updateAtmosphere(now: number) {
-  const seconds = connected && state ? state.time + Math.min(2, (now - lastStateAt) / 1000) : 0;
+  const seconds =
+    connected && state
+      ? state.time + Math.min(2, (now - lastStateAt) / 1000)
+      : 0;
   currentAtmosphere = atmosphere(world.seed, seconds);
-  const theme = mapTheme(world.seed), outbreak = state?.mode === "infection";
-  const baseLight = sceneLighting(theme.kind, outbreak), a = currentAtmosphere;
+  const theme = mapTheme(world.seed),
+    outbreak = state?.mode === "infection";
+  const baseLight = sceneLighting(theme.kind, outbreak),
+    a = currentAtmosphere;
   sky.atmosphere(a.day, a.twilight, a.sun);
+  water.atmosphere(a.day, sky.material.uniforms.horizon.value);
   (scene.fog as THREE.Fog).color.copy(sky.material.uniforms.horizon.value);
-  atmosphereDayColor.setHex(outbreak ? 0xc7d8e5 : theme.kind === 0 ? 0xffdfad : 0xfff0d5);
-  sun.color.copy(atmosphereMoonColor).lerp(atmosphereDayColor, a.day).lerp(atmosphereWarmColor, a.twilight * .35);
-  sun.intensity = THREE.MathUtils.lerp(.65, baseLight.sun, a.day);
-  ambient.intensity = THREE.MathUtils.lerp(.8, baseLight.ambient, a.day);
+  atmosphereDayColor.setHex(
+    outbreak ? 0xc7d8e5 : theme.kind === 0 ? 0xffdfad : 0xfff0d5,
+  );
+  sun.color
+    .copy(atmosphereMoonColor)
+    .lerp(atmosphereDayColor, a.day)
+    .lerp(atmosphereWarmColor, a.twilight * 0.35);
+  sun.intensity = THREE.MathUtils.lerp(0.8, baseLight.sun, a.day);
+  ambient.intensity = THREE.MathUtils.lerp(1.05, baseLight.ambient, a.day);
   ambient.color.copy(atmosphereNightFill).lerp(atmosphereDayFill, a.day);
-  bounce.intensity = THREE.MathUtils.lerp(.42, baseLight.bounce, a.day);
-  renderer.toneMappingExposure = THREE.MathUtils.lerp(.94, baseLight.exposure, a.day);
+  bounce.intensity = THREE.MathUtils.lerp(0.42, baseLight.bounce, a.day);
+  renderer.toneMappingExposure = THREE.MathUtils.lerp(
+    0.94,
+    baseLight.exposure,
+    a.day,
+  );
   // Keep the light transform and cached shadow depth on the same update cadence.
   // Moving the light every frame against an older depth map produces swimming shadows.
   if (!renderer.shadowMap.enabled || renderer.shadowMap.needsUpdate) {
-  const x = connected && local ? Math.floor(local.x / 8) * 8 : W / 2,
-    y = connected && local ? local.y : 13, z = connected && local ? Math.floor(local.z / 8) * 8 : D / 2;
-  const direction = atmosphereDirection.set(a.sun.x * 84 * (2 * a.day - 1), Math.abs(a.sun.y) * 70, a.sun.z * 84 * (2 * a.day - 1));
-  sun.target.position.set(x, y, z);
-  sun.position.set(x + direction.x, y + Math.max(16, direction.y), z + direction.z);
-  sun.target.updateMatrixWorld();
+    const x = connected && local ? Math.floor(local.x / 8) * 8 : W / 2,
+      y = connected && local ? local.y : 13,
+      z = connected && local ? Math.floor(local.z / 8) * 8 : D / 2;
+    const direction = atmosphereDirection.set(
+      a.sun.x * 84 * (2 * a.day - 1),
+      Math.abs(a.sun.y) * 70,
+      a.sun.z * 84 * (2 * a.day - 1),
+    );
+    sun.target.position.set(x, y, z);
+    sun.position.set(
+      x + direction.x,
+      y + Math.max(16, direction.y),
+      z + direction.z,
+    );
+    sun.target.updateMatrixWorld();
   }
 }
 const weaponGroup = new THREE.Group();
@@ -1295,14 +1325,19 @@ function setPause(on: boolean) {
   show("touch", touch && connected && !on);
 }
 document.addEventListener("pointerlockchange", () => {
-  mouseLocked = document.pointerLockElement === canvas;
-  if (!mouseLocked && connected && !touch && !paused) setPause(true);
+  if (
+    !pointerLockActive(document.pointerLockElement, canvas) &&
+    connected &&
+    !touch &&
+    !paused
+  )
+    setPause(true);
 });
 canvas.addEventListener("click", () => {
   if (connected && !paused && !touch) canvas.requestPointerLock?.();
 });
 document.addEventListener("mousemove", (e) => {
-  if (mouseLocked && !paused) {
+  if (pointerLockActive(document.pointerLockElement, canvas) && !paused) {
     yaw -= e.movementX * 0.002 * settings.mouse;
     pitch = Math.max(
       -1.5,
@@ -1363,7 +1398,11 @@ window.addEventListener("keyup", (e) => {
   if (e.code === "Tab") show("scoreboard", false);
 });
 window.addEventListener("mousedown", (e) => {
-  if (connected && mouseLocked && !paused) {
+  if (
+    connected &&
+    pointerLockActive(document.pointerLockElement, canvas) &&
+    !paused
+  ) {
     if (e.button === 0) {
       input.fire = true;
       pulses.fire = true;
@@ -1379,7 +1418,11 @@ canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 window.addEventListener(
   "wheel",
   (e) => {
-    if (connected && !paused && mouseLocked) {
+    if (
+      connected &&
+      !paused &&
+      pointerLockActive(document.pointerLockElement, canvas)
+    ) {
       e.preventDefault();
       for (let n = 1; n <= 7; n++) {
         const candidate = (input.weapon + n * (e.deltaY > 0 ? 1 : 6)) % 7;
@@ -2194,7 +2237,12 @@ function frame(now: number) {
   }
   updateAtmosphere(now);
   sky.update(camera, now / 1000);
-  neon.update(world, camera.position, connected && settings.effects === "high", now);
+  neon.update(
+    world,
+    camera.position,
+    connected && settings.effects === "high",
+    now,
+  );
   water.update(now / 1000, settings.effects !== "low");
   fieldGear.update(
     connected ? (state?.fieldGear ?? []) : [],
@@ -2299,7 +2347,9 @@ setInterval(() => {
       sun: sun.intensity,
       ambient: ambient.intensity,
       atmosphere: currentAtmosphere,
-      neonLights: neon.lights.filter(l => l.visible && l.intensity > 0).length,
+      waterDaylight: water.material.uniforms.daylight.value,
+      neonLights: neon.lights.filter((l) => l.visible && l.intensity > 0)
+        .length,
       gearInstances: fieldGear.solid.count,
       beaconLights: fieldGear.lights.filter((l) => l.intensity > 0).length,
     };

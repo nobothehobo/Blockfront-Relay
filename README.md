@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.7 — Squad Update.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.8 — Afterdark Update.**
+
+**2.8:** a synchronized six-minute day/night cycle with sunset, dawn, stars, moonlight and moving shadows; plus the original **Lumen Quay Afterdark** neon-city map. Choose it in Solo practice → Map or Server browser → Create a match → Map layout. Its streets, open buildings, signs, lamps, cover and skybridges are destructible; the city stays at night. All four map families work with existing modes and NPC options. See [changes, research and verification limits](docs/UPDATE-28.md). Refresh/rejoin after updating.
 
 **2.7:** controlled snow highlights and biome exposure, smoother NPC poses and matching contact shadows, corrected step navigation and throttled jump fallback. Solo and custom rooms now offer up to 15 NPCs: 8 vs 8 including you. See [changes and verification](docs/UPDATE-27.md).
 

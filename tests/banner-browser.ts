@@ -53,7 +53,10 @@ try {
   );
   await a.locator("#name").fill("Solo captain");
   await a.locator("#practice").tap();
-  assert.equal(await a.locator("#solo-map option").count(), 4);
+  assert.equal(
+    await a.locator("#solo-map option").count(),
+    MAP_PRESETS.length + 1,
+  );
   await a.locator("#solo-mode").selectOption("ctf");
   await a.locator("#solo-map").selectOption("7233");
   await a.locator("#solo-bots").selectOption("15");
@@ -124,17 +127,66 @@ try {
       14,
     );
   }
+  // A software GPU can finish joining before the initial chunks/minimap have
+  // settled. Start the animation check on a live acknowledged input stream.
+  await b.waitForFunction(
+    () =>
+      (window as any).BR.map.tilesLeft === 0 &&
+      (window as any).BR.network.pending < 12 &&
+      (window as any).BR.network.snapshotAge < 600,
+  );
+  await b.bringToFront();
+  if (await b.locator("#pause").isVisible()) await b.locator("#resume").click();
   if (!(await b.evaluate(() => document.pointerLockElement)))
     await b.locator("#game").click();
   await b.waitForFunction(() => !!document.pointerLockElement);
+  await b.evaluate(() => {
+    (window as any).__fireEvents = [];
+    for (const kind of ["mousedown", "mouseup", "blur", "visibilitychange"])
+      window.addEventListener(kind, (e) =>
+        queueMicrotask(() =>
+          (window as any).__fireEvents.push({
+            kind: e.type,
+            target: (e.target as HTMLElement).id,
+            fire: (window as any).BR.input.fire,
+            focus: document.hasFocus(),
+            visible: !document.hidden,
+            lock: document.pointerLockElement?.id,
+          }),
+        ),
+      );
+  });
   await b.mouse.down();
-  await b.waitForTimeout(250);
-  await b.mouse.up();
-  await b.waitForFunction(
-    () =>
-      (window as any).BR.state.players.find((p: any) => p.name === "Friend")
-        .ammo[0] < 24,
-  );
+  try {
+    await b
+      .waitForFunction(
+        () =>
+          (window as any).BR.state.players.find((p: any) => p.name === "Friend")
+            .ammo[0] < 24,
+      )
+      .catch(async (error) => {
+        console.log(
+          "Firing diagnostics",
+          await b.evaluate(() => ({
+            input: (window as any).BR.input,
+            player: (window as any).BR.player,
+            network: (window as any).BR.network,
+            phase: (window as any).BR.state.phase,
+            authority: (window as any).BR.state.players.find(
+              (p: any) => p.name === "Friend",
+            ),
+            events: (window as any).__fireEvents,
+            paused: !document
+              .querySelector("#pause")
+              ?.classList.contains("hidden"),
+          })),
+        );
+        await b.screenshot({ path: "artifacts/banner-fire-failure.png" });
+        throw error;
+      });
+  } finally {
+    await b.mouse.up();
+  }
   await b.keyboard.press("KeyR");
   console.log("Checking animated reloads");
   await b.waitForFunction(

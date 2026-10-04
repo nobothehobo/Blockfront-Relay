@@ -134,14 +134,17 @@ export class WaterSurface {
       time: { value: 0 },
       tint: { value: new THREE.Color(0x318aa2) },
       detail: { value: 1 },
+      daylight: { value: 1 },
+      skyTint: { value: new THREE.Color(0xc9dce4) },
     },
     vertexShader: `varying vec3 worldPoint; void main(){ vec4 p=modelMatrix*vec4(position,1.0); worldPoint=p.xyz; gl_Position=projectionMatrix*viewMatrix*p; }`,
-    fragmentShader: `uniform float time; uniform float detail; uniform vec3 tint; varying vec3 worldPoint;
+    fragmentShader: `uniform float time; uniform float detail; uniform float daylight; uniform vec3 tint; uniform vec3 skyTint; varying vec3 worldPoint;
       void main(){ vec3 view=normalize(cameraPosition-worldPoint); float fresnel=pow(1.0-abs(view.y),3.0);
         float wave=sin(worldPoint.x*.75+worldPoint.z*.35+time*.65)*sin(worldPoint.z*1.2-time*.5);
         float glint=pow(max(0.0,wave),18.0)*detail;
         vec3 reflection=mix(vec3(.69,.82,.88),vec3(.35,.61,.76),clamp(abs(view.y)*2.0,0.0,1.0));
-        vec3 color=mix(tint*.8,reflection,fresnel*.68)+glint*vec3(.18,.25,.24);
+        reflection=mix(skyTint*.8,reflection,daylight);
+        vec3 color=mix(tint*(.25+.55*daylight),reflection,fresnel*.68)+glint*vec3(.18,.25,.24)*(.25+.75*daylight);
         gl_FragColor=vec4(color,.78+fresnel*.18);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -154,6 +157,10 @@ export class WaterSurface {
   }
   theme(color: number) {
     this.material.uniforms.tint.value.setHex(color);
+  }
+  atmosphere(day: number, sky: THREE.Color) {
+    this.material.uniforms.daylight.value = day;
+    this.material.uniforms.skyTint.value.copy(sky);
   }
   update(time: number, detail: boolean) {
     this.material.uniforms.time.value = time;

@@ -1,6 +1,8 @@
 # Verification
 
-Automated checks are in `tests/`. Unit tests exercise the actual authoritative Room code, not duplicated gameplay implementations. Squad Update verification passes 105 automated checks, the graphics, elimination and NPC/ordnance polish browser suites, and standard desktop/phone/tablet controls on both Node WebSockets and the local hosted HTTP/SQL adapter.
+Automated checks are in `tests/`. Unit tests exercise the actual authoritative Room code, not duplicated gameplay implementations. Afterdark Update passes 114 automated checks. The new `npm run test:night` uses two actual WebGL clients plus a late join to verify shared city midnight, emitted terrain deltas, lamp removal, phone/tablet limits and shared outdoor midnight/dawn/noon, including water phase. The fixture fast-forwards room time only in tests. No debug mutation endpoint ships. Live pointer-lock gating also has a regression check, and the hosted banner suite verifies desktop firing/reloading after the first map has settled.
+
+The existing graphics suite verifies snow highlight headroom at controlled noon, class/ infected rigs and shadow/touch presets. `npm run test:banner` and `BR_TRANSPORT=http npm run test:banner` now exercise all four map presets through ordinary production endpoints. Previous 2.7 elimination and NPC/ordnance polish verification is documented in UPDATE-27.md; actual 2.8 reruns are recorded in UPDATE-28.md.
 
 2.7 adds settled-foot step navigation, jump throttling, presented-position contact shadows, 15-NPC team balance/slot replacement and hosted persistence checks. The graphics suite also checks unclipped snow-surface pixels and ammo/control separation at 1024 × 352 and 844 × 390. The banner suite fills 8-v-8 through ordinary solo UI and checks that a joining friend replaces an NPC on both transports.
 

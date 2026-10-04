@@ -1,8 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { World, ray } from "../shared/game.js";
-import { stickInput, touchLookGain } from "../client/control-math.js";
+import {
+  stickInput,
+  touchLookGain,
+  pointerLockActive,
+} from "../client/control-math.js";
 import { eliminationCamera } from "../client/elimination.js";
+test("desktop input uses the live pointer-lock target rather than a delayed cached flag", () => {
+  const canvas = {} as Element,
+    other = {} as Element;
+  assert.equal(pointerLockActive(null, canvas), false);
+  assert.equal(pointerLockActive(other, canvas), false);
+  assert.equal(pointerLockActive(canvas, canvas), true);
+});
 test("touch stick filters drift, keeps diagonal speed bounded and sprints only forward", () => {
   assert.deepEqual(stickInput(0.06, 0.04), {
     strafe: 0,

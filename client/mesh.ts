@@ -126,7 +126,10 @@ export function meshChunk(world: World, cx: number, cz: number) {
   );
   geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
   geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  geometry.setAttribute("emission", new THREE.Float32BufferAttribute(emissions, 1));
+  geometry.setAttribute(
+    "emission",
+    new THREE.Float32BufferAttribute(emissions, 1),
+  );
   geometry.setIndex(indices);
   geometry.computeBoundingSphere();
   return geometry;
@@ -167,8 +170,10 @@ export class Terrain {
         diffuseColor.rgb *= (0.96 + grain * 0.08) * mix(0.90,1.0,seam);
       `,
       );
-      shader.fragmentShader = shader.fragmentShader.replace("#include <emissivemap_fragment>",
-        "#include <emissivemap_fragment>\ntotalEmissiveRadiance += voxelEmission * vColor.rgb * 1.8;");
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <emissivemap_fragment>",
+        "#include <emissivemap_fragment>\ntotalEmissiveRadiance += voxelEmission * vColor.rgb * 1.8;",
+      );
     };
     this.rebuild();
   }

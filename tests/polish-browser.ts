@@ -192,8 +192,13 @@ try {
   await observer.locator("#play").click();
   await observer.waitForFunction(() => (window as any).BR.connected);
   await page.bringToFront();
+  // Opening a second page can release the first page's pointer lock. Resume
+  // through the actual pause UI before testing its class keyboard action.
+  if (await page.locator("#pause").isVisible())
+    await page.locator("#resume").click();
   if (!(await page.evaluate(() => document.pointerLockElement)))
     await page.locator("#game").click();
+  await page.waitForFunction(() => document.pointerLockElement?.id === "game");
   room.players.get("viewer")!.blocks = 100;
   await page.keyboard.press("KeyV");
   await page.waitForFunction(

@@ -271,7 +271,8 @@ export default {
         if (!row) return response({ error: "Room not found" }, 404);
         const stored = JSON.parse(row.data) as Data;
         const data =
-          (stored.format === 8 || (stored.format === 7 && mapLayout(stored.options.seed) !== 3))
+          stored.format === 8 ||
+          (stored.format === 7 && mapLayout(stored.options.seed) !== 3)
             ? stored
             : fresh(String(body.room), { ...stored.options, limit: 16 });
         const r = restore(String(body.room), data),

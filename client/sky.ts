@@ -106,7 +106,7 @@ export class Sky {
       theme.kind === 0 ? 0x719fc4 : theme.kind === 2 ? 0x6aa5d1 : 0x498fc7,
     );
     u.horizon.value.setHex(
-      theme.kind === 0 ? 0xf0c39c : theme.kind === 2 ? 0xe2ecf1 : 0xc9dce4,
+      theme.kind === 0 ? 0xf0c39c : theme.kind === 2 ? 0xc5dae8 : 0xc9dce4,
     );
     u.sunColor.value.setHex(theme.kind === 0 ? 0xffd69b : 0xffedd1);
     u.cloudCoverage.value = theme.kind === 2 ? 0.49 : 0.56;

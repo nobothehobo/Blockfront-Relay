@@ -51,3 +51,36 @@ test("elimination camera shows body from outside and stays on the visible side o
     );
   }
 });
+
+test("contact shadows follow presented player position instead of an ahead-of-render snapshot", async () => {
+  const THREE = await import("three");
+  const { ContactShadows } = await import("../client/contact-shadows.js");
+  const world = new World(1, false);
+  const shadows = new ContactShadows();
+  const group = new THREE.Group();
+  group.position.set(50.5, 1.01, 52.5);
+  const player = { id: "npc", x: 60.5, y: 1.01, z: 52.5, dead: 0 } as any;
+  shadows.update(
+    world,
+    [player],
+    true,
+    "viewer",
+    new Map([[player.id, { group }]]),
+  );
+  const matrix = new THREE.Matrix4();
+  shadows.mesh.getMatrixAt(0, matrix);
+  const position = new THREE.Vector3().setFromMatrixPosition(matrix);
+  assert.equal(position.x, group.position.x);
+  assert.equal(position.z, group.position.z);
+  group.visible = false;
+  shadows.update(
+    world,
+    [player],
+    true,
+    "viewer",
+    new Map([[player.id, { group }]]),
+  );
+  assert.equal(shadows.mesh.count, 0);
+  shadows.mesh.geometry.dispose();
+  shadows.material.dispose();
+});

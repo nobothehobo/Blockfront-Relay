@@ -1188,3 +1188,46 @@ body.touch #class-hud {
     max-width: 146px;
   }
 }
+
+/* Safari browser chrome can leave a very short landscape game viewport. */
+@media (orientation: landscape) and (max-height: 600px) {
+  body.touch #weapon-hud {
+    top: max(72px, calc(env(safe-area-inset-top) + 62px));
+    bottom: auto;
+    right: max(14px, env(safe-area-inset-right));
+    max-width: 120px;
+    padding: 5px 8px;
+    background: #102c38d9;
+    border-radius: 8px;
+  }
+  body.touch #weapon-hud #ammo {
+    font-size: 1.25rem;
+  }
+  body.touch #weapon-hud #weapon-name {
+    font-size: 0.6rem;
+  }
+  body.touch #weapon-hud #protection {
+    font-size: 0.55rem;
+  }
+  body.touch #match-note {
+    display: none;
+  }
+  body.touch #match {
+    max-width: 200px;
+  }
+  body.touch #class-hud {
+    top: 155px;
+    padding: 6px 9px;
+  }
+  body.touch #objective-hud {
+    top: 119px;
+    font-size: 0.6rem;
+    max-width: 155px;
+  }
+  body.touch #minimap:not(.expanded) {
+    left: max(170px, calc(env(safe-area-inset-left) + 160px));
+    right: auto;
+    top: max(18px, env(safe-area-inset-top));
+    width: clamp(64px, 10vw, 92px);
+  }
+}

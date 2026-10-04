@@ -267,6 +267,25 @@ export function thinkBot(p: Player, arena: Arena): Input {
     }
     strafe = (brain.side ?? 1) * 0.55;
   }
+  if (travel) {
+    let awayX = 0,
+      awayZ = 0;
+    for (const other of arena.players.values()) {
+      if (other.id === p.id || other.dead > 0 || Math.abs(other.y - p.y) > 1.5)
+        continue;
+      const dx = p.x - other.x,
+        dz = p.z - other.z;
+      const length = Math.hypot(dx, dz);
+      if (length > 0.01 && length < 1.1) {
+        awayX += (dx / length) * (1.1 - length) * 0.5;
+        awayZ += (dz / length) * (1.1 - length) * 0.5;
+      }
+    }
+    if (walkHeight(arena.world, p.x + awayX, p.z + awayZ, p.y) !== null) {
+      forward += -Math.sin(yaw) * awayX - Math.cos(yaw) * awayZ;
+      strafe += Math.cos(yaw) * awayX - Math.sin(yaw) * awayZ;
+    }
+  }
   const steerX = -Math.sin(yaw) * forward + Math.cos(yaw) * strafe;
   const steerZ = -Math.cos(yaw) * forward - Math.sin(yaw) * strafe;
   if (
@@ -290,6 +309,15 @@ export function thinkBot(p: Player, arena: Arena): Input {
         Math.hypot(v.x - p.x - dx * along, v.z - p.z - dz * along) < 0.65
       );
     });
+  // Do not hold jump through landings: try once, then give walking/routing time.
+  const moving = Math.hypot(forward, strafe) > 0.2;
+  const jump =
+    moving &&
+    p.ground &&
+    brain.stuck > 0.5 &&
+    !!front &&
+    arena.time >= (brain.nextJump ?? 0);
+  if (jump) brain.nextJump = arena.time + 1.35;
   return {
     ...emptyInput(),
     seq: p.lastSeq + 1,
@@ -299,7 +327,7 @@ export function thinkBot(p: Player, arena: Arena): Input {
     forward,
     strafe,
     sprint: !attack && !retreat,
-    jump: (!!front && !brain.route?.length) || brain.stuck > 0.5,
+    jump,
     dig: tool,
     jet: p.jetpack && !!front && brain.stuck > 0.8 && p.fuel > 30,
     aim: attack && !p.zombie && !retreat,

@@ -194,6 +194,7 @@ export type Player = Body & {
     routeGoal?: Vec;
     side?: number;
     nextStrafe?: number;
+    nextJump?: number;
     role?: string;
   };
   pendingActions?: Partial<Input>;
@@ -206,7 +207,7 @@ export type Player = Body & {
 };
 export const palette = [
   0, 0x78ae42, 0x997044, 0x78828a, 0x77503b, 0x467f34, 0xead2a0, 0x259ca8,
-  0xd95c39, 0xe4dba9, 0xd2ad53, 0xb58a56, 0xab8261, 0x7b9253, 0xe9f0ed,
+  0xd95c39, 0xe4dba9, 0xd2ad53, 0xb58a56, 0xab8261, 0x7b9253, 0xd0dce2,
   0x8d989c, 0x6d8396, 0x96c5b0, 0xc8cbd0, 0x414d5b, 0xad7149, 0x809881,
 ];
 export const basePosition = (team: number): Vec => ({

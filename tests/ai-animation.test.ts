@@ -123,3 +123,47 @@ test("articulated animation alternates feet and supports grounded, aiming, reloa
   assert.ok(playerPose(1, 0, true, false, true, false, 0).recoil > 0);
   assert.ok(playerPose(1, 0, true, true, false, false, 1).rightArm > 0.5);
 });
+
+test("navigation recognizes one-block ascents from physics-settled feet", () => {
+  const { world } = setup();
+  for (let x = 40; x < 48; x++)
+    for (let z = 40; z < 48; z++) {
+      for (let y = 1; y < 13; y++) world.set(x, y, z, 3);
+      if (x >= 43) world.set(x, 13, z, 3);
+    }
+  assert.equal(walkHeight(world, 43.5, 43.5, 12.987777777), 14.01);
+  const route = planRoute(
+    world,
+    { x: 42.5, y: 12.987777777, z: 43.5 },
+    { x: 45.5, y: 14.01, z: 43.5 },
+  );
+  assert.ok(route.some((p) => p.y === 14.01));
+  assert.ok(route.at(-1)!.x >= 45);
+});
+test("stuck NPC jump is grounded and throttled across repeated think cycles", () => {
+  const { room, world, human, bot } = setup();
+  for (let x = 77; x < 84; x++)
+    for (let y = 1; y < 5; y++) world.set(x, y, 99, 3);
+  bot.brain = {
+    nextThink: 0,
+    lastX: bot.x,
+    lastZ: bot.z,
+    stuck: 1,
+    target: human.id,
+    acquired: 0,
+    lastSeen: { x: human.x, y: human.y, z: human.z },
+    seenAt: 1,
+  };
+  bot.input = { ...emptyInput(), forward: 1 };
+  room.time = 1;
+  assert.equal(thinkBot(bot, room).jump, true);
+  room.time = 1.25;
+  assert.equal(
+    thinkBot(bot, room).jump,
+    false,
+    "held jump cannot immediately retrigger on landing",
+  );
+  room.time = 2.5;
+  bot.ground = false;
+  assert.equal(thinkBot(bot, room).jump, false, "no mid-air wall pogo");
+});

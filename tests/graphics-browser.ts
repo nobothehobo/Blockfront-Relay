@@ -305,6 +305,32 @@ try {
   await phone.screenshot({ path: "artifacts/fieldcraft-phone.png" });
   await phone.setViewportSize({ width: 1024, height: 768 });
   await phone.screenshot({ path: "artifacts/fieldcraft-tablet.png" });
+  for (const viewport of [
+    { width: 1024, height: 352 },
+    { width: 844, height: 390 },
+  ]) {
+    await phone.setViewportSize(viewport);
+    await phone.waitForTimeout(150);
+    const ammo = (await phone.locator("#weapon-hud").boundingBox())!;
+    for (const selector of [
+      "#hud-top",
+      '[data-action="fire"]',
+      '[data-action="aim"]',
+      '[data-action="jet"]',
+    ]) {
+      const other = (await phone.locator(selector).boundingBox())!;
+      assert.ok(
+        ammo.x + ammo.width <= other.x ||
+          ammo.x >= other.x + other.width ||
+          ammo.y + ammo.height <= other.y ||
+          ammo.y >= other.y + other.height,
+        `ammo leaves ${selector} accessible at ${viewport.width}x${viewport.height}`,
+      );
+    }
+    await phone.screenshot({
+      path: `artifacts/hud-landscape-${viewport.height}.png`,
+    });
+  }
   await phone.close();
   await b.close();
   // Zoom in using real movement to inspect original faces, equipment and silhouettes.
@@ -330,6 +356,44 @@ try {
   await a.waitForFunction(() => (window as any).BR.player.z < 163);
   await a.waitForTimeout(600);
   await a.screenshot({ path: "artifacts/fieldcraft-zombies.png" });
+  // Same authoritative courtyard under a snow palette: preserve surface contrast.
+  room.world.seed = room.options.seed = 7238;
+  for (let x = 148; x <= 176; x++)
+    for (let z = 144; z <= 185; z++) room.world.blocks[idx(x, 12, z)] = 14;
+  room.broadcast({
+    type: "map",
+    seed: 7238,
+    map: room.world.encode(),
+    revision: room.revision,
+  });
+  await a.waitForFunction(() => (window as any).BR.lighting.exposure === 0.9);
+  await a.waitForTimeout(800);
+  const snowPixel = await a.evaluate(
+    () =>
+      new Promise<number[]>((resolve) =>
+        requestAnimationFrame(() => {
+          const canvas = document.querySelector("#game") as HTMLCanvasElement;
+          const gl = canvas.getContext("webgl2")!;
+          const rgba = new Uint8Array(4);
+          gl.readPixels(
+            Math.floor(canvas.width * 0.25),
+            Math.floor(canvas.height * 0.16),
+            1,
+            1,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            rgba,
+          );
+          resolve(Array.from(rgba));
+        }),
+      ),
+  );
+  assert.ok(
+    snowPixel.slice(0, 3).every((v) => v > 40 && v < 245),
+    `snow surface retains highlight headroom: ${snowPixel}`,
+  );
+  await a.screenshot({ path: "artifacts/snow-lighting.png" });
+  console.log("Snow ground sRGB sample", snowPixel);
   room.options.mode = "infection";
   await a.waitForFunction(() => (window as any).BR.state.mode === "infection");
   room.broadcast({
@@ -338,7 +402,7 @@ try {
     map: room.world.encode(),
     revision: room.revision,
   });
-  await a.waitForFunction(() => (window as any).BR.lighting.sun < 2);
+  await a.waitForFunction(() => (window as any).BR.lighting.sun === 1.4);
   await a.waitForFunction(
     () =>
       (window as any).BR.map.tilesLeft === 0 && (window as any).BR.chunks > 100,

@@ -18,23 +18,34 @@ export class ContactShadows {
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.mesh.count = 0;
   }
-  update(world: World, players: Player[], enabled: boolean, localId: string) {
+  update(
+    world: World,
+    players: Player[],
+    enabled: boolean,
+    localId: string,
+    presented?: ReadonlyMap<string, { group: THREE.Object3D }>,
+  ) {
     this.mesh.visible = enabled;
     if (!enabled) return;
     let count = 0;
     for (const p of players) {
       if (p.id === localId || p.dead > 0 || count >= 32) continue;
-      let y = Math.floor(p.y - 0.02);
+      const group = presented?.get(p.id)?.group;
+      if (group && !group.visible) continue;
+      const body = group?.position ?? p;
+      let y = Math.floor(body.y - 0.02);
       while (
         y > 0 &&
-        p.y - y < 10 &&
-        !world.get(Math.floor(p.x), y, Math.floor(p.z))
+        body.y - y < 10 &&
+        !world.get(Math.floor(body.x), y, Math.floor(body.z))
       )
         y--;
-      if (p.y - y >= 10) continue;
-      this.transform.position.set(p.x, y + 1.015, p.z);
+      if (body.y - y >= 10) continue;
+      this.transform.position.set(body.x, y + 1.015, body.z);
       this.transform.rotation.set(-Math.PI / 2, 0, 0);
-      this.transform.scale.setScalar(Math.max(0.35, 1 - (p.y - y - 1) * 0.08));
+      this.transform.scale.setScalar(
+        Math.max(0.35, 1 - (body.y - y - 1) * 0.08),
+      );
       this.transform.updateMatrix();
       this.mesh.setMatrixAt(count++, this.transform.matrix);
     }

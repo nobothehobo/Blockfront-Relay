@@ -50,7 +50,7 @@ import { FortificationView } from "./fortification-view.js";
 import { weaponPose } from "./weapon-pose.js";
 import { BattlefieldView, WaterSurface } from "./battlefield-view.js";
 import { ContactShadows } from "./contact-shadows.js";
-import { shadowQuality } from "./lighting.js";
+import { shadowQuality, sceneLighting } from "./lighting.js";
 import { GearView } from "./gear-view.js";
 import { gearInfo } from "../shared/gear.js";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
@@ -232,9 +232,11 @@ function applyTheme(mode = state?.mode) {
   sun.color.setHex(
     outbreak ? 0xc7d8e5 : theme.kind === 0 ? 0xffdfad : 0xfff0d5,
   );
-  sun.intensity = outbreak ? 1.55 : 2.8;
-  ambient.intensity = outbreak ? 0.7 : 0.85;
-  bounce.intensity = outbreak ? 0.25 : 0.45;
+  const lighting = sceneLighting(theme.kind, outbreak);
+  renderer.toneMappingExposure = lighting.exposure;
+  sun.intensity = lighting.sun;
+  ambient.intensity = lighting.ambient;
+  bounce.intensity = lighting.bounce;
   ambient.groundColor.setHex(
     theme.kind === 2 ? 0x9aa6bc : theme.kind === 0 ? 0x9f8666 : 0x899a6c,
   );
@@ -892,7 +894,12 @@ function handleState(next: any) {
       remote.set(rp.id, r);
     }
     // Never interpolate through a respawn or a round's spawn relocation.
-    if (r.target.epoch !== rp.epoch) r.samples.length = 0;
+    if (r.target.epoch !== rp.epoch) {
+      r.samples.length = 0;
+      r.group.userData.rig.phase = 0;
+      r.group.userData.rig.leftLeg.rotation.x = 0;
+      r.group.userData.rig.rightLeg.rotation.x = 0;
+    }
     r.target = rp;
     r.samples.push({ ...rp, at: next.time * 1000 });
     if (r.samples.length > 16) r.samples.shift();
@@ -2021,6 +2028,8 @@ function frame(now: number) {
       const a = r.samples[0] ?? r.target,
         b = r.samples[1] ?? a,
         t = Math.max(0, Math.min(1, (renderAt - a.at) / (b.at - a.at || 1)));
+      const oldX = r.group.position.x,
+        oldZ = r.group.position.z;
       r.group.position.set(
         THREE.MathUtils.lerp(a.x, b.x, t),
         THREE.MathUtils.lerp(a.y, b.y, t),
@@ -2030,33 +2039,64 @@ function frame(now: number) {
       r.group.rotation.y = a.yaw + diff * t;
       r.group.scale.y = r.target.crouch ? 0.68 : 1;
       const rig = r.group.userData.rig;
-      const speed = Math.hypot(
-        THREE.MathUtils.lerp(a.vx ?? 0, b.vx ?? 0, t),
-        THREE.MathUtils.lerp(a.vz ?? 0, b.vz ?? 0, t),
+      // Animate distance actually presented, not stale velocity during a stalled snapshot.
+      const distanceMoved = Math.hypot(
+        r.group.position.x - oldX,
+        r.group.position.z - oldZ,
       );
+      const speed =
+        distanceMoved < 1
+          ? Math.min(12, distanceMoved / Math.max(dt, 0.001))
+          : 0;
       rig.phase += dt * speed * 2.1;
       const pose = playerPose(
         rig.phase,
         speed,
-        r.target.ground,
+        (t < 0.5 ? a : b).ground,
         r.target.zombie,
-        r.target.aim,
-        r.target.reload > 0,
+        (t < 0.5 ? a : b).aim,
+        (t < 0.5 ? a : b).reload > 0,
         (now - (r.group.userData.shotAt ?? -10000)) / 1000,
       );
-      rig.leftLeg.rotation.x = pose.leftLeg;
-      rig.rightLeg.rotation.x = pose.rightLeg;
-      rig.leftArm.rotation.x = pose.leftArm + r.target.pitch * 0.5;
-      rig.rightArm.rotation.x = pose.rightArm + r.target.pitch * 0.5;
-      rig.head.rotation.x = r.target.pitch * 0.5;
-      rig.root.position.y = pose.bob;
-      rig.torso.rotation.x = pose.lean;
+      const blend = 1 - Math.exp(-dt * 18);
+      rig.leftLeg.rotation.x = THREE.MathUtils.lerp(
+        rig.leftLeg.rotation.x,
+        pose.leftLeg,
+        blend,
+      );
+      rig.rightLeg.rotation.x = THREE.MathUtils.lerp(
+        rig.rightLeg.rotation.x,
+        pose.rightLeg,
+        blend,
+      );
+      const lookPitch = THREE.MathUtils.lerp(a.pitch, b.pitch, t);
+      rig.leftArm.rotation.x = THREE.MathUtils.lerp(
+        rig.leftArm.rotation.x,
+        pose.leftArm + lookPitch * 0.5,
+        blend,
+      );
+      rig.rightArm.rotation.x = THREE.MathUtils.lerp(
+        rig.rightArm.rotation.x,
+        pose.rightArm + lookPitch * 0.5,
+        blend,
+      );
+      rig.head.rotation.x = lookPitch * 0.5;
+      rig.root.position.y = THREE.MathUtils.lerp(
+        rig.root.position.y,
+        pose.bob,
+        blend,
+      );
+      rig.torso.rotation.x = THREE.MathUtils.lerp(
+        rig.torso.rotation.x,
+        pose.lean,
+        blend,
+      );
       r.group.visible =
         r.target.dead <= 0 &&
         r.group.position.distanceTo(camera.position) < settings.distance;
       if (r.group.userData.gun) {
         r.group.userData.gun.visible = isFirearm(r.target.weapon);
-        r.group.userData.gun.rotation.x = r.target.pitch * 0.5 - 0.35;
+        r.group.userData.gun.rotation.x = lookPitch * 0.5 - 0.35;
       }
       for (const flame of r.group.userData.flames ?? [])
         flame.visible = r.target.jetpack && a.fuel > b.fuel && r.target.vy > 0;
@@ -2132,6 +2172,7 @@ function frame(now: number) {
     connected ? (state?.players ?? []) : [],
     settings.shadows,
     id,
+    remote,
   );
   if (connected && state && local) battlefield.update(state, local, now / 1000);
   sound.updateJets(

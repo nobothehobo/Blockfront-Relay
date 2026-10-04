@@ -1,7 +1,11 @@
 import { World, Vec, collides } from "../shared/game.js";
 // Bounded local A*: one-block ascents, safe drops; no global navmesh or teleporting.
 export function walkHeight(world: World, x: number, z: number, fromY: number) {
-  for (let y = Math.floor(fromY) + 1; y >= Math.floor(fromY) - 3; y--)
+  for (
+    let y = Math.floor(fromY + 0.05) + 1;
+    y >= Math.floor(fromY + 0.05) - 3;
+    y--
+  )
     if (world.get(x, y - 1, z) && !collides(world, x, y + 0.01, z))
       return y + 0.01;
   return null;

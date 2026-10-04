@@ -134,6 +134,31 @@ test("a stalled transport does not mutate the acknowledged movement body", () =>
     body,
   );
 });
+test("diagonal step-up cannot climb two voxel levels in one tick", () => {
+  const { player, world } = setup();
+  Object.assign(player, {
+    x: 40.65,
+    y: 1.001,
+    z: 40.65,
+    vx: 7,
+    vz: 7,
+    vy: 0,
+    ground: true,
+  });
+  world.set(41, 1, 40, 3);
+  world.set(41, 1, 41, 3);
+  world.set(41, 2, 41, 3);
+  move(
+    player,
+    { ...emptyInput(), strafe: 1, forward: -1 },
+    world,
+    TICK,
+    false,
+    false,
+  );
+  assert.ok(player.y > 1.5, "fixture reaches first step");
+  assert.ok(player.y <= 2.001, "second horizontal axis cannot climb again");
+});
 test("input flooding cannot create extra simulation time, and old spawn commands are rejected", () => {
   const { room, player } = setup();
   for (let frame = 0; frame < 30; frame++) {

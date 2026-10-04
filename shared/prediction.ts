@@ -1,4 +1,5 @@
 import { Body, Input, World, TICK, move } from "./game.js";
+import { KITS } from "./fortifications.js";
 export type Command = Input;
 export function sanitizeInput(raw: unknown): Input | null {
   if (!raw || typeof raw !== "object") return null;
@@ -23,10 +24,18 @@ export function sanitizeInput(raw: unknown): Input | null {
     dig: r.dig === true,
     grenade: r.grenade === true,
     buildKit:
-      Number.isInteger(r.buildKit) && r.buildKit >= 0 && r.buildKit < 4
+      Number.isInteger(r.buildKit) &&
+      r.buildKit >= 0 &&
+      r.buildKit < KITS.length
         ? r.buildKit
         : 0,
     ability: r.ability === true,
+    viewTime:
+      typeof r.viewTime === "number" &&
+      Number.isFinite(r.viewTime) &&
+      r.viewTime >= 0
+        ? r.viewTime
+        : undefined,
     classId:
       Number.isInteger(r.classId) && r.classId >= 0 && r.classId < 4
         ? r.classId

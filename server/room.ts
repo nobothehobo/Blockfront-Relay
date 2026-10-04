@@ -2,6 +2,7 @@ import { basePosition, mapTheme, nextMapSeed } from "../shared/game.js";
 import { sectors, supplies, Sector } from "../shared/battlefield.js";
 import { thinkBot } from "./bots.js";
 import { sanitizeInput } from "../shared/prediction.js";
+import { HitHistory, HitPose } from "./rewind.js";
 import {
   CLASSES,
   classInfo,
@@ -55,6 +56,7 @@ export type RoomOptions = {
   target?: number;
   bots?: number;
   arsenal?: "sandbox" | "specialists";
+  rewind?: boolean;
 };
 export class Room {
   world: World;
@@ -84,6 +86,7 @@ export class Room {
   supplyStations = supplies();
   controlClock = 0;
   lastBroadcast = 0;
+  hitHistory = new HitHistory();
   limit: number;
   duration: number;
   target: number;
@@ -473,6 +476,7 @@ export class Room {
   state() {
     return {
       time: this.time,
+      lagCompensation: this.options.rewind === true,
       remaining: this.remaining,
       phase: this.phase,
       warmup: this.warmup,
@@ -720,6 +724,8 @@ export class Room {
         }
       }
     }
+    if (this.options.rewind)
+      this.hitHistory.record(this.time, this.players.values());
     if (this.time - this.lastBroadcast >= 0.099) {
       this.lastBroadcast = this.time;
       this.broadcast({
@@ -784,6 +790,15 @@ export class Room {
       return;
     }
     const damage = new Map<Player, number>();
+    const poses = new Map<Player, HitPose>();
+    for (const v of this.players.values())
+      if (v.id !== p.id && v.dead <= 0 && v.team !== p.team)
+        poses.set(
+          v,
+          this.options.rewind && !p.bot && isFirearm(p.weapon)
+            ? this.hitHistory.pose(v, p.input.viewTime, this.time)
+            : v,
+        );
     const headshots = new Set<Player>();
     const traces: Vec[] = [];
     for (let n = 0; n < w.pellets; n++) {
@@ -802,13 +817,16 @@ export class Room {
       d.z /= length;
       let distance = ray(this.world, origin, d, w.range)?.distance ?? w.range;
       let target: Player | undefined;
-      for (const v of this.players.values()) {
-        if (v.id === p.id || v.dead > 0 || v.team === p.team) continue;
+      for (const [v, pose] of poses) {
         const hit = rayBox(
           origin,
           d,
-          { x: v.x - 0.33, y: v.y, z: v.z - 0.33 },
-          { x: v.x + 0.33, y: v.y + (v.crouch ? 1.15 : 1.75), z: v.z + 0.33 },
+          { x: pose.x - 0.33, y: pose.y, z: pose.z - 0.33 },
+          {
+            x: pose.x + 0.33,
+            y: pose.y + (pose.crouch ? 1.15 : 1.75),
+            z: pose.z + 0.33,
+          },
         );
         if (hit < distance) {
           distance = hit;
@@ -818,7 +836,8 @@ export class Room {
       if (target) {
         const head =
           isFirearm(p.weapon) &&
-          origin.y + d.y * distance >= target.y + (target.crouch ? 0.9 : 1.4);
+          origin.y + d.y * distance >=
+            poses.get(target)!.y + (poses.get(target)!.crouch ? 0.9 : 1.4);
         if (head) headshots.add(target);
         damage.set(
           target,

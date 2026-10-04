@@ -27,6 +27,7 @@ export type Input = {
   ability?: boolean;
   classId?: number;
   buildKit?: number;
+  viewTime?: number;
 };
 export const emptyInput = (): Input => ({
   seq: 0,
@@ -631,12 +632,14 @@ export function move(
     p.fuel = Math.max(0, p.fuel - 30 * dt);
   } else p.fuel = Math.min(100, p.fuel + (p.ground ? 23 : 10) * dt);
   p.vy = Math.max(-28, p.vy - 20 * dt);
+  let stepped = false;
   for (const axis of ["x", "z"] as const) {
     const step = p[axis === "x" ? "vx" : "vz"] * dt;
     p[axis] += step;
     if (collides(w, p.x, p.y, p.z, h)) {
-      if (p.ground && !collides(w, p.x, p.y + 1, p.z, h)) {
+      if (!stepped && p.ground && !collides(w, p.x, p.y + 1, p.z, h)) {
         p.y += 1;
+        stepped = true;
       } else {
         p[axis] -= step;
         p[axis === "x" ? "vx" : "vz"] = 0;

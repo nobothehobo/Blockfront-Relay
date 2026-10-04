@@ -212,11 +212,32 @@ test("build inputs use the server ray and cannot place a kit without reachable t
   a.pitch = 0.5;
   r.edit(a, true);
   assert.equal(r.revision, 6);
-  for (const bad of [-1, 4, 1.5, "1", NaN, Infinity])
+  for (const bad of [-1, KITS.length, 1.5, "1", NaN, Infinity])
     assert.equal(
       sanitizeInput({ ...emptyInput(), buildKit: bad })!.buildKit,
       0,
     );
+});
+test("bridge selected through ordinary sanitized input builds 48 synchronized cells", () => {
+  const { r, a, aPackets, bPackets } = fixture();
+  const blocks = a.blocks;
+  r.input(a.id, {
+    ...emptyInput(),
+    seq: 1,
+    yaw: a.yaw,
+    pitch: a.pitch,
+    weapon: 5,
+    buildKit: 4,
+  });
+  r.edit(a, true);
+  assert.equal(a.blocks, blocks - 48);
+  assert.equal(r.revision, 48);
+  const edits = aPackets.find((p) => p.type === "edits");
+  assert.equal(edits.edits.length, 48);
+  assert.deepEqual(
+    edits,
+    bPackets.find((p) => p.type === "edits"),
+  );
 });
 test("specialist rooms enforce weapons, spawn primaries and class-owned jetpacks while sandbox stays compatible", () => {
   const { r, a } = fixture(true);

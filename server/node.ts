@@ -4,6 +4,10 @@ import path from "node:path";
 import { WebSocketServer, WebSocket } from "ws";
 import { Room, RoomOptions } from "./room.js";
 import { randomUUID } from "node:crypto";
+import { performance } from "node:perf_hooks";
+const tickSamples: { cost: number; gap: number }[] = [];
+let previousTick = performance.now();
+const rewind = process.env.REWIND_ENABLED !== "false";
 const rooms = new Map<string, Room>();
 for (const [id, mode, jet] of [
   ["valley", "tdm", "all"],
@@ -28,6 +32,7 @@ for (const [id, mode, jet] of [
       mode,
       jet,
       seed: 7231,
+      rewind,
       arsenal:
         mode === "frontline" || mode === "demolition"
           ? "specialists"
@@ -68,6 +73,27 @@ const app = http.createServer(async (req, res) => {
   if (url.pathname === "/api/health")
     return json(200, {
       ok: true,
+      transport: "ws",
+      lagCompensation: rewind,
+      maxRewindMs: rewind ? 200 : 0,
+      tick: {
+        hz: 30,
+        samples: tickSamples.length,
+        averageMs:
+          tickSamples.reduce((n, s) => n + s.cost, 0) /
+          (tickSamples.length || 1),
+        maxMs: Math.max(0, ...tickSamples.map((s) => s.cost)),
+        lateTicks: tickSamples.filter((s) => s.gap > 50).length,
+        queuedCommands: [...rooms.values()].reduce(
+          (n, r) =>
+            n +
+            [...r.players.values()].reduce(
+              (m, p) => m + (p.commands?.length ?? 0),
+              0,
+            ),
+          0,
+        ),
+      },
       rooms: rooms.size,
       players: [...rooms.values()].reduce((n, r) => n + r.players.size, 0),
     });
@@ -99,6 +125,7 @@ const app = http.createServer(async (req, res) => {
           limit: Math.max(2, Math.min(32, Number(o.limit) || 32)),
           bots: Math.max(0, Math.min(8, Number(o.bots) || 0)) | 0,
           duration: Math.max(120, Math.min(900, Number(o.duration) || 300)),
+          rewind,
         };
       rooms.set(id, new Room(id, options));
       return json(201, { id });
@@ -163,7 +190,11 @@ app.on("upgrade", (req, socket, head) => {
     const id = randomUUID();
     let messages = 0,
       windowStart = Date.now(),
-      lastInput = Date.now();
+      lastInput = Date.now(),
+      alive = true;
+    ws.on("pong", () => {
+      alive = true;
+    });
     r.add(
       id,
       url.searchParams.get("name") ?? "Builder",
@@ -203,6 +234,11 @@ app.on("upgrade", (req, socket, head) => {
         ws.close(1008, "Invalid message");
       }
     });
+    const heartbeat = setInterval(() => {
+      if (!alive) return ws.terminate();
+      alive = false;
+      ws.ping();
+    }, 15000);
     const timeout = setInterval(() => {
       if (Date.now() - lastInput > 1500) {
         const p = r.players.get(id);
@@ -222,13 +258,21 @@ app.on("upgrade", (req, socket, head) => {
     }, 1000);
     ws.on("close", () => {
       clearInterval(timeout);
+      clearInterval(heartbeat);
       r.remove(id);
     });
     ws.on("error", () => {});
   });
 });
 setInterval(() => {
+  const start = performance.now();
   for (const r of rooms.values()) r.tick();
+  tickSamples.push({
+    cost: performance.now() - start,
+    gap: start - previousTick,
+  });
+  previousTick = start;
+  if (tickSamples.length > 600) tickSamples.shift();
 }, 1000 / 30);
 app.listen(
   Number(process.env.PORT ?? 3000),

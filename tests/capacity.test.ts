@@ -80,6 +80,15 @@ test(
       await new Promise((resolve) => setTimeout(resolve, 1200));
       assert.equal(players.length, 32);
       assert.ok(players.every((p) => p.ack > 20 && p.states >= 5));
+      const health = (await fetch("http://127.0.0.1:3103/api/health").then(
+        (r) => r.json(),
+      )) as any;
+      assert.equal(health.transport, "ws");
+      assert.equal(health.lagCompensation, true);
+      assert.equal(health.maxRewindMs, 200);
+      assert.ok(health.tick.samples > 0 && health.tick.samples <= 600);
+      assert.ok(Number.isFinite(health.tick.averageMs));
+      assert.ok(health.tick.queuedCommands >= 0);
       console.log(
         "Verified 32 connected WebSocket clients, with movement acknowledgments and state delivery to every client",
       );

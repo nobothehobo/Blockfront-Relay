@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.2 — Frontlines.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.3 — Strongholds.**
+
+**New:** Stronghold Demolition, bounded authoritative structural collapse, Sapper terrain breaches, a bridge construction kit, precision headshots, four traversable foundry buildings, and optional desktop terrain shadows. See [2.3 release notes and limits](docs/UPDATE-23.md). Reload/rejoin after upgrading; hosted rounds reset for the new geometry.
 
 Source: [nobothehobo/Blockfront-Relay](https://github.com/nobothehobo/Blockfront-Relay).
 
@@ -124,7 +126,9 @@ Build the hosted artifact with `npm run build:hosted`. `.openai/hosting.json` de
 
 1 Rifle · 2 SMG · 3 Shotgun · 4 Marksman · 5 Spade · 6 Blocks · 7 Blast launcher. Digging yields blocks, up to 200; class loadouts determine starting reserves. Terrain edits reach six blocks; zombies dig seven blocks away. The bottom layer and a small spawn foundation are protected, including against explosions. Placement inside living players is rejected. Edits last until the next round, and late joiners receive the current edited map. Zombies cannot use explosives or class abilities.
 
-Settings save locally: quality preset, render distance, effects, FOV, master/effects volume, desktop/touch sensitivity, touch control scale, invert look and crosshair. Dynamic shadows, background music, controller support and custom keyboard bindings are not implemented.
+Construction kits include a cover wall, ramp, shelter and eight-block bridge. Sapper's ability also breaches nearby terrain along the aim ray.
+
+Settings save locally: quality preset, render distance, effects, FOV, master/effects volume, desktop/touch sensitivity, touch control scale, invert look and crosshair. Optional nearby terrain shadows run on desktop; touch devices use cheaper contact shadows. Background music, controller support and custom keyboard bindings are not implemented.
 
 ## Source layout
 

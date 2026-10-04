@@ -24,6 +24,7 @@ import {
   D,
   mapTheme,
   isFirearm,
+  palette,
 } from "../shared/game.js";
 import { MiniMap } from "./minimap.js";
 import { stickInput, touchLookGain } from "./control-math.js";
@@ -162,6 +163,9 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setClearColor(0xa9c3bd);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.12;
+renderer.shadowMap.enabled = settings.shadows && !touch;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate = false;
 const scene = new THREE.Scene();
 const combatFX = new CombatFX(scene);
 const fortifications = new FortificationView(scene);
@@ -171,7 +175,17 @@ const ambient = new THREE.HemisphereLight(0xe4efff, 0x899a6c, 1.65);
 scene.add(ambient);
 const sun = new THREE.DirectionalLight(0xffe8bf, 2.2);
 sun.position.set(-48, 64, -60);
+sun.castShadow = true;
+sun.shadow.mapSize.set(512, 512);
+sun.shadow.camera.left = sun.shadow.camera.bottom = -32;
+sun.shadow.camera.right = sun.shadow.camera.top = 32;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 150;
+sun.shadow.bias = -0.0006;
+sun.shadow.normalBias = 0.08;
 scene.add(sun);
+scene.add(sun.target);
+let lastShadow = 0;
 const camera = new THREE.PerspectiveCamera(
   settings.fov,
   innerWidth / innerHeight,
@@ -478,6 +492,8 @@ function makePlayer(p: any) {
     merged,
     new THREE.MeshLambertMaterial({ vertexColors: true }),
   );
+  body.castShadow = true;
+  body.receiveShadow = true;
   body.add(root);
   g.add(body);
   g.updateMatrixWorld(true);
@@ -578,6 +594,8 @@ function applySettings() {
   camera.fov = settings.fov;
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
+  renderer.shadowMap.enabled = settings.shadows && !touch;
+  renderer.shadowMap.needsUpdate = true;
   (scene.fog as THREE.Fog).near = settings.distance * 0.45;
   (scene.fog as THREE.Fog).far = settings.distance + 12;
   document.documentElement.style.setProperty(
@@ -688,7 +706,7 @@ async function refreshRooms() {
       const title = document.createElement("strong");
       title.textContent = r.name;
       const meta = document.createElement("small");
-      meta.textContent = `${r.bots ? `${r.bots} NPCs · ` : ""}${r.mode === "frontline" ? "Frontline Control" : r.mode === "tdm" ? "Team deathmatch" : r.mode === "relay" ? "Capture the relay" : "Humans vs Zombies"} · ${r.players}/${r.max} players\n${r.map} · ${r.arsenal === "specialists" ? "Specialists" : "Sandbox"} · Jetpacks ${r.jet}`;
+      meta.textContent = `${r.bots ? `${r.bots} NPCs · ` : ""}${r.mode === "demolition" ? "Stronghold Demolition" : r.mode === "frontline" ? "Frontline Control" : r.mode === "tdm" ? "Team deathmatch" : r.mode === "relay" ? "Capture the relay" : "Humans vs Zombies"} · ${r.players}/${r.max} players\n${r.map} · ${r.arsenal === "specialists" ? "Specialists" : "Sandbox"} · Jetpacks ${r.jet}`;
       meta.style.whiteSpace = "pre-line";
       info.append(title, meta);
       const joinButton = document.createElement("button");
@@ -1001,6 +1019,20 @@ function handleEvent(e: any) {
     if (distance < 100)
       sound.play("explosion", Math.max(0.1, 1 - distance / 100));
   }
+  if (e.kind === "collapse")
+    for (const b of e.debris ?? []) {
+      combatFX.particle(
+        { x: b.x + 0.5, y: b.y + 0.5, z: b.z + 0.5 },
+        { x: (Math.random() - 0.5) * 2, y: -2, z: (Math.random() - 0.5) * 2 },
+        0.4,
+        1,
+        palette[b.color] ?? 0x78828a,
+      );
+    }
+  if (e.kind === "breach" && e.pos) {
+    combatFX.explosion(e.pos, camera.position);
+    sound.play("dig", 0.6);
+  }
   if (e.kind === "ability" && e.pos)
     combatFX.particle(e.pos, { x: 0, y: 0.7, z: 0 }, 0.35, 0.4, 0x68d3c7);
   if (e.kind === "hit") {
@@ -1012,6 +1044,10 @@ function handleEvent(e: any) {
       sound.play("damage");
       damageUntil = performance.now() + 220;
     }
+  }
+  if (e.kind === "headshot" && e.id === id) {
+    hitUntil = performance.now() + 220;
+    sound.play("hit", 0.6);
   }
   if (e.id === id && ["dig", "place", "reload", "pickup"].includes(e.kind))
     sound.play(e.kind);
@@ -1039,9 +1075,11 @@ function updateHud() {
       ? "Team deathmatch"
       : mode === "relay"
         ? "Capture the relay"
-        : mode === "frontline"
-          ? "Frontline Control"
-          : "Humans vs Zombies";
+        : mode === "demolition"
+          ? "Stronghold Demolition"
+          : mode === "frontline"
+            ? "Frontline Control"
+            : "Humans vs Zombies";
   $("scores").textContent =
     mode === "infection"
       ? `${state.humans} HUMANS`
@@ -1059,7 +1097,9 @@ function updateHud() {
         ? `${state.players.length - state.humans} infected · Round ${state.round}`
         : mode === "relay"
           ? "First to 3 relays"
-          : `Round ${state.round} · ${state.map} · First to ${state.target ?? 40}`;
+          : mode === "demolition"
+            ? `Round ${state.round} · Destroy 85% of the enemy stronghold`
+            : `Round ${state.round} · ${state.map} · First to ${state.target ?? 40}`;
   $("team-label").textContent = p.zombie
     ? "ZOMBIE"
     : mode === "infection"
@@ -1120,27 +1160,34 @@ function updateHud() {
   show("banner", !!banner);
   $("banner").textContent = banner;
   $("objective-hud").textContent =
-    mode === "frontline"
-      ? (state.controlPoints ?? [])
+    mode === "demolition"
+      ? (state.demolition ?? [])
           .map(
-            (point: any) =>
-              `${point.name}: ${point.contested ? "CONTESTED" : point.progress > 0 ? `${Math.round(point.progress * 100)}%` : point.owner < 0 ? "neutral" : point.owner === 0 ? "Azure" : "Ember"}`,
+            (s: any) =>
+              `${s.team === p.team ? "DEFEND" : "BREACH"}: ${Math.round((s.remaining / s.total) * 100)}% intact`,
           )
           .join(" · ")
-      : mode === "relay"
-        ? state.flags
+      : mode === "frontline"
+        ? (state.controlPoints ?? [])
             .map(
-              (f: any) =>
-                `${f.team === 0 ? "Azure" : "Ember"} relay: ${f.carrier ? (f.carrier === id ? "YOU HAVE IT" : "carried") : f.dropped ? "dropped" : "home"}`,
+              (point: any) =>
+                `${point.name}: ${point.contested ? "CONTESTED" : point.progress > 0 ? `${Math.round(point.progress * 100)}%` : point.owner < 0 ? "neutral" : point.owner === 0 ? "Azure" : "Ember"}`,
             )
             .join(" · ")
-        : mode === "infection"
-          ? p.zombie
-            ? "Infect humans · Hold jump to climb"
-            : "Survive · Build defenses"
-          : state.jet === "pickup"
-            ? "Jetpack beacon at the central bridge"
-            : "";
+        : mode === "relay"
+          ? state.flags
+              .map(
+                (f: any) =>
+                  `${f.team === 0 ? "Azure" : "Ember"} relay: ${f.carrier ? (f.carrier === id ? "YOU HAVE IT" : "carried") : f.dropped ? "dropped" : "home"}`,
+              )
+              .join(" · ")
+          : mode === "infection"
+            ? p.zombie
+              ? "Infect humans · Hold jump to climb"
+              : "Survive · Build defenses"
+            : state.jet === "pickup"
+              ? "Jetpack beacon at the central bridge"
+              : "";
   if ((p.supplyProgress ?? 0) > 0)
     $("objective-hud").textContent +=
       ` · Resupplying ${Math.round(((p.supplyProgress ?? 0) / 3) * 100)}%`;
@@ -1880,6 +1927,15 @@ function frame(now: number) {
       outline.position.set(target.x + 0.5, target.y + 0.5, target.z + 0.5);
     }
     terrain.distance(local.x, local.z, settings.distance);
+    if (renderer.shadowMap.enabled && now - lastShadow > 250) {
+      lastShadow = now;
+      const x = Math.floor(local.x / 8) * 8,
+        z = Math.floor(local.z / 8) * 8;
+      sun.target.position.set(x, local.y, z);
+      sun.position.set(x - 48, local.y + 64, z - 60);
+      sun.target.updateMatrixWorld();
+      renderer.shadowMap.needsUpdate = true;
+    }
     if (now - lastNet > (networkMode === "http" ? 100 : 50)) {
       lastNet = now;
       void sendInput();

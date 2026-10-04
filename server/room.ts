@@ -42,6 +42,7 @@ import {
   Projectile,
   isFirearm,
   demolitionCells,
+  demolitionValue,
 } from "../shared/game.js";
 export type Peer = { send: (data: string) => void; close?: () => void };
 export type RoomOptions = {
@@ -121,7 +122,7 @@ export class Room {
             this.world.blocks[x + W * (z + D * y)] = 0;
         }
       for (const [x, y, z] of cells)
-        this.world.blocks[x + W * (z + D * y)] = team === 0 ? 7 : 8;
+        this.world.blocks[x + W * (z + D * y)] = demolitionValue(team, y);
     }
   }
   demolitionStatus() {
@@ -129,7 +130,9 @@ export class Room {
       team,
       total: cells.length,
       remaining: cells.filter(
-        ([x, y, z]) => this.world.get(x, y, z) === (team === 0 ? 7 : 8),
+        ([x, y, z]) =>
+          this.world.get(x, y, z) === demolitionValue(team, y) ||
+          this.world.get(x, y, z) === (team === 0 ? 7 : 8),
       ).length,
       pos: {
         x: Math.floor(this.base(team).x) + (team === 0 ? 14 : -14),

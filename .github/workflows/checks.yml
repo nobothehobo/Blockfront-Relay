@@ -23,3 +23,4 @@ jobs:
       - run: npm run test:audio
       - run: npm run test:connection
       - run: npm run test:frontline
+      - run: npm run test:strongholds

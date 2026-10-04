@@ -257,9 +257,12 @@ export function demolitionCells(team: number): [number, number, number][] {
   for (let dx = -4; dx <= 4; dx++)
     for (let dz = -4; dz <= 4; dz++)
       for (let y = 13; y <= 20; y++) {
-        const door = dz === -4 && Math.abs(dx) <= 1 && y < 16;
+        const door = Math.abs(dz) === 4 && Math.abs(dx) <= 1 && y < 16;
         const window =
-          Math.abs(dx) === 4 && Math.abs(dz) <= 1 && y >= 16 && y <= 17;
+          ((Math.abs(dx) === 4 && Math.abs(dz) <= 1) ||
+            (Math.abs(dz) === 4 && Math.abs(dx) >= 2 && Math.abs(dx) <= 3)) &&
+          y >= 16 &&
+          y <= 17;
         if (
           !door &&
           !window &&
@@ -269,6 +272,8 @@ export function demolitionCells(team: number): [number, number, number][] {
       }
   return cells;
 }
+export const demolitionValue = (team: number, y: number) =>
+  y === 13 || y === 18 ? (team === 0 ? 7 : 8) : y === 20 ? 6 : 3;
 export class World {
   blocks = new Uint8Array(W * H * D);
   edits = new Map<number, number>();

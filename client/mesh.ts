@@ -221,6 +221,8 @@ export class Terrain {
         old.geometry = geometry;
       } else {
         const mesh = new THREE.Mesh(geometry, this.material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
         mesh.frustumCulled = true;
         this.chunks.set(key, mesh);
         this.group.add(mesh);

@@ -15,6 +15,12 @@ type MapState = {
   jet: string;
   controlPoints?: Sector[];
   supplyStations?: SupplyStation[];
+  demolition?: {
+    team: number;
+    pos: { x: number; z: number };
+    remaining: number;
+    total: number;
+  }[];
   players: Dot[];
   flags: {
     team: number;
@@ -126,6 +132,15 @@ export class MiniMap {
       Math.max(0, Math.min(s, (p.z / D) * s)),
     ];
     const color = (team: number) => (team === 0 ? "#57ded0" : "#ff9d59");
+    if (state.mode === "demolition")
+      for (const fort of state.demolition ?? []) {
+        const [x, z] = point(fort.pos);
+        ctx.fillStyle = color(fort.team);
+        ctx.fillRect(x - 7, z - 7, 14, 14);
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 10px sans-serif";
+        ctx.fillText("D", x - 4, z + 4);
+      }
     for (const team of [0, 1]) {
       const [x, z] = point(basePosition(team));
       ctx.fillStyle = color(team);

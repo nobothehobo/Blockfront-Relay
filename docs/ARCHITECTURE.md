@@ -44,7 +44,15 @@ Optional scouts run in `server/bots.ts`, selecting ordinary movement, aim, fire,
 
 Mobile uses a floating left stick and a larger right fire pad that also captures look drags. Aim/crouch toggle on taps, a named weapon picker replaces cycling, and building opens contextual dig/place buttons with a return-to-gun toggle. Touch pointer capture permits looking/firing while moving independently. Existing local sensitivity and control-scale preferences remain available.
 
-The minimap caches a top-down 320 × 320 terrain image. A three-millisecond tile budget builds it incrementally; block edits dirty only one 16 × 16 tile. Player/objective overlays refresh at 10 Hz. The map uses authoritative terrain and predicted local heading; teammates only are shown. Hosted serialization format 5 resets older rooms on 2.0 deployment because class loadouts and persisted projectiles changed; clients must reload and rejoin.
+The minimap caches a top-down 320 × 320 terrain image. A three-millisecond tile budget builds it incrementally; block edits dirty only one 16 × 16 tile. Player/objective overlays refresh at 10 Hz. The map uses authoritative terrain and predicted local heading; teammates only are shown. Hosted serialization format 7 resets older rooms on 2.5 deployment because the procedural terrain baseline changed; clients must reload and rejoin.
+
+## 2.5 maps, CTF and handling
+
+`mapLayout(seed)` selects Foundry, Aqueduct or Ridgeline geometry independently of the existing three biome palettes. `MAP_PRESETS` supplies stable named choices; `nextMapSeed` avoids consecutive repeats of the same layout family. Structures remain ordinary editable voxels. Hosted serialization now uses format 7 and resets incompatible older rounds before restoring edits, preventing old delta indices from being applied to the wrong procedural baseline.
+
+CTF reuses authoritative relay possession/drop/return/capture rules with separate mode identity, flag UI and three-capture default. `server/ctf-tactics.ts` assigns stable squad defense/raid slots, dynamically escorts human or NPC carriers and selects the closest pair for recovery/interception. Objective knowledge does not grant wall visibility or bypass combat validation. Public snapshots include role labels, not private navigation brains. Solo setup creates ordinary server rooms; both adapters allow sixteen rooms, while existing per-room player limits remain unchanged.
+
+`client/weapon-pose.ts` derives cosmetic reload phases, magazine/hand travel, firing actions, shell presentation, tool swings and switch/sprint lowering. Static gun geometry remains batched; only moving parts retain individual small meshes. Presentation smooths server reload countdowns; it cannot grant ammunition or shorten the actual reload.
 
 ## 2.0 classes and ordnance
 

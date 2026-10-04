@@ -24,3 +24,5 @@ jobs:
       - run: npm run test:connection
       - run: npm run test:frontline
       - run: npm run test:strongholds
+      - run: npm run test:banner
+      - run: BR_TRANSPORT=http npm run test:banner

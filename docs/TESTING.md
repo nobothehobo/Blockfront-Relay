@@ -2,6 +2,8 @@
 
 Automated checks are in `tests/`. Unit tests exercise the actual authoritative Room code, not duplicated gameplay implementations.
 
+2.5 adds `tests/banner-patrol.test.ts` for CTF rules, squad role allocation, an autonomously navigating flag runner, distinct map families/rotation and bounded weapon-action poses. Hosted SQL tests cover carried/dropped flags, captures and late-join state across independent sessions. `npm run test:banner` and `BR_TRANSPORT=http npm run test:banner` exercise solo setup, seven NPCs, a desktop friend in the same room, keyboard/touch reloads and every map preset using normal production endpoints.
+
 - Deterministic 320 × 320 map and lossless RLE, including edited map on late join.
 - Minimap surface samples after destruction/placement, far-edge coordinates, live teammate filtering and clear larger-map bases.
 - Movement/input validation, server-owned speed and rejection of nonfinite values.

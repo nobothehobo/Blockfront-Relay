@@ -26,7 +26,7 @@ export function playerPose(
         ? 0.85 + swing * 0.14
         : 0.35 + swing * 0.1 + recoil,
     bob: grounded ? Math.abs(Math.sin(phase)) * stride * 0.035 : 0,
-    lean: grounded ? -stride * 0.06 : 0.05,
+    lean: zombie ? 0.16 + stride * 0.05 : grounded ? -stride * 0.06 : 0.05,
     recoil,
   };
 }

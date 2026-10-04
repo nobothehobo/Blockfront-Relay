@@ -315,7 +315,22 @@ export function thinkBot(p: Player, arena: Arena): Input {
     ability:
       !p.zombie &&
       (p.abilityCooldown ?? 0) === 0 &&
-      (retreat || (attack && (p.classId !== 0 || p.health < 70))),
+      (p.classId === 4
+        ? tool
+        : retreat || (attack && (p.classId !== 0 || p.health < 70))),
+    gear:
+      !p.zombie &&
+      p.ground &&
+      (p.gearCharges ?? 0) > 0 &&
+      (p.gearCooldown ?? 0) === 0 &&
+      Math.floor(arena.time * 5 + personality) % 23 === 0 &&
+      (p.classId === 0
+        ? p.health < 70
+        : p.classId === 3
+          ? !attack && distance > 8
+          : p.classId === 2
+            ? attack && distance > 12 && distance < 24
+            : tool),
     fire:
       attack &&
       arena.phase === "active" &&

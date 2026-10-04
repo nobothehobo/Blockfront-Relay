@@ -1,3 +1,4 @@
+import { gearInfo } from "../shared/gear.js";
 import { Room, RoomOptions } from "../server/room.js";
 import { World, W, D, mapTheme } from "../shared/game.js";
 import { assets } from "./assets.generated.js";
@@ -43,7 +44,13 @@ function restore(id: string, data: Data) {
   }
   const r = new Room(id, data.options, world);
   Object.assign(r, data.room);
-  r.players = new Map(data.players.map((p) => [p.id, p]));
+  r.players = new Map(
+    data.players.map((p) => {
+      p.gearCharges ??= p.zombie ? 0 : gearInfo(p.classId).charges;
+      p.gearCooldown ??= 0;
+      return [p.id, p];
+    }),
+  );
   for (const [i, v] of data.edits) {
     r.world.blocks[i] = v;
     r.world.edits.set(i, v);
@@ -70,6 +77,8 @@ function save(
       round: r.round,
       revision: r.revision,
       flags: r.flags,
+      fieldGear: r.fieldGear,
+      nextGear: r.nextGear,
       controlPoints: r.controlPoints,
       controlClock: r.controlClock,
       warmup: r.warmup,

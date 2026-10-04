@@ -37,6 +37,7 @@ import { Sound } from "./audio.js";
 import { jetVoices } from "./audio-mix.js";
 import { Sky } from "./sky.js";
 import { playerPose } from "./animation.js";
+import { createCharacter } from "./character.js";
 import { CombatFX } from "./combat-fx.js";
 import {
   CLASSES,
@@ -49,6 +50,9 @@ import { FortificationView } from "./fortification-view.js";
 import { weaponPose } from "./weapon-pose.js";
 import { BattlefieldView, WaterSurface } from "./battlefield-view.js";
 import { ContactShadows } from "./contact-shadows.js";
+import { shadowQuality } from "./lighting.js";
+import { GearView } from "./gear-view.js";
+import { gearInfo } from "../shared/gear.js";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const show = (id: string, on = true) => $(id).classList.toggle("hidden", !on);
@@ -85,7 +89,7 @@ const defaults: Settings = {
   preset: touch ? "mobile" : "balanced",
   distance: touch ? 80 : 112,
   effects: touch ? "low" : "high",
-  shadows: !touch,
+  shadows: true,
   fov: 80,
   master: 0.55,
   volume: 0.75,
@@ -169,18 +173,26 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setClearColor(0xa9c3bd);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.12;
-renderer.shadowMap.enabled = settings.shadows && !touch;
+renderer.toneMappingExposure = 1.03;
+renderer.shadowMap.enabled = shadowQuality(
+  settings.preset,
+  touch,
+  settings.shadows,
+).enabled;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate = false;
 const scene = new THREE.Scene();
 const combatFX = new CombatFX(scene);
 const fortifications = new FortificationView(scene);
+const fieldGear = new GearView(scene);
 scene.fog = new THREE.Fog(0xa9c3bd, 30, 100);
 scene.add(terrain.group);
-const ambient = new THREE.HemisphereLight(0xe4efff, 0x899a6c, 1.65);
+const ambient = new THREE.HemisphereLight(0xe4efff, 0x899a6c, 0.85);
 scene.add(ambient);
-const sun = new THREE.DirectionalLight(0xffe8bf, 2.2);
+const bounce = new THREE.DirectionalLight(0xbdd8e3, 0.45);
+bounce.position.set(35, 20, 45);
+scene.add(bounce);
+const sun = new THREE.DirectionalLight(0xffe8bf, 2.8);
 sun.position.set(-48, 64, -60);
 sun.castShadow = true;
 sun.shadow.mapSize.set(512, 512);
@@ -189,7 +201,7 @@ sun.shadow.camera.right = sun.shadow.camera.top = 32;
 sun.shadow.camera.near = 1;
 sun.shadow.camera.far = 150;
 sun.shadow.bias = -0.0006;
-sun.shadow.normalBias = 0.08;
+sun.shadow.normalBias = 0.04;
 scene.add(sun);
 scene.add(sun.target);
 let lastShadow = 0;
@@ -209,14 +221,20 @@ const contactShadows = new ContactShadows();
 scene.add(contactShadows.mesh);
 const sky = new Sky();
 scene.add(sky.mesh);
-function applyTheme() {
+function applyTheme(mode = state?.mode) {
+  const outbreak = mode === "infection";
   const theme = mapTheme(world.seed);
   scene.background = new THREE.Color(theme.sky);
-  sky.theme(world.seed);
+  sky.theme(world.seed, outbreak);
   (scene.fog as THREE.Fog).color.copy(sky.material.uniforms.horizon.value);
   water.theme(theme.water);
   water.mesh.scale.y = mapLayout(world.seed) === 1 ? 1.8 : 1;
-  sun.color.setHex(theme.kind === 0 ? 0xffdfad : 0xfff0d5);
+  sun.color.setHex(
+    outbreak ? 0xc7d8e5 : theme.kind === 0 ? 0xffdfad : 0xfff0d5,
+  );
+  sun.intensity = outbreak ? 1.55 : 2.8;
+  ambient.intensity = outbreak ? 0.7 : 0.85;
+  bounce.intensity = outbreak ? 0.25 : 0.45;
   ambient.groundColor.setHex(
     theme.kind === 2 ? 0x9aa6bc : theme.kind === 0 ? 0x9f8666 : 0x899a6c,
   );
@@ -224,7 +242,8 @@ function applyTheme() {
 applyTheme();
 const weaponGroup = new THREE.Group();
 camera.add(weaponGroup);
-const mat = (color: number) => new THREE.MeshLambertMaterial({ color });
+const mat = (color: number) =>
+  new THREE.MeshStandardMaterial({ color, roughness: 0.75, metalness: 0.18 });
 function box(
   w: number,
   h: number,
@@ -319,6 +338,18 @@ function setWeaponModel(n: number) {
     if (n === 3)
       box(0.08, 0.08, 0.25, 0.23, -0.11, -0.49, 0x142b32, weaponGroup);
     else box(0.04, 0.05, 0.04, 0.23, -0.14, -0.68, 0x132c34, weaponGroup);
+  } else if (n === 4 && local?.classId === 4 && !local.zombie) {
+    box(0.22, 0.2, 0.43, 0.26, -0.2, -0.58, 0xe3ac59, weaponGroup);
+    box(0.1, 0.23, 0.1, 0.26, -0.37, -0.4, 0x30434c, weaponGroup);
+    box(0.24, 0.035, 0.13, 0.26, -0.12, -0.56, 0x33454d, weaponGroup);
+    moving(
+      box(0.13, 0.13, 0.28, 0.26, -0.2, -0.91, 0x91a7a9, weaponGroup),
+      "drill",
+    );
+    moving(
+      box(0.19, 0.045, 0.07, 0.26, -0.2, -1.04, 0xb9ccca, weaponGroup),
+      "drill",
+    );
   } else if (n === 4) {
     box(0.045, 0.5, 0.045, 0.26, -0.3, -0.54, 0x896745, weaponGroup);
     box(0.24, 0.22, 0.045, 0.26, -0.01, -0.54, 0x91a6a3, weaponGroup);
@@ -398,12 +429,17 @@ function setWeaponModel(n: number) {
   weaponGroup.add(
     new THREE.Mesh(
       geometry,
-      new THREE.MeshLambertMaterial({ vertexColors: true }),
+      new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.75,
+        metalness: 0.18,
+      }),
     ),
   );
 }
 setWeaponModel(0);
 let modelWeapon = 0;
+let modelClass = -1;
 let weaponSwitchedAt = 0;
 let presentedPose: ReturnType<typeof weaponPose> | null = null;
 let jumpFeedback = false;
@@ -412,161 +448,7 @@ const remote = new Map<
   { group: THREE.Group; samples: any[]; target: any; label: HTMLElement }
 >();
 function makePlayer(p: any) {
-  const g = new THREE.Group();
-  const color = p.zombie ? 0x80bd50 : p.team === 0 ? 0x4ab7b9 : 0xe77548;
-  if (!p.zombie) {
-    if (p.classId === 1)
-      for (const x of [-0.4, 0.4])
-        box(0.24, 0.18, 0.28, x, 1.3, 0, 0xe7d4a0, g);
-    if (p.classId === 2) {
-      box(0.52, 0.55, 0.24, 0, 1.1, 0.37, 0x60594d, g);
-      for (const x of [-0.15, 0.15])
-        box(0.1, 0.52, 0.1, x, 1.1, 0.52, 0xd9b26a, g);
-    }
-    if (p.classId === 3) {
-      box(0.48, 0.16, 0.48, 0, 1.95, 0, 0x415b4d, g);
-      box(0.22, 0.3, 0.42, 0, 1.15, 0.3, 0x415b4d, g);
-    }
-  }
-  box(0.62, 0.65, 0.38, 0, 1.06, 0, color, g);
-  box(0.43, 0.42, 0.4, 0, 1.61, 0, p.zombie ? 0xb2ce75 : 0xd7b38c, g);
-  box(0.45, 0.12, 0.43, 0, 1.85, 0, color, g);
-  box(0.2, 0.6, 0.23, -0.18, 0.38, 0, 0x334b52, g);
-  box(0.2, 0.6, 0.23, 0.18, 0.38, 0, 0x334b52, g);
-  box(0.17, 0.58, 0.2, -0.4, 1.05, -0.08, color, g);
-  box(0.17, 0.58, 0.2, 0.4, 1.05, -0.08, color, g);
-  if (!p.zombie)
-    g.userData.gun = box(
-      p.classId === 2 ? 0.23 : 0.1,
-      p.classId === 2 ? 0.23 : 0.1,
-      p.classId === 3 ? 0.75 : 0.5,
-      0.36,
-      1.12,
-      -0.33,
-      0x34434a,
-      g,
-    );
-  box(0.4, 0.45, 0.16, 0, 1.05, 0.29, 0x46585d, g);
-  box(0.44, 0.15, 0.42, 0, 1.69, -0.01, 0x243638, g);
-  box(0.46, 0.08, 0.44, 0, 1.9, 0, color, g);
-  for (const x of [-0.18, 0.18]) {
-    box(0.19, 0.12, 0.3, x, 0.1, -0.05, 0x293236, g);
-    box(0.08, 0.43, 0.025, x, 1.09, -0.205, 0x52624b, g);
-    box(0.15, 0.16, 0.035, x, 1.04, -0.235, 0x7b805c, g);
-    box(0.21, 0.13, 0.255, x, 0.43, -0.015, color, g);
-    box(0.09, 0.055, 0.045, x, 1.69, -0.23, 0xf1d092, g);
-  }
-  // Original field-kit silhouettes and team-colored helmet markings, batched below.
-  box(0.11, 0.09, 0.455, 0, 1.92, 0, 0xe6ddbb, g);
-  box(0.65, 0.1, 0.4, 0, 0.79, 0, 0x34413a, g);
-  box(0.12, 0.18, 0.08, 0, 0.97, -0.235, 0xb8a879, g);
-  for (const x of [-0.4, 0.4]) {
-    box(0.19, 0.14, 0.225, x, 0.81, -0.08, 0x34413a, g);
-    box(0.19, 0.11, 0.225, x, 1.23, -0.08, 0xe6ddbb, g);
-  }
-  // Batch static anatomy into one draw call; gun and thrust stay independently animated.
-  const parts = g.children.filter((c) => c !== g.userData.gun) as THREE.Mesh[];
-  const root = new THREE.Bone(),
-    torso = new THREE.Bone(),
-    head = new THREE.Bone();
-  torso.position.y = 0.95;
-  root.add(torso);
-  head.position.y = 0.5;
-  torso.add(head);
-  const leftLeg = new THREE.Bone(),
-    rightLeg = new THREE.Bone();
-  leftLeg.position.set(-0.18, 0.74, 0);
-  rightLeg.position.set(0.18, 0.74, 0);
-  root.add(leftLeg, rightLeg);
-  const leftArm = new THREE.Bone(),
-    rightArm = new THREE.Bone();
-  leftArm.position.set(-0.4, 0.4, -0.08);
-  rightArm.position.set(0.4, 0.4, -0.08);
-  torso.add(leftArm, rightArm);
-  const bones = [root, torso, head, leftLeg, rightLeg, leftArm, rightArm];
-  const geometries = parts.map((m) => {
-    const geometry = m.geometry.toNonIndexed();
-    geometry.translate(m.position.x, m.position.y, m.position.z);
-    const color = (m.material as THREE.MeshLambertMaterial).color;
-    const values = new Float32Array(
-      geometry.getAttribute("position").count * 3,
-    );
-    for (let i = 0; i < values.length; i += 3)
-      values.set([color.r, color.g, color.b], i);
-    geometry.setAttribute("color", new THREE.BufferAttribute(values, 3));
-    const boneIndex =
-      m.position.y < 0.75
-        ? m.position.x < 0
-          ? 3
-          : 4
-        : Math.abs(m.position.x) > 0.32
-          ? m.position.x < 0
-            ? 5
-            : 6
-          : m.position.y > 1.4
-            ? 2
-            : 1;
-    const count = geometry.getAttribute("position").count;
-    const skinIndex = new Uint16Array(count * 4),
-      skinWeight = new Float32Array(count * 4);
-    for (let i = 0; i < count; i++) {
-      skinIndex[i * 4] = boneIndex;
-      skinWeight[i * 4] = 1;
-    }
-    geometry.setAttribute(
-      "skinIndex",
-      new THREE.Uint16BufferAttribute(skinIndex, 4),
-    );
-    geometry.setAttribute(
-      "skinWeight",
-      new THREE.Float32BufferAttribute(skinWeight, 4),
-    );
-    g.remove(m);
-    m.geometry.dispose();
-    (m.material as THREE.Material).dispose();
-    return geometry;
-  });
-  const merged = mergeGeometries(geometries)!;
-  geometries.forEach((g) => g.dispose());
-  const body = new THREE.SkinnedMesh(
-    merged,
-    new THREE.MeshLambertMaterial({ vertexColors: true }),
-  );
-  body.castShadow = true;
-  body.receiveShadow = true;
-  body.add(root);
-  g.add(body);
-  g.updateMatrixWorld(true);
-  body.bind(new THREE.Skeleton(bones));
-  // Conservative bounds cover all animated limbs without per-frame bounds scans.
-  body.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 1, 0), 2);
-  if (g.userData.gun) {
-    const gun = g.userData.gun;
-    g.remove(gun);
-    gun.position.sub(new THREE.Vector3(0.4, 1.35, -0.08));
-    rightArm.add(gun);
-  }
-  g.userData.rig = {
-    root,
-    torso,
-    head,
-    leftLeg,
-    rightLeg,
-    leftArm,
-    rightArm,
-    phase: 0,
-  };
-  g.userData.flames = [-0.13, 0.13].map((x) => {
-    const flame = box(0.09, 0.35, 0.09, x, 0.7, 0.3, 0xffbe55, g);
-    (flame.material as THREE.Material).dispose();
-    flame.material = new THREE.MeshLambertMaterial({
-      color: 0xffbe55,
-      emissive: 0xff9400,
-      emissiveIntensity: 2,
-    });
-    flame.visible = false;
-    return flame;
-  });
+  const g = createCharacter(p);
   scene.add(g);
   const label = document.createElement("div");
   label.style.cssText =
@@ -634,7 +516,20 @@ function applySettings() {
   camera.fov = settings.fov;
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
-  renderer.shadowMap.enabled = settings.shadows && !touch;
+  renderer.shadowMap.enabled = shadowQuality(
+    settings.preset,
+    touch,
+    settings.shadows,
+  ).enabled;
+  const shadow = shadowQuality(settings.preset, touch, settings.shadows);
+  if (sun.shadow.mapSize.x !== shadow.size) {
+    sun.shadow.map?.dispose();
+    sun.shadow.map = null;
+    sun.shadow.mapSize.set(shadow.size, shadow.size);
+  }
+  sun.shadow.camera.left = sun.shadow.camera.bottom = -shadow.radius;
+  sun.shadow.camera.right = sun.shadow.camera.top = shadow.radius;
+  sun.shadow.camera.updateProjectionMatrix();
   renderer.shadowMap.needsUpdate = true;
   (scene.fog as THREE.Fog).near = settings.distance * 0.45;
   (scene.fog as THREE.Fog).far = settings.distance + 12;
@@ -655,7 +550,7 @@ function settingsUi() {
     ["preset", "Quality preset"],
     ["distance", "Render distance", 32, 192, 4],
     ["effects", "Effects quality"],
-    ["shadows", "Ground contact shadows"],
+    ["shadows", "Shadows (mobile: contact only)"],
     ["fov", "Field of view", 60, 105, 1],
     ["master", "Master volume", 0, 1, 0.05],
     ["volume", "Effects volume", 0, 1, 0.05],
@@ -712,7 +607,7 @@ function settingsUi() {
               ? 112
               : 176;
         settings.effects = field.value === "mobile" ? "low" : "high";
-        settings.shadows = field.value !== "mobile";
+        settings.shadows = true;
       }
       val.textContent = String(settings[key]);
       applySettings();
@@ -781,7 +676,7 @@ function message(msg: any) {
     id = msg.id;
     roomId = msg.room.id;
     world.seed = msg.seed ?? msg.room?.seed ?? world.seed;
-    applyTheme();
+    applyTheme(msg.state?.mode ?? msg.room?.mode);
     world.decode(msg.map);
     terrain.rebuild();
     minimap.reset();
@@ -818,7 +713,7 @@ function message(msg: any) {
   } else if (msg.type === "map") {
     combatFX.clear();
     world.seed = msg.seed ?? msg.room?.seed ?? world.seed;
-    applyTheme();
+    applyTheme(msg.state?.mode ?? msg.room?.mode);
     world.decode(msg.map);
     terrain.rebuild();
     minimap.reset();
@@ -1070,6 +965,7 @@ function handleEvent(e: any) {
     if (distance < 100)
       sound.play("explosion", Math.max(0.1, 1 - distance / 100));
   }
+  if (e.kind === "gear" && e.id === id) sound.play("place", 0.7);
   if (e.kind === "collapse")
     for (const b of e.debris ?? []) {
       combatFX.particle(
@@ -1081,7 +977,20 @@ function handleEvent(e: any) {
       );
     }
   if (e.kind === "breach" && e.pos) {
-    combatFX.explosion(e.pos, camera.position);
+    if (e.tool === "bore") {
+      for (let i = 0; i < 12; i++)
+        combatFX.particle(
+          { x: e.pos.x + 0.5, y: e.pos.y + 0.3, z: e.pos.z + 0.5 },
+          {
+            x: (Math.random() - 0.5) * 3,
+            y: Math.random() * 2,
+            z: (Math.random() - 0.5) * 3,
+          },
+          0.12,
+          0.6,
+          0xafb6a4,
+        );
+    } else combatFX.explosion(e.pos, camera.position);
     sound.play("dig", 0.6);
   }
   if (e.kind === "ability" && e.pos)
@@ -1182,11 +1091,18 @@ function updateHud() {
     p.zombie || p.dead > 0 || !(p.grenades ?? 0);
   $<HTMLButtonElement>("ability-button").disabled =
     p.zombie || p.dead > 0 || (p.abilityCooldown ?? 0) > 0;
+  $("gear-button").textContent =
+    `${gearInfo(p.classId).name.toUpperCase()} ${p.gearCharges ?? 0}`;
+  $<HTMLButtonElement>("gear-button").disabled =
+    p.zombie || p.dead > 0 || !p.gearCharges || (p.gearCooldown ?? 0) > 0;
   $("blocks").textContent = `${p.blocks} blocks`;
   $("fuel-label").style.opacity = p.jetpack ? "1" : ".45";
   $("fuel").textContent = p.jetpack ? `${Math.round(p.fuel)}%` : "NO PACK";
   $("fuel-bar").style.width = p.jetpack ? `${p.fuel}%` : "0%";
-  $("weapon-name").textContent = WEAPONS[p.weapon].name.toUpperCase();
+  $("weapon-name").textContent =
+    p.weapon === 4 && p.classId === 4 && !p.zombie
+      ? "BORE DRILL"
+      : WEAPONS[p.weapon].name.toUpperCase();
   $("ammo").textContent = isFirearm(p.weapon)
     ? String(p.ammo[p.weapon])
     : p.weapon === 5
@@ -1307,6 +1223,7 @@ function resetInput() {
     "dig",
     "grenade",
     "ability",
+    "gear",
   ])
     (input as any)[key] = false;
   input.forward = 0;
@@ -1361,6 +1278,7 @@ const binding: Record<string, keyof Input> = {
   KeyR: "reload",
   KeyG: "grenade",
   KeyV: "ability",
+  KeyK: "gear",
   KeyE: "place",
   KeyQ: "dig",
 };
@@ -1712,7 +1630,7 @@ for (let i = 0; i < CLASSES.length; i++) {
   const role = CLASSES[i],
     button = document.createElement("button");
   button.dataset.classId = String(i);
-  button.innerHTML = `<strong>${role.name}</strong><span>${role.description}</span><small>${role.health} HP · ${role.blocks} blocks · ${role.grenades} grenades · ${role.ability}</small>`;
+  button.innerHTML = `<strong>${role.name}</strong><span>${role.description}</span><small>${role.health} HP · ${role.blocks} blocks · ${role.grenades} grenades · ${role.ability}<br>${gearInfo(i).charges} ${gearInfo(i).name} · ${gearInfo(i).description}</small>`;
   button.onclick = () => {
     selectedClass = i;
     input.classId = i;
@@ -2017,7 +1935,8 @@ function frame(now: number) {
     presentedPose = pose;
     weaponGroup.position.set(pose.x, pose.y, pose.z);
     weaponGroup.rotation.set(pose.pitch, 0, pose.roll);
-    if (modelWeapon !== local.weapon) {
+    if (modelWeapon !== local.weapon || modelClass !== local.classId) {
+      modelClass = local.classId ?? 0;
       modelWeapon = local.weapon;
       weaponSwitchedAt = now;
       setWeaponModel(modelWeapon);
@@ -2026,6 +1945,8 @@ function frame(now: number) {
       part.position.copy(part.userData.home);
       part.rotation.set(0, 0, 0);
       const kind = part.userData.kind;
+      if (kind === "drill")
+        part.rotation.z = input.fire || input.dig ? now * 0.024 : 0;
       if (kind === "magazine") {
         part.position.y -= pose.magazine * 0.23;
         part.position.x -= pose.magazine * 0.08;
@@ -2071,7 +1992,11 @@ function frame(now: number) {
       outline.position.set(target.x + 0.5, target.y + 0.5, target.z + 0.5);
     }
     terrain.distance(local.x, local.z, settings.distance);
-    if (renderer.shadowMap.enabled && now - lastShadow > 250) {
+    if (
+      renderer.shadowMap.enabled &&
+      now - lastShadow >
+        shadowQuality(settings.preset, touch, settings.shadows).interval
+    ) {
       lastShadow = now;
       const x = Math.floor(local.x / 8) * 8,
         z = Math.floor(local.z / 8) * 8;
@@ -2196,6 +2121,12 @@ function frame(now: number) {
   }
   sky.update(camera, now / 1000);
   water.update(now / 1000, settings.effects !== "low");
+  fieldGear.update(
+    connected ? (state?.fieldGear ?? []) : [],
+    camera.position,
+    settings.effects === "high",
+    now / 1000,
+  );
   contactShadows.update(
     world,
     connected ? (state?.players ?? []) : [],
@@ -2284,6 +2215,17 @@ setInterval(() => {
       ...connectionStats,
     };
   },
+  get lighting() {
+    return {
+      sunShadows: renderer.shadowMap.enabled,
+      shadowSize: sun.shadow.mapSize.x,
+      exposure: renderer.toneMappingExposure,
+      sun: sun.intensity,
+      ambient: ambient.intensity,
+      gearInstances: fieldGear.solid.count,
+      beaconLights: fieldGear.lights.filter((l) => l.intensity > 0).length,
+    };
+  },
   get drawCalls() {
     return renderer.info.render.calls;
   },
@@ -2325,6 +2267,7 @@ setInterval(() => {
     return [...remote.values()].map((r) => ({
       id: r.target.id,
       bot: r.target.bot,
+      model: r.group.userData.model,
       visible: r.group.visible,
       phase: r.group.userData.rig.phase,
       leftLeg: r.group.userData.rig.leftLeg.rotation.x,

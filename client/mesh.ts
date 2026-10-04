@@ -64,7 +64,7 @@ export function meshChunk(world: World, cx: number, cz: number) {
           ];
           color.setHex(palette[Math.abs(m)]);
           const shade =
-            axis === 1 ? (m > 0 ? 1 : 0.52) : axis === 0 ? 0.78 : 0.88;
+            axis === 1 ? (m > 0 ? 1 : 0.66) : axis === 0 ? 0.94 : 0.97;
           for (let corner = 0; corner < pts.length; corner++) {
             const pt = pts[corner],
               sample = pt.map((a, k) => a + off[k]);
@@ -134,7 +134,11 @@ export class Terrain {
   dirty = new Set<string>();
   view = { x: W / 2, z: D / 2, d: 160 };
   lastCenter = "";
-  material = new THREE.MeshLambertMaterial({ vertexColors: true });
+  material = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    roughness: 1,
+    metalness: 0,
+  });
   constructor(public world: World) {
     this.material.onBeforeCompile = (shader) => {
       shader.vertexShader =
@@ -156,7 +160,8 @@ export class Terrain {
         vec3 f = fract(voxelPosition);
         vec3 edge = min(f,1.0-f) + abs(voxelNormal);
         float seam = smoothstep(0.0,0.035, min(min(edge.x,edge.y),edge.z));
-        diffuseColor.rgb *= (0.88 + grain * 0.20) * mix(0.92,1.0,seam);
+        // Fine bevel highlights preserve clean cube readability at long range.
+        diffuseColor.rgb *= (0.96 + grain * 0.08) * mix(0.84,1.0,seam);
       `,
       );
     };

@@ -44,6 +44,17 @@ export const CLASSES = [
     cooldown: 20,
     description: "Marksman · temporarily steadier firearm accuracy",
   },
+  {
+    name: "Delver",
+    primary: 2,
+    health: 105,
+    speed: 1.04,
+    blocks: 120,
+    grenades: 2,
+    ability: "Bore",
+    cooldown: 12,
+    description: "Shotgun · fast digging, short tunnel drill and lumen beacons",
+  },
 ] as const;
 export const validClass = (value: unknown) =>
   typeof value === "number" &&
@@ -56,6 +67,7 @@ export const CLASS_WEAPONS = [
   [1, 4, 5],
   [2, 4, 5, 6],
   [3, 0, 4, 5],
+  [2, 4, 5],
 ] as const;
 export const allowedWeapon = (
   id: number | undefined,

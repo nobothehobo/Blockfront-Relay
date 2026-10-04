@@ -72,20 +72,23 @@ export class Sky {
         float elevation=max(0.0,d.y);
         vec3 color=mix(horizon,top,smoothstep(0.0,.82,elevation));
         float sunlight=max(0.0,dot(d,sunDirection));
-        color+=sunColor*(pow(sunlight,36.0)*.18+pow(sunlight,320.0)*.32);
+        color+=sunColor*(pow(sunlight,18.0)*.10+pow(sunlight,180.0)*.25);
         vec2 uv=d.xz/(.32+elevation)*.24+vec2(time*.0018,time*.0007);
         float n=texture2D(clouds,uv).r*.76+texture2D(clouds,uv*1.93-vec2(time*.0012)).r*.24;
         float body=smoothstep(cloudCoverage,cloudCoverage+.14,n);
         body*=smoothstep(.03,.20,elevation);
-        vec3 cloud=mix(horizon*.84,vec3(1.0,.97,.90),smoothstep(cloudCoverage+.02,cloudCoverage+.19,n));
-        color=mix(color,cloud,body*.93);
+        float shade=texture2D(clouds,uv+sunDirection.xz*.025).r;
+        float rim=smoothstep(.0,.10,n-shade)*.16*pow(sunlight,4.0);
+        vec3 cloud=mix(horizon*.64,vec3(1.0,.97,.90),smoothstep(cloudCoverage+.03,cloudCoverage+.20,n));
+        cloud+=sunColor*rim;
+        color=mix(color,cloud,body*.90);
         float disc=smoothstep(.99935,.99965,sunlight)*(1.0-body*.80);
         color=mix(color,sunColor*2.0,disc);
         // Hazy distant scenery lives outside the playable world, never obscures nearby voxels.
         float angle=atan(d.z,d.x);
         float ridge=.025+.013*sin(angle*7.0)+.009*sin(angle*17.0+1.4);
         float mountains=(1.0-smoothstep(ridge-.005,ridge+.005,d.y))*smoothstep(-.08,.005,d.y);
-        color=mix(color,horizon*.80,mountains*.32);
+        color=mix(color,horizon*.64,mountains*.5);
         gl_FragColor=vec4(color,1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -96,7 +99,7 @@ export class Sky {
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = -100;
   }
-  theme(seed: number) {
+  theme(seed: number, outbreak = false) {
     const theme = mapTheme(seed),
       u = this.material.uniforms;
     u.top.value.setHex(
@@ -107,6 +110,12 @@ export class Sky {
     );
     u.sunColor.value.setHex(theme.kind === 0 ? 0xffd69b : 0xffedd1);
     u.cloudCoverage.value = theme.kind === 2 ? 0.49 : 0.56;
+    if (outbreak) {
+      u.top.value.setHex(0x34485f);
+      u.horizon.value.setHex(0x9baa9b);
+      u.sunColor.value.setHex(0xe9d1a2);
+      u.cloudCoverage.value = 0.49;
+    }
   }
   update(camera: THREE.Camera, seconds: number) {
     this.mesh.position.copy(camera.position);

@@ -53,8 +53,8 @@ const grenade = (values: Partial<Projectile> = {}): Projectile => ({
   fuse: 2.2,
   ...values,
 });
-test("four original classes spawn with server-owned stats and cannot change role until respawn", () => {
-  for (let id = 0; id < 4; id++) {
+test("five original classes spawn with server-owned stats and cannot change role until respawn", () => {
+  for (let id = 0; id < CLASSES.length; id++) {
     const { r, a } = fixture(id),
       role = CLASSES[id];
     assert.equal(a.health, role.health);
@@ -67,15 +67,19 @@ test("four original classes spawn with server-owned stats and cannot change role
       role.primary,
       "loadout survives before client input arrives",
     );
-    r.input("a", { ...emptyInput(), seq: 1, classId: (id + 1) % 4 });
+    r.input("a", {
+      ...emptyInput(),
+      seq: 1,
+      classId: (id + 1) % CLASSES.length,
+    });
     assert.equal(a.classId, id);
-    assert.equal(a.nextClass, (id + 1) % 4);
+    assert.equal(a.nextClass, (id + 1) % CLASSES.length);
     r.spawn(a);
-    assert.equal(a.classId, (id + 1) % 4);
+    assert.equal(a.classId, (id + 1) % CLASSES.length);
     r.input("a", { ...emptyInput(), seq: 2, classId: 999 });
-    assert.equal(a.nextClass, (id + 1) % 4);
+    assert.equal(a.nextClass, (id + 1) % CLASSES.length);
   }
-  for (const bad of [NaN, -1, 4, 1.5, "2"])
+  for (const bad of [NaN, -1, CLASSES.length, 1.5, "2"])
     assert.equal(validClass(bad), false);
 });
 test("class abilities have authoritative cooldowns, limits and distinct effects", () => {

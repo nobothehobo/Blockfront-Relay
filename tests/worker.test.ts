@@ -41,6 +41,94 @@ function fixture() {
   };
   return { db, call, DB };
 }
+test("hosted Delver equipment and inventories persist across independent requests, both peers and late joins", async () => {
+  const { db, call } = fixture();
+  const created = await call("/api/create", {
+    name: "Fieldcraft",
+    mode: "tdm",
+    jet: "all",
+    seed: 7231,
+  });
+  const room = created.data.id;
+  const a = await call("/api/join", { room, name: "Delver", classId: 4 });
+  const b = await call("/api/join", { room, name: "Peer", classId: 0 });
+  const row = db.prepare("SELECT data FROM game_rooms WHERE id=?");
+  const stored = JSON.parse((row.get(room) as any).data);
+  stored.room.phase = "active";
+  stored.clock = Date.now() - 200;
+  const p = stored.players.find((p: any) => p.id === a.data.welcome.id);
+  const home = stored.room.flags[p.team].home;
+  Object.assign(p, {
+    ...home,
+    y: home.y - 0.03,
+    yaw: -Math.PI / 2,
+    pitch: 0,
+    ground: true,
+    protected: 0,
+  });
+  Object.assign(
+    stored.players.find((p: any) => p.id === b.data.welcome.id),
+    { ...home, x: home.x + 15 },
+  );
+  db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(
+    JSON.stringify(stored),
+    room,
+  );
+  const submitted = await call("/api/input", {
+    room,
+    token: a.data.token,
+    epoch: p.epoch,
+    round: 1,
+    commands: [
+      {
+        ...emptyInput(),
+        seq: 1,
+        yaw: -Math.PI / 2,
+        weapon: 2,
+        gear: true,
+        classId: 4,
+      },
+    ],
+  });
+  assert.equal(submitted.status, 200);
+  const poll = async (session: any) => {
+    await new Promise((r) => setTimeout(r, 70));
+    const result = await call("/api/input", {
+      room,
+      token: session.data.token,
+      epoch: session.data.welcome.state.players.find(
+        (v: any) => v.id === session.data.welcome.id,
+      ).epoch,
+      round: 1,
+      commands: [],
+    });
+    assert.equal(result.status, 200);
+    return result.data.messages.filter((m: any) => m.type === "state").at(-1)
+      .state;
+  };
+  const first = await poll(a),
+    second = await poll(b);
+  assert.equal(first.fieldGear[0].kind, "beacon");
+  assert.equal(second.fieldGear[0].id, first.fieldGear[0].id);
+  assert.equal(second.players.find((v: any) => v.id === p.id).gearCharges, 2);
+  const saved = JSON.parse((row.get(room) as any).data);
+  assert.equal(saved.room.fieldGear.length, 1);
+  assert.ok(saved.room.nextGear > first.fieldGear[0].id);
+  const late = await call("/api/join", { room, name: "Late" });
+  assert.equal(late.data.welcome.state.fieldGear[0].id, first.fieldGear[0].id);
+  // A prior-release room remains compatible without granting unlimited inventory.
+  const old = JSON.parse((row.get(room) as any).data);
+  delete old.players.find((v: any) => v.id === b.data.welcome.id).gearCharges;
+  db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(
+    JSON.stringify(old),
+    room,
+  );
+  assert.equal(
+    (await poll(b)).players.find((v: any) => v.id === b.data.welcome.id)
+      .gearCharges,
+    2,
+  );
+});
 test("expired empty practice rooms release capacity but active and normal rooms are preserved", async () => {
   const { db, call } = fixture();
   await call("/api/rooms");

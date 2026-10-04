@@ -39,7 +39,7 @@
       <div class="brand">
         <span class="brand-mark">BR</span
         ><span>BLOCKFRONT<br /><b>RELAY</b></span
-        ><small>2.5 · BANNER PATROL</small>
+        ><small>2.6 · FIELDCRAFT</small>
       </div>
       <p class="eyebrow">PROCEDURAL FRONTIERS</p>
       <h1>Dig in.<br />Build your advantage.</h1>
@@ -141,9 +141,10 @@
       </div>
       <div id="settings-fields"></div>
       <p>
-        Preferences save on this device. Lighting uses baked face shading and
-        optional lightweight character contact shadows. Desktop can also enable
-        nearby terrain shadows. Reflection render targets are not used.
+        Preferences save on this device. The mobile preset uses light contact
+        shadows; balanced and high add nearby sun shadows. High effects
+        illuminate nearby lumen beacons. Try balanced first, then reduce quality
+        if play slows down.
       </p>
     </section>
     <section id="solo-setup" class="modal hidden">
@@ -201,7 +202,8 @@
         <b>PC / Mac</b><br />WASD move · Shift sprint · Space jump · C crouch<br />Mouse
         aim · Left click fire / tool · Right click aim<br />R reload · 1–7 or
         wheel select · Q dig · E place<br />F jetpack · M expand map · Tab
-        scoreboard · Esc pause · G grenade · V class ability · B cycle build kit
+        scoreboard · Esc pause · G grenade · V class ability · K field gear · B
+        cycle build kit
       </p>
       <p>
         <b>iPhone / iPad</b><br />Left stick to move; push farther to sprint.
@@ -216,11 +218,11 @@
       <p>
         <b>Frontier forces</b><br />Choose a class before deploying, or queue a
         change using your class badge. Tap FRAG for a grenade and the named
-        ability for your class skill. Desktop: G grenade, V ability, 7 blast
-        launcher (Sapper in specialist rooms). In Specialist loadouts each class
-        has its own weapons; Skirmisher gets the jetpack when Class jetpacks is
-        selected. Sappers dig twice as fast. Explosives can damage you as well
-        as carve terrain.
+        ability for your class skill. Desktop: G grenade, V ability, K field
+        gear, 7 blast launcher (Sapper in specialist rooms). In Specialist
+        loadouts each class has its own weapons; Skirmisher gets the jetpack
+        when Class jetpacks is selected. Sappers dig twice as fast. Explosives
+        can damage you as well as carve terrain.
       </p>
       <p>
         <b>Frontline Control</b><br />Stand within a sector ring for eight
@@ -294,6 +296,13 @@
         >
           RALLY
         </button>
+        <button
+          id="gear-button"
+          data-action="gear"
+          aria-label="Deploy class field equipment"
+        >
+          MEDBOX 2
+        </button>
       </div>
       <div id="hitmarker" class="hidden">×</div>
       <div id="feed"></div>
@@ -315,8 +324,8 @@
         <small id="reload-note"></small>
       </div>
       <div id="desktop-hint">
-        WASD · 1–7 tools · G grenade · V ability · Q dig · E build · B kit · F
-        jet
+        WASD · 1–7 tools · G grenade · V ability · K gear · Q dig · E build · B
+        kit · F jet
       </div>
     </div>
     <div id="touch" class="hidden">

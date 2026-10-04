@@ -26,6 +26,7 @@ export type Input = {
   dig: boolean;
   grenade?: boolean;
   ability?: boolean;
+  gear?: boolean;
   classId?: number;
   buildKit?: number;
   viewTime?: number;
@@ -176,6 +177,8 @@ export type Player = Body & {
   supplyCooldown?: number;
   supplyProgress?: number;
   abilityCooldown?: number;
+  gearCharges?: number;
+  gearCooldown?: number;
   bot?: boolean;
   brain?: {
     nextThink: number;

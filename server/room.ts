@@ -2,6 +2,7 @@ import { basePosition, mapTheme, nextMapSeed } from "../shared/game.js";
 import { sectors, supplies, Sector } from "../shared/battlefield.js";
 import { thinkBot } from "./bots.js";
 import { sanitizeInput } from "../shared/prediction.js";
+import { FieldGear, gearInfo } from "../shared/gear.js";
 import { HitHistory, HitPose } from "./rewind.js";
 import {
   CLASSES,
@@ -63,6 +64,8 @@ export class Room {
   world: World;
   players = new Map<string, Player>();
   peers = new Map<string, Peer>();
+  fieldGear: FieldGear[] = [];
+  nextGear = 1;
   emptySince = Date.now();
   time = 0;
   remaining = 300;
@@ -209,7 +212,7 @@ export class Room {
     for (let i = bots.length; i < wanted; i++) {
       let n = 1;
       while (this.players.has(`npc-${n}`)) n++;
-      this.add(`npc-${n}`, `Scout ${n}`, { send: () => {} }, true, (n - 1) % 4);
+      this.add(`npc-${n}`, `Scout ${n}`, { send: () => {} }, true, (n - 1) % 5);
     }
   }
   add(id: string, name: string, peer: Peer, bot = false, selectedClass = 0) {
@@ -286,6 +289,7 @@ export class Room {
         f.dropped = Math.max(this.time, 0.000001);
       }
     this.players.delete(id);
+    this.fieldGear = this.fieldGear.filter((g) => g.owner !== id);
     this.peers.delete(id);
     if (!this.peers.size) this.emptySince = Date.now();
     if (removed && !removed.bot) this.ensureBots();
@@ -332,6 +336,7 @@ export class Room {
         "dig",
         "grenade",
         "ability",
+        "gear",
       ] as const)
         if (command[key]) p.pendingActions[key] = true;
       p.lastSeq = command.seq;
@@ -392,6 +397,8 @@ export class Room {
       supplyProgress: 0,
       abilityCooldown: 0,
       abilityTime: 0,
+      gearCharges: p.zombie ? 0 : gearInfo(p.classId).charges,
+      gearCooldown: 0,
       ammo: WEAPONS.map((w) => w.mag),
       reserve: WEAPONS.map((w) => w.reserve),
       reload: 0,
@@ -413,6 +420,7 @@ export class Room {
     };
   }
   start() {
+    this.fieldGear = [];
     this.phase = "active";
     this.remaining = this.duration;
     this.scores = [0, 0];
@@ -446,9 +454,11 @@ export class Room {
     this.winner = winner;
     this.remaining = 10;
     this.projectiles = [];
+    this.fieldGear = [];
     this.event("victory", winner);
   }
   restart() {
+    this.fieldGear = [];
     this.projectiles = [];
     this.round++;
     this.options.seed = nextMapSeed(this.options.seed, this.round);
@@ -488,6 +498,7 @@ export class Room {
   }
   state() {
     return {
+      fieldGear: this.fieldGear,
       time: this.time,
       lagCompensation: this.options.rewind === true,
       remaining: this.remaining,
@@ -574,6 +585,7 @@ export class Room {
       p.protected = Math.max(0, p.protected - dt);
       p.grenadeCooldown = Math.max(0, (p.grenadeCooldown ?? 0) - dt);
       p.abilityCooldown = Math.max(0, (p.abilityCooldown ?? 0) - dt);
+      p.gearCooldown = Math.max(0, (p.gearCooldown ?? 0) - dt);
       this.resupply(p, dt);
       if (p.commandMode) {
         // Retain enough real elapsed time for a delayed HTTP batch, never extra time.
@@ -654,6 +666,7 @@ export class Room {
       if (this.phase !== "finished") {
         if (p.input.grenade) this.throwGrenade(p);
         if (p.input.ability) this.useAbility(p);
+        if (p.input.gear) this.deployGear(p);
         if ((p.input.place || (p.input.fire && p.weapon === 5)) && !p.zombie)
           this.edit(p, true);
         else if (p.input.dig || (p.input.fire && p.weapon === 4))
@@ -707,7 +720,10 @@ export class Room {
         this.explode(projectile);
       }
     }
-    if (this.phase !== "finished") this.collapse();
+    if (this.phase !== "finished") {
+      this.updateGear(dt);
+      this.collapse();
+    }
     if (this.phase === "active") {
       if (this.options.mode === "demolition") {
         const status = this.demolitionStatus();
@@ -968,11 +984,187 @@ export class Room {
           this.broadcast({ type: "edits", edits, revision: this.revision });
         this.event("breach", `${p.name} opened a breach`, p.id, { pos: hit });
       }
+    } else if (p.classId === 4) {
+      const forward = direction(p.yaw, 0);
+      const hit = ray(this.world, eye(p), forward, 4);
+      if (hit) {
+        const edits: [number, number, number, number][] = [];
+        const alongX = Math.abs(forward.x) > Math.abs(forward.z),
+          sign = (alongX ? forward.x : forward.z) > 0 ? 1 : -1;
+        for (let depth = 0; depth < 3; depth++)
+          for (let side = 0; side < 2; side++)
+            for (let up = 0; up < 2; up++) {
+              const x = hit.x + (alongX ? depth * sign : side),
+                z = hit.z + (alongX ? side : depth * sign),
+                y = Math.floor(p.y + 0.05) + up;
+              if (
+                x < 1 ||
+                x >= W - 1 ||
+                z < 1 ||
+                z >= D - 1 ||
+                y < 1 ||
+                y >= H - 1 ||
+                Math.hypot(x + 0.5 - p.x, y + 0.5 - p.y, z + 0.5 - p.z) > 6 ||
+                !this.world.get(x, y, z)
+              )
+                continue;
+              if (
+                [0, 1].some((t) => {
+                  const b = this.base(t);
+                  return y < 15 && Math.hypot(x + 0.5 - b.x, z + 0.5 - b.z) < 3;
+                })
+              )
+                continue;
+              this.world.set(x, y, z, 0);
+              this.queueCollapse(x, y, z);
+              this.revision++;
+              edits.push([x, y, z, 0]);
+            }
+        p.blocks = Math.min(200, p.blocks + edits.length);
+        if (edits.length)
+          this.broadcast({ type: "edits", edits, revision: this.revision });
+        this.event("breach", `${p.name} bored a tunnel`, p.id, {
+          pos: hit,
+          tool: "bore",
+        });
+      }
     } else p.abilityTime = p.classId === 1 ? 4 : 5;
     this.event("ability", `${p.name}: ${role.ability}`, p.id, {
       pos: eye(p),
       classId: p.classId,
     });
+  }
+  deployGear(p: Player) {
+    if (
+      p.zombie ||
+      p.dead > 0 ||
+      !p.ground ||
+      this.phase !== "active" ||
+      !p.gearCharges ||
+      (p.gearCooldown ?? 0) > 0 ||
+      this.fieldGear.length >= 32
+    )
+      return;
+    const d = direction(p.yaw, 0),
+      x = p.x + d.x * 2,
+      z = p.z + d.z * 2;
+    if (
+      x < 1 ||
+      x >= W - 1 ||
+      z < 1 ||
+      z >= D - 1 ||
+      ray(this.world, eye(p), d, 2)
+    )
+      return;
+    let y = Math.floor(p.y + 1);
+    while (y > 0 && y >= p.y - 4 && !this.world.get(x, y, z)) y--;
+    y += 1.04;
+    if (
+      Math.abs(y - p.y) > 4 ||
+      !this.world.get(x, y - 0.1, z) ||
+      this.world.get(x, y, z) ||
+      this.world.get(x, y + 1, z)
+    )
+      return;
+    if (
+      [...this.players.values()].some(
+        (v) =>
+          v.dead <= 0 &&
+          Math.hypot(v.x - x, v.z - z) < 0.65 &&
+          Math.abs(v.y - y) < 2,
+      )
+    )
+      return;
+    const kind = gearInfo(p.classId).kind;
+    this.fieldGear.push({
+      id: this.nextGear++,
+      owner: p.id,
+      team: p.team,
+      kind,
+      x,
+      y,
+      z,
+      life: kind === "charge" ? 3 : 45,
+      armed: 2,
+    });
+    p.gearCharges--;
+    p.gearCooldown = 1;
+    p.protected = 0;
+    this.event("gear", `${p.name} deployed ${gearInfo(p.classId).name}`, p.id, {
+      pos: { x, y, z },
+      kind,
+    });
+  }
+  updateGear(dt: number) {
+    const clearSight = (g: FieldGear, p: Player) => {
+      const origin = { x: g.x, y: g.y + 0.35, z: g.z };
+      const delta = {
+        x: p.x - origin.x,
+        y: p.y + 0.6 - origin.y,
+        z: p.z - origin.z,
+      };
+      const length = Math.hypot(delta.x, delta.y, delta.z);
+      return (
+        length < 0.001 ||
+        !ray(
+          this.world,
+          origin,
+          { x: delta.x / length, y: delta.y / length, z: delta.z / length },
+          Math.max(0, length - 0.1),
+        )
+      );
+    };
+    for (const g of [...this.fieldGear]) {
+      g.life -= dt;
+      g.armed = Math.max(0, g.armed - dt);
+      const supported = this.world.get(g.x, g.y - 0.1, g.z);
+      let detonate = g.kind === "charge" && g.life <= 0;
+      let consumed = false;
+      if (supported && g.life > 0 && g.kind === "medbox") {
+        const patient = [...this.players.values()].find(
+          (p) =>
+            p.dead <= 0 &&
+            !p.zombie &&
+            p.team === g.team &&
+            p.health < classInfo(p.classId).health &&
+            Math.hypot(p.x - g.x, p.y - g.y, p.z - g.z) < 1.8 &&
+            clearSight(g, p),
+        );
+        if (patient) {
+          patient.health = Math.min(
+            classInfo(patient.classId).health,
+            patient.health + 30,
+          );
+          consumed = true;
+          this.event("pickup", `${patient.name} used a medbox`, patient.id);
+        }
+      }
+      if (supported && g.kind === "mine" && !g.armed && g.life > 0) {
+        detonate = [...this.players.values()].some(
+          (p) =>
+            p.dead <= 0 &&
+            p.team !== g.team &&
+            Math.hypot(p.x - g.x, p.y - g.y, p.z - g.z) < 2 &&
+            clearSight(g, p),
+        );
+      }
+      if (!supported || g.life <= 0 || consumed || detonate)
+        this.fieldGear = this.fieldGear.filter((v) => v.id !== g.id);
+      if (detonate && supported)
+        this.explode({
+          id: -g.id,
+          owner: g.owner,
+          team: g.team,
+          kind: "grenade",
+          x: g.x,
+          y: g.y + 0.2,
+          z: g.z,
+          vx: 0,
+          vy: 0,
+          vz: 0,
+          fuse: 0,
+        });
+    }
   }
   explode(projectile: Projectile) {
     const pos = { x: projectile.x, y: projectile.y, z: projectile.z },
@@ -1066,9 +1258,11 @@ export class Room {
     }
     p.editCooldown = p.zombie
       ? 0.16
-      : this.options.arsenal === "specialists" && p.classId === 2 && !place
-        ? 0.1
-        : 0.22;
+      : p.classId === 4 && !place
+        ? 0.08
+        : this.options.arsenal === "specialists" && p.classId === 2 && !place
+          ? 0.1
+          : 0.22;
     this.world.set(b.x, b.y, b.z, place ? (p.team === 0 ? 7 : 8) : 0);
     if (!place) this.queueCollapse(b.x, b.y, b.z);
     this.revision++;
@@ -1119,6 +1313,7 @@ export class Room {
       p.health < role.health ||
       p.blocks < role.blocks ||
       (p.grenades ?? 0) < role.grenades ||
+      (p.gearCharges ?? 0) < gearInfo(p.classId).charges ||
       WEAPONS.some(
         (w, i) =>
           isFirearm(i) && (p.ammo[i] < w.mag || p.reserve[i] < w.reserve),
@@ -1145,6 +1340,7 @@ export class Room {
     p.health = role.health;
     p.blocks = Math.max(p.blocks, role.blocks);
     p.grenades = role.grenades;
+    p.gearCharges = gearInfo(p.classId).charges;
     WEAPONS.forEach((w, i) => {
       if (isFirearm(i)) {
         p.ammo[i] = w.mag;

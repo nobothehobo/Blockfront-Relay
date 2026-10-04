@@ -104,6 +104,21 @@ try {
     await a.waitForTimeout(250);
   }
   assert.ok(largest <= 7000, `Largest packet ${largest} bytes`);
+  const diagnostics = await a.evaluate(() => (window as any).BR.network);
+  assert.ok(
+    diagnostics.failures >= 2,
+    "diagnostics count HTTP errors/timeouts",
+  );
+  assert.ok(
+    diagnostics.predictionStops >= 1,
+    "outage fills bounded queue without losing telemetry",
+  );
+  assert.ok(diagnostics.buffer >= 100 && diagnostics.buffer <= 250);
+  assert.equal(
+    diagnostics.lagCompensation,
+    false,
+    "HTTP does not advertise unavailable rewind",
+  );
   const joystick = await a.locator("#joystick").boundingBox();
   assert.ok(joystick);
   const cdp = await context.newCDPSession(a);

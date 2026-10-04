@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { replay } from "../shared/prediction.js";
+import { SnapshotClock, ConnectionStats } from "./net-timing.js";
 import {
   inputPacket,
   MAX_PENDING_INPUTS,
@@ -127,6 +128,10 @@ let yaw = 0,
   httpBusy = false,
   httpCursor = 0;
 let pendingInputs: Input[] = [];
+const snapshotClock = new SnapshotClock(),
+  connectionStats = new ConnectionStats();
+let predictionBlocked = false;
+let lastNetworkUi = -1000;
 let predictionEpoch = 0;
 const renderCorrection = new THREE.Vector3();
 let lastPing = 0;
@@ -733,6 +738,10 @@ async function refreshRooms() {
 }
 function message(msg: any) {
   if (msg.type === "welcome") {
+    snapshotClock.reset();
+    connectionStats.reset();
+    predictionBlocked = false;
+    lastStateAt = performance.now();
     combatFX.clear();
     id = msg.id;
     roomId = msg.room.id;
@@ -852,6 +861,7 @@ async function join(room: string) {
   ws = new WebSocket(url);
   const socket = ws;
   socket.onmessage = (e) => {
+    if (ws !== socket) return;
     try {
       message(JSON.parse(e.data));
     } catch (err) {
@@ -882,6 +892,7 @@ async function join(room: string) {
   }, 10000);
 }
 function handleState(next: any) {
+  if (!snapshotClock.observe(next.time * 1000, performance.now())) return;
   lastStateAt = performance.now();
   state = next;
   combatFX.sync(next.projectiles ?? [], performance.now());
@@ -922,6 +933,10 @@ function handleState(next: any) {
       local!.y - predicted.y,
       local!.z - predicted.z,
     );
+    connectionStats.observeCorrection(
+      correction.length(),
+      correction.length() >= 2,
+    );
     if (correction.length() < 2 && local!.dead === p.dead)
       renderCorrection.add(correction).clampLength(0, 1.5);
     else renderCorrection.set(0, 0, 0);
@@ -948,8 +963,8 @@ function handleState(next: any) {
     // Never interpolate through a respawn or a round's spawn relocation.
     if (r.target.epoch !== rp.epoch) r.samples.length = 0;
     r.target = rp;
-    r.samples.push({ at: performance.now(), ...rp });
-    if (r.samples.length > 8) r.samples.shift();
+    r.samples.push({ ...rp, at: next.time * 1000 });
+    if (r.samples.length > 16) r.samples.shift();
   }
   for (const [key, r] of remote)
     if (!alive.has(key)) {
@@ -1148,10 +1163,7 @@ function updateHud() {
       : p.protected > 0
         ? "SPAWN SHIELD"
         : "";
-  $("network").textContent =
-    performance.now() - lastStateAt > 1500 || networkFailures
-      ? "Recovering connection…"
-      : `${ping} ms · ${networkMode === "http" ? "HTTP" : "WS"}`;
+  updateNetwork();
   let banner = "";
   if (state.phase === "finished")
     banner = `${state.winner} · Next round in ${Math.ceil(state.remaining)}s`;
@@ -1716,6 +1728,26 @@ $("create").onclick = async () => {
     button.disabled = false;
   }
 };
+function updateNetwork() {
+  if (performance.now() - lastNetworkUi < 250) return;
+  lastNetworkUi = performance.now();
+  const age = Math.max(0, performance.now() - lastStateAt);
+  $("network").textContent =
+    age > 1500 || networkFailures
+      ? "Recovering connection…"
+      : predictionBlocked
+        ? "Waiting for server…"
+        : `${ping} ms · ${networkMode === "http" ? "HTTP" : "WS"}`;
+  $("connection-details").textContent =
+    `${networkMode.toUpperCase()} · RTT ${ping} ms · snapshot age ${Math.round(age)} ms\n` +
+    `Motion buffer ${Math.round(snapshotClock.delay)} ms · jitter ${Math.round(snapshotClock.jitter)} ms · gaps ${snapshotClock.gaps}\n` +
+    `Queued inputs ${pendingInputs.length}/${MAX_PENDING_INPUTS} · prediction pauses ${connectionStats.predictionStops}\n` +
+    `Corrections ${connectionStats.corrections} (${connectionStats.hardCorrections} hard) · max ${connectionStats.maxCorrection.toFixed(2)} blocks\n` +
+    `Request failures ${connectionStats.failures} · sent ${(connectionStats.bytesSent / 1024).toFixed(1)} KiB\n` +
+    (state?.lagCompensation
+      ? "Hitscan rewind: up to 200 ms"
+      : "Hitscan rewind: not enabled on this host");
+}
 async function sendInput() {
   if (!connected || performance.now() < retryAt) return;
   const commands =
@@ -1730,6 +1762,9 @@ async function sendInput() {
         commands,
       );
       ws.send(packet.body);
+      connectionStats.bytesSent += new TextEncoder().encode(
+        packet.body,
+      ).byteLength;
       if (packet.lastSeq !== undefined) sentCommand = packet.lastSeq;
       if (performance.now() - lastPing > 2000) {
         lastPing = performance.now();
@@ -1741,20 +1776,24 @@ async function sendInput() {
     const activeToken = httpToken;
     const start = performance.now();
     try {
+      const packet = inputPacket(
+        {
+          room: roomId,
+          token: httpToken,
+          epoch: predictionEpoch,
+          revision: (world as any).revision ?? 0,
+          cursor: httpCursor,
+          round: state?.round,
+        },
+        commands,
+      );
+      connectionStats.bytesSent += new TextEncoder().encode(
+        packet.body,
+      ).byteLength;
       const result = await api("/api/input", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: inputPacket(
-          {
-            room: roomId,
-            token: httpToken,
-            epoch: predictionEpoch,
-            revision: (world as any).revision ?? 0,
-            cursor: httpCursor,
-            round: state?.round,
-          },
-          commands,
-        ).body,
+        body: packet.body,
       });
       if (httpToken !== activeToken || !connected) return;
       ping = Math.round(performance.now() - start);
@@ -1778,6 +1817,7 @@ async function sendInput() {
         void join(previousRoom);
       } else {
         networkFailures++;
+        connectionStats.failures++;
         retryAt =
           performance.now() +
           Math.min(2000, 150 * 2 ** Math.min(networkFailures, 4));
@@ -1839,17 +1879,28 @@ function frame(now: number) {
     while (accumulator >= TICK) {
       if (pendingInputs.length < MAX_PENDING_INPUTS) {
         const command = { ...input, seq: ++seq };
+        if (state?.lagCompensation && snapshotClock.samples > 1)
+          command.viewTime = snapshotClock.renderTime(now) / 1000;
         for (const [key, on] of Object.entries(pulses))
           if (on) (command as any)[key] = true;
         pendingInputs.push(command);
         input.seq = seq;
         for (const key of Object.keys(pulses))
           delete pulses[key as keyof Input];
-        if (local.dead <= 0)
+        if (local.dead <= 0) {
+          const oldY = local.y;
           move(local, command, world, TICK, local.zombie, local.jetpack);
+          const rise = local.y - oldY;
+          if (rise > 0.5 && rise <= 1.05 && !command.jump && !command.jet)
+            renderCorrection.y = Math.max(-1, renderCorrection.y - rise);
+        }
       }
       accumulator -= TICK;
     }
+    const blocked = pendingInputs.length >= MAX_PENDING_INPUTS;
+    if (blocked && !predictionBlocked) connectionStats.predictionStops++;
+    predictionBlocked = blocked;
+    updateNetwork();
     const ep = eye(local);
     renderCorrection.multiplyScalar(Math.exp(-dt * 12));
     camera.position.set(
@@ -1945,8 +1996,8 @@ function frame(now: number) {
       now < damageUntil
         ? "radial-gradient(ellipse,transparent 30%,#d7464b66)"
         : "none";
+    const renderAt = snapshotClock.renderTime(now);
     for (const r of remote.values()) {
-      const renderAt = now - Math.max(110, Math.min(300, ping * 0.6 + 50));
       while (r.samples.length > 2 && r.samples[1].at < renderAt)
         r.samples.shift();
       const a = r.samples[0] ?? r.target,
@@ -2127,6 +2178,11 @@ setInterval(() => {
       transport: networkMode,
       pending: pendingInputs.length,
       acknowledged: state?.players.find((p: any) => p.id === id)?.lastSeq,
+      snapshotAge: Math.max(0, performance.now() - lastStateAt),
+      buffer: snapshotClock.delay,
+      jitter: snapshotClock.jitter,
+      lagCompensation: state?.lagCompensation ?? false,
+      ...connectionStats,
     };
   },
   get drawCalls() {

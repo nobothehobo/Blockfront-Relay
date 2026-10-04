@@ -39,7 +39,7 @@
       <div class="brand">
         <span class="brand-mark">BR</span
         ><span>BLOCKFRONT<br /><b>RELAY</b></span
-        ><small>2.3 · STRONGHOLDS</small>
+        ><small>2.4 · CONNECTION & COMBAT</small>
       </div>
       <p class="eyebrow">PROCEDURAL FRONTIERS</p>
       <h1>Dig in.<br />Build your advantage.</h1>
@@ -139,8 +139,8 @@
       <div id="settings-fields"></div>
       <p>
         Preferences save on this device. Lighting uses baked face shading and
-        optional lightweight character contact shadows. Reflection render
-        targets and dynamic shadow maps are not used.
+        optional lightweight character contact shadows. Desktop can also enable
+        nearby terrain shadows. Reflection render targets are not used.
       </p>
     </section>
     <section id="controls" class="modal hidden">
@@ -161,8 +161,8 @@
         name to choose directly. BUILD opens the digging/placement tools; SHOOT
         becomes PLACE or DIG for the selected tool. Tap BUILD again to return to
         your gun. With Blocks selected, tap KIT to cycle a cover wall, ramp,
-        shelter or single block. Green ghosts are placeable; red ghosts show why
-        placement is blocked.
+        shelter, bridge or single block. Green ghosts are placeable; red ghosts
+        show why placement is blocked.
       </p>
       <p>
         <b>Frontier forces</b><br />Choose a class before deploying, or queue a
@@ -346,6 +346,15 @@
     <section id="pause" class="modal hidden">
       <h2>Take a breather</h2>
       <p>The match continues while paused.</p>
+      <details>
+        <summary>Connection diagnostics</summary>
+        <p
+          id="connection-details"
+          style="white-space: pre-line; font-size: 0.85rem"
+        >
+          Joining…
+        </p>
+      </details>
       <button id="resume" class="primary">Resume</button
       ><button id="pause-settings">Settings</button
       ><button id="pause-class">Change class</button

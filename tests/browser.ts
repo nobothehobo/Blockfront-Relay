@@ -64,6 +64,10 @@ try {
   await a.locator("#name").fill("DesktopA");
   await a.locator("#play").click();
   await a.waitForFunction(() => (window as any).BR.connected);
+  assert.equal(
+    await a.evaluate(() => (window as any).BR.network.lagCompensation),
+    process.env.BR_TRANSPORT !== "http",
+  );
   if (!(await a.evaluate(() => document.pointerLockElement)))
     await a.locator("#game").click();
   await a.waitForFunction(() => document.pointerLockElement?.id === "game");
@@ -154,6 +158,14 @@ try {
     { id: bId, x: bInitial },
   );
   await b.screenshot({ path: "artifacts/match-desktop.png" });
+  await b.keyboard.press("Escape");
+  await b.locator("#pause details summary").click();
+  await b.waitForFunction(() =>
+    document
+      .querySelector("#connection-details")
+      ?.textContent?.includes("Motion buffer"),
+  );
+  assert.ok(await b.locator("#connection-details").isVisible());
   console.log(
     "PASS desktop: launch, pointer lock, movement, switching, firing, reload, jetpack and two-browser remote synchronization",
   );

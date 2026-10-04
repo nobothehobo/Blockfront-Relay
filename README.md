@@ -1,8 +1,10 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.3 — Strongholds.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.4 — Connection & Combat (first pass).**
 
-**New:** Stronghold Demolition, bounded authoritative structural collapse, Sapper terrain breaches, a bridge construction kit, precision headshots, four traversable foundry buildings, and optional desktop terrain shadows. See [2.3 release notes and limits](docs/UPDATE-23.md). Reload/rejoin after upgrading; hosted rounds reset for the new geometry.
+**New:** jitter-aware server-time interpolation, pause-menu connection diagnostics, dedicated-server bounded hitscan rewind, WebSocket heartbeats, server tick diagnostics, safer diagonal step climbing, and a bridge input fix. See [2.4 release notes and limits](docs/UPDATE-24.md). This starts the proposed 3.0 reliability pass; it does not provision a new public WebSocket host. Reload/rejoin for the new client.
+
+**2.3:** Stronghold Demolition, bounded authoritative structural collapse, Sapper terrain breaches, a bridge construction kit, precision headshots, four traversable foundry buildings, and optional desktop terrain shadows. See [2.3 release notes and limits](docs/UPDATE-23.md).
 
 Source: [nobothehobo/Blockfront-Relay](https://github.com/nobothehobo/Blockfront-Relay).
 

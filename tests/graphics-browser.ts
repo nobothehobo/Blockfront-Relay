@@ -102,7 +102,7 @@ sockets.on("connection", (ws, req) => {
     role,
   );
   Object.assign(p, {
-    x: num === 1 ? 160.5 : 170.5,
+    x: num === 1 ? 160.5 : 166.5 + num * 2,
     y: 12.98,
     z: 175.5,
     yaw: 0,
@@ -151,24 +151,24 @@ async function faceNorth(page: Page) {
       Math.abs((window as any).BR.player.pitch) < 0.03,
   );
 }
-async function join(page: Page, role: number) {
+async function join(page: Page, role: number, preset = "balanced") {
   console.log(`Joining visual test role ${role}`);
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(m.text());
   });
-  await page.addInitScript(() => {
+  await page.addInitScript((preset) => {
     localStorage.setItem("br-touch-tip", "1");
     localStorage.setItem(
       "br-settings",
       JSON.stringify({
-        preset: "balanced",
-        distance: 112,
-        effects: "high",
+        preset,
+        distance: preset === "mobile" ? 32 : 112,
+        effects: preset === "mobile" ? "low" : "high",
         shadows: true,
       }),
     );
-  });
+  }, preset);
   await page.goto(`http://127.0.0.1:${(server.address() as any).port}`);
   await page.waitForFunction(() =>
     document.querySelector("#status")?.textContent?.includes("rooms available"),
@@ -219,7 +219,7 @@ try {
   assert.ok(await a.evaluate(() => (window as any).BR.lighting.sunShadows));
   await a.screenshot({ path: "artifacts/fieldcraft-classes.png" });
   const b = await browser.newPage({ viewport: { width: 1024, height: 768 } });
-  await join(b, 0);
+  await join(b, 0, "mobile");
   await a.bringToFront();
   await a.locator("#game").click();
   await a.waitForFunction(() => document.pointerLockElement?.id === "game");
@@ -260,7 +260,7 @@ try {
     isMobile: true,
     hasTouch: true,
   });
-  await join(phone, 1);
+  await join(phone, 1, "mobile");
   // Select the mobile preset through the actual settings UI.
   await phone.locator("#pause-button").tap();
   await phone.locator("#pause-settings").tap();
@@ -268,6 +268,12 @@ try {
     .locator("#settings-fields label")
     .filter({ hasText: "Quality preset" })
     .locator("select");
+  await quality.selectOption("balanced");
+  assert.equal(
+    await phone.evaluate(() => (window as any).BR.lighting.shadowSize),
+    512,
+  );
+  assert.ok(await phone.evaluate(() => (window as any).BR.lighting.sunShadows));
   await quality.selectOption("mobile");
   await phone.locator('[data-close="settings"]').tap();
   await phone.locator("#resume").tap();
@@ -333,6 +339,10 @@ try {
     revision: room.revision,
   });
   await a.waitForFunction(() => (window as any).BR.lighting.sun < 2);
+  await a.waitForFunction(
+    () =>
+      (window as any).BR.map.tilesLeft === 0 && (window as any).BR.chunks > 100,
+  );
   await a.screenshot({ path: "artifacts/fieldcraft-outbreak.png" });
   assert.deepEqual(errors, []);
   console.log(

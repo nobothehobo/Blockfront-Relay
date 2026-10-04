@@ -1,6 +1,10 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.5 — Banner Patrol.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.6 — Fieldcraft.**
+
+**2.6:** rebuilt original class and infected character models, physically based materials, improved sun/bounce lighting and nearby shadows, twilight Outbreak sky, and a fifth excavation role. Medboxes, light beacons, timed charges and proximity mines are playable server-authoritative class equipment. See [Fieldcraft details, controls and limits](docs/UPDATE-26.md).
+
+**Public test:** [Play Blockfront Relay](https://blockfront-relay.nobothehobo.chatgpt.site).
 
 **2.5:** cooperative NPC Capture the Flag, a configurable solo setup screen, three structurally different map families, and moving magazines/bolts/pumps and phased reload animations. See [release notes and limits](docs/UPDATE-25.md). Reload/rejoin after updating; old hosted rounds reset to use the new terrain baseline.
 
@@ -29,7 +33,7 @@ The north-up minimap shows terrain, your heading, living teammates, bases, relay
 
 Audio uses original synthesized retro gun reports, mechanical reloads, crunchy block impacts and fuller explosions. Continuous jetpack thrust includes ignition/shutdown, fuel-dependent tone and nearby-player stereo engines. Loops respect mute, pause, life and fuel. See [audio design and limits](docs/AUDIO.md).
 
-**2.0:** choose Trailguard (rifle + nearby healing), Skirmisher (SMG + speed burst), Sapper (blast launcher + building resupply), or Surveyor (marksman + accuracy focus). Each has distinct health, speed, block/grenade reserves and original field-kit silhouettes. Class changes apply on respawn; every role retains access to the sandbox arsenal. Grenades bounce and explode; launcher rounds detonate on impact. Both damage players and carve synchronized voxel craters. Animated bullet streaks follow authoritative hitscan endpoints; bounded instanced debris, smoke, muzzle flashes and explosion audio add feedback. Terrain gains baked corner shading. See [2.0 release notes](docs/UPDATE-20.md).
+**Classes:** choose Trailguard (rifle + nearby healing), Skirmisher (SMG + speed burst), Sapper (blast launcher + building resupply), Surveyor (marksman + accuracy focus), or Delver (shotgun + tunnel boring). Each has distinct health, speed, block/grenade reserves and original field-kit silhouettes. Class changes apply on respawn; every role retains access to the sandbox arsenal. Grenades bounce and explode; launcher rounds detonate on impact. Both damage players and carve synchronized voxel craters. Animated bullet streaks follow authoritative hitscan endpoints; bounded instanced debris, smoke, muzzle flashes and explosion audio add feedback. Terrain gains baked corner shading. See [2.0 release notes](docs/UPDATE-20.md).
 
 **2.1:** original cover walls (6 blocks), connected four-step ramps (30) and open-door shelters (50) can be placed as an atomic kit. Select Blocks, then B or the touch KIT button to cycle; green/red footprint ghosts show whether placement is valid. All cells are checked for resources, terrain, players, support, range and protected foundations before any are created. Server edit batches replicate to everyone and late joins. Custom rooms now offer **Specialist loadouts** and **Class jetpacks** by default; these do not change existing sandbox rooms. Only Sapper can use the launcher in specialist rooms, Skirmishers get class jetpacks, and Sappers dig faster. Weapon handling gains bounded cosmetic recoil, smoother aim transitions and an original marksman optic. See [Fieldwork and reference research](docs/UPDATE-21.md).
 
@@ -101,39 +105,40 @@ Or enter the server's HTTPS URL under **About & connection → Server URL**, the
 
 The Sites deployment includes a second server adapter, `worker/index.ts`, using a D1-backed optimistic compare-and-swap room transaction. This is **real shared, server-authoritative multiplayer**, using HTTP input/state exchange around 10 Hz. It is not peer-to-peer and does not rely on isolate-local room memory. The same room simulation handles both transports.
 
-The hosted edition is a convenient small-match fallback. Database round trips add latency, every input transaction writes a room record, and contention grows with player count. **For the best FPS experience and larger matches (up to 32 players), deploy the Node WebSocket server.** Hosted transport is not claimed to have passed a 16-player internet load test. Private Sites access requires the owning account; opening access for friends is a separate sharing configuration.
+The hosted edition is a convenient small-match fallback. Database round trips add latency, every input transaction writes a room record, and contention grows with player count. **For the best FPS experience and larger matches (up to 32 players), deploy the Node WebSocket server.** Hosted transport is not claimed to have passed a 16-player internet load test. The linked test site is public; private Sites deployments require an explicit sharing change before friends can join.
 
 Build the hosted artifact with `npm run build:hosted`. `.openai/hosting.json` declares a D1 `DB` binding; generated schema migrations are in `drizzle/`. Publication applies migrations before uploading `dist/server/index.js`. The Worker embeds the small client bundle, so external asset URLs are unnecessary. Production schema changes use `npm run db:generate`; never mutate deployed migrations.
 
 ## Controls
 
-| Action                      | Desktop                  | iPhone / iPad                               |
-| --------------------------- | ------------------------ | ------------------------------------------- |
-| Move / sprint               | WASD / Shift             | Floating left stick; push farther to sprint |
-| Look                        | Mouse with pointer lock  | Drag right side or SHOOT                    |
-| Fire / use selected tool    | Left click               | Hold SHOOT / PLACE / DIG                    |
-| Aim                         | Right click              | Tap AIM to toggle                           |
-| Jump / zombie wall scramble | Space                    | Hold JUMP                                   |
-| Crouch                      | Hold C                   | Tap CROUCH to toggle                        |
-| Reload                      | R                        | RELOAD                                      |
-| Select weapon / tool        | 1–7 or mouse wheel       | Tap weapon name; choose from picker         |
-| Throw grenade               | G                        | FRAG button                                 |
-| Class ability               | V                        | Named ability button                        |
-| Change class                | Class badge / pause menu | Class badge / pause menu                    |
-| Dig                         | Hold Q                   | BUILD → hold DIG                            |
-| Build                       | Hold E                   | BUILD → hold PLACE; tap again for gun       |
-| Cycle construction kit      | B (selects Blocks)       | With Blocks selected, tap KIT               |
-| Jetpack                     | Hold F                   | Hold JET                                    |
-| Expand minimap              | M                        | Tap MAP; tap CLOSE MAP to dismiss           |
-| Scores                      | Hold Tab                 | Scores button                               |
-| Pause / release mouse       | Esc                      | Pause button                                |
-| Relay interaction / pickup  | Walk near it             | Walk near it                                |
+| Action                      | Desktop                  | iPhone / iPad                                      |
+| --------------------------- | ------------------------ | -------------------------------------------------- |
+| Move / sprint               | WASD / Shift             | Floating left stick; push farther to sprint        |
+| Look                        | Mouse with pointer lock  | Drag right side or SHOOT                           |
+| Fire / use selected tool    | Left click               | Hold SHOOT / PLACE / DIG                           |
+| Aim                         | Right click              | Tap AIM to toggle                                  |
+| Jump / zombie wall scramble | Space                    | Hold JUMP                                          |
+| Crouch                      | Hold C                   | Tap CROUCH to toggle                               |
+| Reload                      | R                        | RELOAD                                             |
+| Select weapon / tool        | 1–7 or mouse wheel       | Tap weapon name; choose from picker                |
+| Throw grenade               | G                        | FRAG button                                        |
+| Class ability               | V                        | Named ability button                               |
+| Deploy class field gear     | K                        | Named gear button (MEDBOX / LUMEN / CHARGE / MINE) |
+| Change class                | Class badge / pause menu | Class badge / pause menu                           |
+| Dig                         | Hold Q                   | BUILD → hold DIG                                   |
+| Build                       | Hold E                   | BUILD → hold PLACE; tap again for gun              |
+| Cycle construction kit      | B (selects Blocks)       | With Blocks selected, tap KIT                      |
+| Jetpack                     | Hold F                   | Hold JET                                           |
+| Expand minimap              | M                        | Tap MAP; tap CLOSE MAP to dismiss                  |
+| Scores                      | Hold Tab                 | Scores button                                      |
+| Pause / release mouse       | Esc                      | Pause button                                       |
+| Relay interaction / pickup  | Walk near it             | Walk near it                                       |
 
-1 Rifle · 2 SMG · 3 Shotgun · 4 Marksman · 5 Spade · 6 Blocks · 7 Blast launcher. Digging yields blocks, up to 200; class loadouts determine starting reserves. Terrain edits reach six blocks; zombies dig seven blocks away. The bottom layer and a small spawn foundation are protected, including against explosions. Placement inside living players is rejected. Edits last until the next round, and late joiners receive the current edited map. Zombies cannot use explosives or class abilities.
+1 Rifle · 2 SMG · 3 Shotgun · 4 Marksman · 5 Spade / Delver bore drill · 6 Blocks · 7 Blast launcher. Digging yields blocks, up to 200; class loadouts determine starting reserves. Terrain edits reach six blocks; zombies dig seven blocks away. The bottom layer and a small spawn foundation are protected, including against explosions. Placement inside living players is rejected. Edits last until the next round, and late joiners receive the current edited map. Zombies cannot use explosives, field gear or class abilities.
 
 Construction kits include a cover wall, ramp, shelter and eight-block bridge. Sapper's ability also breaches nearby terrain along the aim ray.
 
-Settings save locally: quality preset, render distance, effects, FOV, master/effects volume, desktop/touch sensitivity, touch control scale, invert look and crosshair. Optional nearby terrain shadows run on desktop; touch devices use cheaper contact shadows. Background music, controller support and custom keyboard bindings are not implemented.
+Settings save locally: quality preset, render distance, effects, FOV, master/effects volume, desktop/touch sensitivity, touch control scale, invert look and crosshair. Mobile preset uses contact shadows; balanced/high can enable nearby terrain/character sun shadows, including on touch devices. High effects allow at most two nearby beacon lights. Background music, controller support and custom keyboard bindings are not implemented.
 
 ## Source layout
 
@@ -163,6 +168,7 @@ npm run test:browser
 BR_TRANSPORT=http npm run test:browser
 npm run test:elimination
 npm run test:polish
+npm run test:graphics
 npm run test:fieldwork
 npm run test:audio
 ```

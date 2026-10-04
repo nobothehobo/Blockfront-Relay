@@ -94,6 +94,8 @@ export class GearView {
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
+    const distance2 = (g: FieldGear) =>
+      (g.x - camera.x) ** 2 + (g.y - camera.y) ** 2 + (g.z - camera.z) ** 2;
     const beacons = highEffects
       ? gear
           .filter(
@@ -101,17 +103,13 @@ export class GearView {
               g.kind === "beacon" &&
               Math.hypot(g.x - camera.x, g.y - camera.y, g.z - camera.z) < 22,
           )
-          .sort(
-            (a, b) =>
-              camera.distanceToSquared(new THREE.Vector3(a.x, a.y, a.z)) -
-              camera.distanceToSquared(new THREE.Vector3(b.x, b.y, b.z)),
-          )
+          .sort((a, b) => distance2(a) - distance2(b))
           .slice(0, 2)
       : [];
     this.lights.forEach((light, i) => {
       const g = beacons[i];
       light.visible = highEffects;
-      light.intensity = g ? 22 : 0;
+      light.intensity = g ? 10 : 0;
       if (g) light.position.set(g.x, g.y + 0.8, g.z);
     });
   }

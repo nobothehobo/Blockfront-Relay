@@ -32,3 +32,7 @@ Use the Node WebSocket server for larger matches and the best latency. The hoste
 ## Larger battlefield and minimap
 
 Alpha 0.4 expands terrain to 320 × 56 × 320 cells (5.47 MiB per typed array). Greedy geometry builds only dirty chunks near the current view, up to two per frame, with a six-millisecond budget checked between chunks. Individual chunk work can exceed that budget. Distant chunks remain pending until approached. The minimap is a cached Canvas 2D image, rather than a second 3D scene; its terrain tiles have a three-millisecond incremental budget and markers draw at 10 Hz. Routine edits invalidate one tile instead of rescanning the whole map. Physical iOS performance still needs device testing.
+
+## Fieldcraft graphics costs
+
+2.6 uses Standard materials and nearby sun shadows on balanced/high presets. Desktop balanced uses a 1024px map refreshed at most every 180ms; desktop high uses 2048px/120ms. Touch balanced/high use 512px/300ms. Mobile preset has no sun shadow map, retains optional one-draw-call contact shadows, and omits beacon lights. High effects cap beacon illumination at the two nearest visible-range lights, without shadow maps. Equipment uses two batched draws for up to 32 entities. Anatomy stays one skinned draw per character, below 6000 vertices per original model. Shader/material errors and layouts are checked in actual Chromium WebGL; this is not a measured FPS result on hardware or Safari. The new compressed client is approximately 158 KB.

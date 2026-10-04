@@ -19,6 +19,7 @@ jobs:
       - run: BR_TRANSPORT=http npm run test:browser
       - run: npm run test:elimination
       - run: npm run test:polish
+      - run: npm run test:graphics
       - run: npm run test:fieldwork
       - run: npm run test:audio
       - run: npm run test:connection

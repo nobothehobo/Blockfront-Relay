@@ -1,6 +1,8 @@
 # Verification
 
-Automated checks are in `tests/`. Unit tests exercise the actual authoritative Room code, not duplicated gameplay implementations.
+Automated checks are in `tests/`. Unit tests exercise the actual authoritative Room code, not duplicated gameplay implementations. Fieldcraft release verification passes 99 automated checks, the graphics, elimination and NPC/ordnance polish browser suites, and standard desktop/phone/tablet controls on both Node WebSockets and the local hosted HTTP/SQL adapter.
+
+2.6 adds `tests/fieldgear.test.ts` for server-owned deploy pulses, inventory, range/support/occupancy, life/infection/phase restrictions, medbox sight and health limits, mine arming/cover/team rules, timed charge damage/craters, lifecycle limits, Delver tunnel batches/cooldowns and protected foundations. Hosted tests verify gear/inventory/IDs across independent requests, both peers, late joins and previous-release rooms. `npm run test:graphics` renders all five class rigs and three infected variants, checks shader errors and shadow presets, verifies two-browser beacon and Bore replication, and checks touch gear plus phone/tablet layouts in a controlled authoritative fixture.
 
 2.5 adds `tests/banner-patrol.test.ts` for CTF rules, squad role allocation, an autonomously navigating flag runner, distinct map families/rotation and bounded weapon-action poses. Hosted SQL tests cover carried/dropped flags, captures and late-join state across independent sessions. `npm run test:banner` and `BR_TRANSPORT=http npm run test:banner` exercise solo setup, seven NPCs, a desktop friend in the same room, keyboard/touch reloads and every map preset using normal production endpoints.
 
@@ -17,7 +19,7 @@ Automated checks are in `tests/`. Unit tests exercise the actual authoritative R
 - Exact movement replay at 200/500 ms round-trip latency plus jitter, bounded simulation time under flooding and brief batched fire taps.
 - Thirty-two-player simulation and 32 real WebSocket-connection smoke tests.
 - Hosted session auth, common state and concurrent CAS joins.
-- Four class loadouts and respawn-only changes, server abilities/cooldowns, grenade bounce/fuse/inventory, launcher impact/ammo/rate, cover-aware blast damage and replicated crater batches, protected foundations and late joins. Hosted persistence tests verify class selection, active ordnance and explosion feedback across requests.
+- Five class loadouts and respawn-only changes, server abilities/cooldowns, grenade bounce/fuse/inventory, launcher impact/ammo/rate, cover-aware blast damage and replicated crater batches, protected foundations and late joins. Hosted persistence tests verify class selection, active ordnance and explosion feedback across requests.
 - NPC slot replacement, authority-driven movement/combat/reloading/respawning, occlusion, objectives, infection and shared hosted persistence.
 - Local obstacle routes, safe-drop rejection, visible-target prioritization, last-seen memory expiration, retreating reloads, relay-carrier navigation and articulated pose math.
 - Real WebSocket-client integration for movement, map edits/late joins, fuel, combat, death and respawn.
@@ -44,4 +46,4 @@ Remaining validation:
 
 There is no claim of measured 60 FPS on physical mobile hardware. Greedy chunks, distance culling and capped pixel ratios are implemented; real-device performance remains to be measured. Gamepad and custom desktop bindings are future work.
 
-The published URL remains owner-private. Direct external test requests encountered a sign-in barrier; local transport and browser tests do not constitute verification of a live match on separate physical devices. Friends need site access, or a deployed public Node server, to join.
+The public test URL uses the hosted HTTP/SQL adapter. Controlled local tests of that adapter and the dedicated WebSocket server do not constitute verification of a live match across separate physical devices and internet connections.

@@ -74,6 +74,8 @@ export function createCharacter(p: Appearance) {
     const flesh = [0x99a773, 0x849b86, 0xafad7f][variant],
       cloth = [0x4a5f50, 0x5c5960, 0x465b67][variant];
     part(1, variant === 1 ? 0.71 : 0.57, 0.62, 0.4, 0, 1.04, 0.04, cloth);
+    // Root-owned hips keep the waist connected while the torso hunches.
+    part(0, variant === 1 ? 0.61 : 0.53, 0.2, 0.32, 0, 0.73, 0.015, cloth);
     part(2, 0.45, 0.43, 0.42, 0.035, 1.66, -0.035, flesh);
     part(2, 0.35, 0.17, 0.43, 0.06, 1.47, -0.09, 0x6c7460);
     part(2, 0.3, 0.12, 0.025, 0.035, 1.52, -0.325, 0x292b30);

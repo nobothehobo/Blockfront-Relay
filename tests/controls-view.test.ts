@@ -95,3 +95,37 @@ test("contact shadows follow presented player position instead of an ahead-of-re
   shadows.mesh.geometry.dispose();
   shadows.material.dispose();
 });
+
+import {
+  gameKey,
+  hybridMovement,
+  TrackpadLook,
+} from "../client/hybrid-input.js";
+test("hardware keys work independently of touch detection and normalize absent Safari codes", () => {
+  assert.equal(gameKey("", "w"), "KeyW");
+  assert.equal(gameKey("Unidentified", " "), "Space");
+  assert.equal(gameKey("KeyQ", "a"), "KeyQ");
+  assert.deepEqual(hybridMovement(new Set(["KeyW", "KeyD"]), 0, 0), {
+    forward: 1,
+    strafe: 1,
+  });
+  assert.deepEqual(hybridMovement(new Set(["KeyW", "KeyS"]), 0.8, 0.2), {
+    forward: 0,
+    strafe: 0.2,
+  });
+  assert.deepEqual(hybridMovement(new Set(), 0.8, -0.5), {
+    forward: 0.8,
+    strafe: -0.5,
+  });
+});
+test("unlocked trackpad look resets on UI entry and clamps pointer jumps and edge steering", () => {
+  const look = new TrackpadLook();
+  assert.deepEqual(look.sample(200, 300), { x: 0, y: 0 });
+  assert.deepEqual(look.sample(230, 310), { x: 30, y: 10 });
+  assert.deepEqual(look.edge(1024, 768), { x: 0, y: 0 });
+  assert.deepEqual(look.sample(1, 1000), { x: -80, y: 80 });
+  assert.deepEqual(look.edge(1024, 768), { x: -35 / 36, y: 1 });
+  look.clear();
+  assert.deepEqual(look.edge(1024, 768), { x: 0, y: 0 });
+  assert.deepEqual(look.sample(800, 100), { x: 0, y: 0 });
+});

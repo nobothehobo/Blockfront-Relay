@@ -81,3 +81,7 @@ Snow albedo, sky haze and per-biome exposure preserve highlight headroom. Sun st
 `server/approaches.ts` selects a persistent strategic lane from position, destination and NPC preference, then provides sparse corners to the existing bounded local navigator. Short-range goals remain direct. Private lane state stays outside player snapshots. NPCs submit normal inputs and cannot override collision or teleport to a waypoint.
 
 Hosted format 9 stores `terrainVersion`. Existing format-8 rounds without that field restore the exact version-0 generator and their terrain edits, players and session tokens. Cache keys include both seed and terrain version. A normal next-round reset generates version 1, clears edits and sends clients the fresh compact map plus new spawn epochs. This avoids applying old edits or predicted movement to a changed map underneath active players.
+
+## 2.11.1 hybrid input
+
+`client/hybrid-input.ts` normalizes key codes, combines keyboard/joystick movement per axis and bounds unlocked trackpad deltas/edge steering. Touch capability continues selecting mobile rendering defaults independently of the chosen input mode. The client uses native pointer lock when available, with caught errors and an ordinary-coordinate fallback otherwise. Gameplay keys, pointer events and touch panels all feed the existing authoritative command stream. Read-only control diagnostics support browser QA; no mutation API is added.

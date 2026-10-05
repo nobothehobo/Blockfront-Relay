@@ -1,6 +1,6 @@
 {
   "name": "blockfront-relay",
-  "version": "2.11.0",
+  "version": "2.11.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -22,7 +22,8 @@
     "test:banner": "node --import tsx tests/banner-browser.ts",
     "format": "prettier --write client server shared worker/index.ts worker/assets.generated.d.ts tests docs db scripts/*.mjs *.json *.md *.yaml",
     "test:graphics": "node --import tsx tests/graphics-browser.ts",
-    "test:night": "node --import tsx tests/night-browser.ts"
+    "test:night": "node --import tsx tests/night-browser.ts",
+    "test:keyboard": "node --import tsx tests/keyboard-browser.ts"
   },
   "dependencies": {
     "three": "^0.180.0",

@@ -35,6 +35,7 @@ import {
   touchLookGain,
   pointerLockActive,
 } from "./control-math.js";
+import { gameKey, hybridMovement, TrackpadLook } from "./hybrid-input.js";
 import { eliminationCamera } from "./elimination.js";
 import { Terrain } from "./mesh.js";
 import { Sound } from "./audio.js";
@@ -81,6 +82,7 @@ const updateAppMode = () => {
 standaloneQuery.addEventListener("change", updateAppMode);
 updateAppMode();
 type Settings = {
+  inputMode: "auto" | "touch" | "keyboard";
   preset: string;
   distance: number;
   effects: string;
@@ -95,6 +97,7 @@ type Settings = {
   crosshair: string;
 };
 const defaults: Settings = {
+  inputMode: "auto",
   preset: touch ? "mobile" : "balanced",
   distance: touch ? 80 : 112,
   effects: touch ? "low" : "high",
@@ -174,6 +177,13 @@ const minimap = new MiniMap(
   $<HTMLButtonElement>("minimap-toggle"),
 );
 const canvas = $<HTMLCanvasElement>("game");
+canvas.tabIndex = 0;
+let hardwareActive =
+  settings.inputMode === "keyboard" ||
+  (!touch && settings.inputMode !== "touch");
+let fallbackActive = false,
+  hadPointerLock = false;
+const trackpad = new TrackpadLook();
 const renderer = new THREE.WebGLRenderer({
   canvas,
   antialias: !touch,
@@ -643,8 +653,45 @@ const outline = new THREE.Mesh(
 );
 scene.add(outline);
 outline.visible = false;
+function updateInputUi() {
+  document.body.classList.toggle("hardware-input", hardwareActive);
+  document.body.classList.toggle(
+    "unlocked-input",
+    hardwareActive && fallbackActive,
+  );
+  show("touch", touch && connected && !paused && !hardwareActive);
+  show("input-toggle", touch && connected);
+  $("input-toggle").textContent = hardwareActive ? "TOUCH" : "KEYBOARD";
+  show(
+    "trackpad-hint",
+    connected && !paused && hardwareActive && fallbackActive,
+  );
+}
+function useHardware() {
+  if (settings.inputMode === "touch") return;
+  hardwareActive = true;
+  fallbackActive = !pointerLockActive(document.pointerLockElement, canvas);
+  updateInputUi();
+}
+function requestGamePointerLock() {
+  if (!hardwareActive) return;
+  fallbackActive = !pointerLockActive(document.pointerLockElement, canvas);
+  updateInputUi();
+  if (!canvas.requestPointerLock) return;
+  try {
+    const result = canvas.requestPointerLock();
+    result?.catch(() => {
+      fallbackActive = true;
+      updateInputUi();
+    });
+  } catch {
+    fallbackActive = true;
+    updateInputUi();
+  }
+}
 function applySettings() {
   localStorage.setItem("br-settings", JSON.stringify(settings));
+  updateInputUi();
   sound.master = settings.master;
   sound.effects = settings.volume;
   renderer.setPixelRatio(
@@ -704,7 +751,8 @@ function settingsUi() {
     ["fov", "Field of view", 60, 105, 1],
     ["master", "Master volume", 0, 1, 0.05],
     ["volume", "Effects volume", 0, 1, 0.05],
-    ["mouse", "Mouse sensitivity", 0.2, 3, 0.1],
+    ["inputMode", "Input: auto / touch / keyboard-trackpad"],
+    ["mouse", "Mouse / trackpad sensitivity", 0.2, 3, 0.1],
     ["mobile", "Touch sensitivity", 0.2, 3, 0.1],
     ["scale", "Touch control scale", 0.8, 1.3, 0.05],
     ["invert", "Invert look"],
@@ -729,9 +777,11 @@ function settingsUi() {
       field = document.createElement("select");
       for (const value of key === "preset"
         ? ["mobile", "balanced", "high"]
-        : key === "effects"
-          ? ["low", "high"]
-          : ["+", "·", "⊙"]) {
+        : key === "inputMode"
+          ? ["auto", "touch", "keyboard"]
+          : key === "effects"
+            ? ["low", "high"]
+            : ["+", "·", "⊙"]) {
         const option = document.createElement("option");
         option.value = value;
         option.textContent = value;
@@ -760,6 +810,16 @@ function settingsUi() {
         settings.shadows = true;
       }
       val.textContent = String(settings[key]);
+      if (key === "inputMode") {
+        resetInput();
+        hardwareActive =
+          settings.inputMode === "keyboard" ||
+          (!touch && settings.inputMode !== "touch");
+        fallbackActive =
+          hardwareActive &&
+          !pointerLockActive(document.pointerLockElement, canvas);
+        if (!hardwareActive) document.exitPointerLock?.();
+      }
       applySettings();
     };
     label.append(field, val);
@@ -845,7 +905,8 @@ function message(msg: any) {
     show("browser", false);
     show("solo-setup", false);
     show("hud");
-    show("touch", touch);
+    updateInputUi();
+    canvas.focus({ preventScroll: true });
     if (touch && !localStorage.getItem("br-touch-tip")) {
       show("touch-tip");
       localStorage.setItem("br-touch-tip", "1");
@@ -959,7 +1020,7 @@ async function join(room: string) {
     }
   };
   socket.onopen = () => {
-    if (!touch) canvas.requestPointerLock?.();
+    if (hardwareActive) requestGamePointerLock();
   };
   socket.onerror = () => {
     if (!connected) {
@@ -1402,6 +1463,7 @@ function updateHud() {
 const held = new Set<string>();
 function resetInput() {
   held.clear();
+  trackpad.clear();
   for (const key of Object.keys(pulses)) delete pulses[key as keyof Input];
   for (const key of [
     "fire",
@@ -1438,36 +1500,114 @@ function setPause(on: boolean) {
     sound.stopJets();
     resetInput();
     document.exitPointerLock?.();
-  } else if (!touch) canvas.requestPointerLock?.();
-  show("touch", touch && connected && !on);
+  } else requestGamePointerLock();
+  updateInputUi();
 }
 document.addEventListener("pointerlockchange", () => {
-  if (
-    !pointerLockActive(document.pointerLockElement, canvas) &&
-    connected &&
-    !touch &&
-    !paused
-  )
-    setPause(true);
+  const locked = pointerLockActive(document.pointerLockElement, canvas);
+  const lost = hadPointerLock && !locked;
+  hadPointerLock = locked;
+  trackpad.clear();
+  if (locked) {
+    hardwareActive = true;
+    fallbackActive = false;
+  }
+  if (lost && connected && !paused) setPause(true);
+  updateInputUi();
 });
+document.addEventListener("pointerlockerror", () => {
+  fallbackActive = hardwareActive;
+  updateInputUi();
+});
+function playSurface(target: EventTarget | null) {
+  return (
+    target instanceof HTMLElement &&
+    (target === canvas || !!target.closest("#look-zone, #move-zone"))
+  );
+}
+function mouseLook(dx: number, dy: number) {
+  const gain = touchLookGain(input.aim, input.weapon);
+  yaw -= dx * 0.002 * settings.mouse * gain;
+  pitch = Math.max(
+    -1.5,
+    Math.min(
+      1.5,
+      pitch - dy * 0.002 * settings.mouse * gain * (settings.invert ? -1 : 1),
+    ),
+  );
+}
+document.addEventListener(
+  "pointerdown",
+  (e) => {
+    if (!connected || paused || !playSurface(e.target)) return;
+    if (e.pointerType === "mouse") {
+      useHardware();
+      if (!hardwareActive) return;
+      canvas.focus({ preventScroll: true });
+      trackpad.sample(e.clientX, e.clientY);
+      requestGamePointerLock();
+    } else if (settings.inputMode === "auto" && hardwareActive) {
+      hardwareActive = false;
+      fallbackActive = false;
+      trackpad.clear();
+      updateInputUi();
+    }
+  },
+  true,
+);
 canvas.addEventListener("click", () => {
-  if (connected && !paused && !touch) canvas.requestPointerLock?.();
+  if (connected && !paused && hardwareActive) requestGamePointerLock();
 });
 document.addEventListener("mousemove", (e) => {
-  if (pointerLockActive(document.pointerLockElement, canvas) && !paused) {
-    yaw -= e.movementX * 0.002 * settings.mouse;
-    pitch = Math.max(
-      -1.5,
-      Math.min(
-        1.5,
-        pitch -
-          e.movementY * 0.002 * settings.mouse * (settings.invert ? -1 : 1),
-      ),
-    );
-  }
+  if (
+    pointerLockActive(document.pointerLockElement, canvas) &&
+    connected &&
+    !paused
+  )
+    mouseLook(e.movementX, e.movementY);
 });
+document.addEventListener("pointermove", (e) => {
+  if (
+    e.pointerType !== "mouse" ||
+    pointerLockActive(document.pointerLockElement, canvas)
+  )
+    return;
+  if (
+    !connected ||
+    paused ||
+    !hardwareActive ||
+    !fallbackActive ||
+    !playSurface(e.target)
+  ) {
+    trackpad.clear();
+    return;
+  }
+  const delta = trackpad.sample(e.clientX, e.clientY);
+  mouseLook(delta.x, delta.y);
+});
+canvas.addEventListener("pointerleave", () => trackpad.clear());
+window.addEventListener("pointercancel", () => {
+  trackpad.clear();
+  input.fire = false;
+  input.aim = false;
+});
+$("input-toggle").onclick = () => {
+  settings.inputMode = hardwareActive ? "touch" : "keyboard";
+  resetInput();
+  hardwareActive = settings.inputMode === "keyboard";
+  fallbackActive =
+    hardwareActive && !pointerLockActive(document.pointerLockElement, canvas);
+  if (!hardwareActive) {
+    hadPointerLock = false;
+    document.exitPointerLock?.();
+  }
+  applySettings();
+  canvas.focus({ preventScroll: true });
+};
 const binding: Record<string, keyof Input> = {
   Space: "jump",
+  Enter: "fire",
+  KeyZ: "aim",
   ShiftLeft: "sprint",
   ShiftRight: "sprint",
   KeyC: "crouch",
@@ -1482,42 +1622,65 @@ const binding: Record<string, keyof Input> = {
 window.addEventListener("keydown", (e) => {
   if (
     !connected ||
-    ["INPUT", "SELECT"].includes((e.target as HTMLElement).tagName)
+    ["INPUT", "SELECT", "TEXTAREA"].includes(
+      (e.target as HTMLElement).tagName,
+    ) ||
+    (e.target as HTMLElement).isContentEditable
   )
     return;
-  if (e.code === "KeyM") {
+  const code = gameKey(e.code, e.key);
+  if (code === "KeyM") {
     e.preventDefault();
     minimap.toggle();
     return;
   }
-  if (e.code === "Escape") {
-    setPause(!paused);
+  if (code === "Escape" || code === "KeyP") {
+    e.preventDefault();
+    if (!e.repeat) setPause(!paused);
     return;
   }
-  if (e.code === "Tab") {
+  if (code === "Tab") {
     e.preventDefault();
     show("scoreboard");
     return;
   }
   if (paused) return;
-  if (["Space", "ArrowUp", "ArrowDown"].includes(e.code)) e.preventDefault();
-  held.add(e.code);
-  if (binding[e.code]) {
-    (input as any)[binding[e.code]] = true;
-    pulses[binding[e.code]] = true;
+  if (
+    binding[code] ||
+    [
+      "KeyW",
+      "KeyA",
+      "KeyS",
+      "KeyD",
+      "ArrowLeft",
+      "ArrowRight",
+      "ArrowUp",
+      "ArrowDown",
+    ].includes(code)
+  ) {
+    e.preventDefault();
+    sound.unlock();
+    useHardware();
   }
-  if (e.code === "KeyB" && !e.repeat) cycleKit();
-  if (/^Digit[1-7]$/.test(e.code)) chooseWeapon(Number(e.code.slice(-1)) - 1);
+  held.add(code);
+  if (binding[code]) {
+    (input as any)[binding[code]] = true;
+    pulses[binding[code]] = true;
+  }
+  if (code === "KeyB" && !e.repeat) cycleKit();
+  if (/^Digit[1-7]$/.test(code)) chooseWeapon(Number(code.slice(-1)) - 1);
 });
 window.addEventListener("keyup", (e) => {
-  held.delete(e.code);
-  if (binding[e.code]) (input as any)[binding[e.code]] = false;
-  if (e.code === "Tab") show("scoreboard", false);
+  const code = gameKey(e.code, e.key);
+  held.delete(code);
+  if (binding[code]) (input as any)[binding[code]] = false;
+  if (code === "Tab") show("scoreboard", false);
 });
 window.addEventListener("mousedown", (e) => {
   if (
     connected &&
-    pointerLockActive(document.pointerLockElement, canvas) &&
+    (pointerLockActive(document.pointerLockElement, canvas) ||
+      (hardwareActive && fallbackActive && playSurface(e.target))) &&
     !paused
   ) {
     if (e.button === 0) {
@@ -1538,7 +1701,8 @@ window.addEventListener(
     if (
       connected &&
       !paused &&
-      pointerLockActive(document.pointerLockElement, canvas)
+      (pointerLockActive(document.pointerLockElement, canvas) ||
+        (hardwareActive && fallbackActive && playSurface(e.target)))
     ) {
       e.preventDefault();
       for (let n = 1; n <= 7; n++) {
@@ -1575,7 +1739,8 @@ let joyF = 0,
 const joystick = $("joystick");
 const moveZone = $("move-zone");
 moveZone.addEventListener("pointerdown", (e) => {
-  if (joyPointer !== -1) return;
+  if (e.pointerType === "mouse" || joyPointer !== -1 || paused || !connected)
+    return;
   e.preventDefault();
   joyPointer = e.pointerId;
   moveZone.setPointerCapture(e.pointerId);
@@ -1638,7 +1803,8 @@ function touchLook(dx: number, dy: number) {
 }
 const lookZone = $("look-zone");
 lookZone.addEventListener("pointerdown", (e) => {
-  if (lookPointer !== -1) return;
+  if (e.pointerType === "mouse" || lookPointer !== -1 || paused || !connected)
+    return;
   e.preventDefault();
   lookPointer = e.pointerId;
   lastLook = { x: e.clientX, y: e.clientY };
@@ -1649,6 +1815,29 @@ lookZone.addEventListener("pointermove", (e) => {
   touchLook(e.clientX - lastLook.x, e.clientY - lastLook.y);
   lastLook = { x: e.clientX, y: e.clientY };
 });
+canvas.addEventListener("pointerdown", (e) => {
+  if (
+    e.pointerType === "mouse" ||
+    !touch ||
+    !connected ||
+    paused ||
+    lookPointer !== -1
+  )
+    return;
+  e.preventDefault();
+  lookPointer = e.pointerId;
+  lastLook = { x: e.clientX, y: e.clientY };
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (e.pointerId !== lookPointer || e.pointerType === "mouse") return;
+  touchLook(e.clientX - lastLook.x, e.clientY - lastLook.y);
+  lastLook = { x: e.clientX, y: e.clientY };
+});
+for (const kind of ["pointerup", "pointercancel", "lostpointercapture"])
+  canvas.addEventListener(kind, (e) => {
+    if ((e as PointerEvent).pointerId === lookPointer) lookPointer = -1;
+  });
 for (const kind of ["pointerup", "pointercancel", "lostpointercapture"])
   lookZone.addEventListener(kind, (e) => {
     if ((e as PointerEvent).pointerId === lookPointer) lookPointer = -1;
@@ -1821,9 +2010,15 @@ $("browse").onclick = () => {
   show("browser");
   void refreshRooms();
 };
-$("settings-open").onclick = () => show("settings");
+$("settings-open").onclick = () => {
+  settingsUi();
+  show("settings");
+};
 $("controls-open").onclick = () => show("controls");
-$("pause-settings").onclick = () => show("settings");
+$("pause-settings").onclick = () => {
+  settingsUi();
+  show("settings");
+};
 function openClasses() {
   if (connected) setPause(true);
   show("class-menu");
@@ -2032,16 +2227,25 @@ function frame(now: number) {
       disconnect("Connection lost. Check your internet and join again.");
       return;
     }
-    input.forward = paused
-      ? 0
-      : touch
-        ? joyF
-        : (held.has("KeyW") ? 1 : 0) - (held.has("KeyS") ? 1 : 0);
-    input.strafe = paused
-      ? 0
-      : touch
-        ? joyS
-        : (held.has("KeyD") ? 1 : 0) - (held.has("KeyA") ? 1 : 0);
+    const movement = hybridMovement(held, touch ? joyF : 0, touch ? joyS : 0);
+    input.forward = paused ? 0 : movement.forward;
+    input.strafe = paused ? 0 : movement.strafe;
+    if (!paused && !pointerLockActive(document.pointerLockElement, canvas)) {
+      const edge =
+        hardwareActive && fallbackActive
+          ? trackpad.edge(innerWidth, innerHeight)
+          : { x: 0, y: 0 };
+      mouseLook(
+        (edge.x +
+          Number(held.has("ArrowRight")) -
+          Number(held.has("ArrowLeft"))) *
+          dt *
+          800,
+        (edge.y + Number(held.has("ArrowDown")) - Number(held.has("ArrowUp"))) *
+          dt *
+          800,
+      );
+    }
     input.yaw = yaw;
     input.pitch = pitch;
     if (touch && (input.aim || input.crouch)) input.sprint = false;
@@ -2459,6 +2663,14 @@ setInterval(() => {
 }, 10000);
 // Read-only diagnostics used by browser QA; no production gameplay commands or state authority.
 (window as any).BR = {
+  get controls() {
+    return {
+      hardware: hardwareActive,
+      fallback: fallbackActive,
+      mode: settings.inputMode,
+      locked: pointerLockActive(document.pointerLockElement, canvas),
+    };
+  },
   get connected() {
     return connected;
   },

@@ -1270,3 +1270,33 @@ body.touch #class-hud {
     width: clamp(64px, 10vw, 92px);
   }
 }
+
+#trackpad-hint {
+  position: fixed;
+  bottom: max(8px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(650px, 80vw);
+  text-align: center;
+  color: #def0e9;
+  background: #142c35d9;
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 11px;
+  pointer-events: none;
+  z-index: 2;
+}
+body.hardware-input #weapon-hud {
+  bottom: 48px;
+}
+body.unlocked-input #desktop-hint {
+  display: none;
+}
+#input-toggle {
+  font-size: 11px;
+  padding: 8px;
+}
+
+#game {
+  outline: none;
+}

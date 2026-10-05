@@ -1,5 +1,7 @@
 # Verification
 
+2.11.1 adds touch-capable hardware keyboard regression checks and `test:keyboard`, which explicitly removes/rejects pointer lock in an iPad-sized browser while testing a desktop peer and hybrid input. The full unit/network/worker suite passes 137 checks. See [iPad keyboard controls and device limits](IPAD-KEYBOARD.md).
+
 Branching Battlegrounds (2.11) passes 135 automated checks. `tests/layout.test.ts` checks supported/headroom-cleared routes across map families and varied seeds, obstructed spawn sightlines, NPC lane choice/reverse routing and an autonomous foot-only CTF capture on every map without relocation. Hosted migration checks verify preserved prior-round terrain edits and sessions, then the fresh layout/map/epoch on normal round restart. Current browser verification is recorded in [UPDATE-211.md](UPDATE-211.md).
 
 Field Finish (2.9) has 120 automated checks, including correct exposed-face occlusion/greedy merging, authoritative terrain/player/miss impact metadata, capped reused casing pools, smoke limits, weapon sway/landing settling and visible held-item swaps. The NPC/two-browser ordnance suite passed with the new smoke shader. The enhanced graphics suite verifies accepted firing effects and rifle/tool swaps in two actual WebGL views. It uses persistent effect counters to check short-lived particles and corrects headless pointer-lock cursor warps through ordinary relative-look events, without assigning client simulation state. Final reruns for this release are recorded in UPDATE-29.md.

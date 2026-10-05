@@ -27,3 +27,5 @@ jobs:
       - run: npm run test:strongholds
       - run: npm run test:banner
       - run: BR_TRANSPORT=http npm run test:banner
+      - run: npm run test:keyboard
+      - run: BR_TRANSPORT=http npm run test:keyboard

@@ -39,7 +39,7 @@
       <div class="brand">
         <span class="brand-mark">BR</span
         ><span>BLOCKFRONT<br /><b>RELAY</b></span
-        ><small>2.11 · BRANCHING BATTLEGROUNDS</small>
+        ><small>2.11.1 · IPAD KEYBOARD FIX</small>
       </div>
       <p class="eyebrow">PROCEDURAL FRONTIERS</p>
       <h1>Dig in.<br />Build your advantage.</h1>
@@ -220,6 +220,16 @@
         show why placement is blocked.
       </p>
       <p>
+        <b>iPad keyboard / trackpad</b><br />Keyboard movement works alongside
+        touch controls. Press WASD or use the KEYBOARD button for
+        keyboard/trackpad mode. Click the game to start aiming. Move the pointer
+        to look; near a screen edge it keeps turning. Click to fire, hold Z to
+        aim or Enter to fire. Arrow keys also look; P pauses on keyboards
+        without Escape. Use TOUCH to restore the touchscreen controls. Settings
+        lets you choose Auto, Touch or Keyboard. Safari trackpad mode uses a
+        visible cursor when pointer lock is unavailable.
+      </p>
+      <p>
         <b>Frontier forces</b><br />Choose a class before deploying, or queue a
         change using your class badge. Tap FRAG for a grenade and the named
         ability for your class skill. Desktop: G grenade, V ability, K field
@@ -271,7 +281,14 @@
       </div>
       <div id="hud-top">
         <span id="network">— ms</span><button id="score-button">Scores</button
-        ><button id="pause-button">Pause</button>
+        ><button id="pause-button">Pause</button
+        ><button
+          id="input-toggle"
+          class="hidden"
+          aria-label="Switch touchscreen or keyboard controls"
+        >
+          KEYBOARD
+        </button>
       </div>
       <aside id="minimap" aria-label="Battlefield map">
         <canvas
@@ -334,6 +351,10 @@
         WASD · 1–7 tools · G grenade · V ability · K gear · Q dig · E build · B
         kit · F jet
       </div>
+    </div>
+    <div id="trackpad-hint" class="hidden">
+      Trackpad: move to look · edge to keep turning · click fire · Z aim ·
+      arrows look · P pause
     </div>
     <div id="touch" class="hidden">
       <div id="look-zone" aria-label="Drag to look"></div>

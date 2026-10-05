@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.11 — Branching Battlegrounds Update.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.11.1 — iPad Keyboard Fix.**
+
+**2.11.1:** keyboard movement on touch-capable devices, iPad trackpad aiming/firing without pointer lock, edge turning, arrow-key look and quick touch/keyboard switching. See [iPad keyboard controls and verification](docs/IPAD-KEYBOARD.md). Refresh/rejoin for the fix.
 
 **2.11:** three branching approaches per map, offset base screens, original central landmarks, connected objective courtyards and NPC strategic lane routing. The direct base-to-base road is replaced with flanks and contested cover. Existing hosted matches preserve their terrain and sessions until the next round. See [changes and testing](docs/UPDATE-211.md). Refresh/rejoin to load the update.
 
@@ -118,6 +120,8 @@ The hosted edition is a convenient small-match fallback. Database round trips ad
 Build the hosted artifact with `npm run build:hosted`. `.openai/hosting.json` declares a D1 `DB` binding; generated schema migrations are in `drizzle/`. Publication applies migrations before uploading `dist/server/index.js`. The Worker embeds the small client bundle, so external asset URLs are unnecessary. Production schema changes use `npm run db:generate`; never mutate deployed migrations.
 
 ## Controls
+
+**iPad with Magic Keyboard / trackpad:** join, then click **KEYBOARD** or press WASD. Click the game and move the pointer to aim; a screen edge keeps turning. Click fires, Z aims, Enter also fires, arrow keys look, and P pauses. **TOUCH** restores finger controls; keyboard movement still works in Touch mode. Settings → Input selects Auto, Touch or Keyboard. Without pointer lock the system cursor remains visible.
 
 | Action                      | Desktop                  | iPhone / iPad                                      |
 | --------------------------- | ------------------------ | -------------------------------------------------- |

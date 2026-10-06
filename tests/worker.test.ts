@@ -6,6 +6,7 @@ import worker from "../worker/index.js";
 import { emptyInput, demolitionCells, idx, World } from "../shared/game.js";
 import { atmosphere } from "../shared/environment.js";
 import { CITY_SEED } from "../shared/city.js";
+import { packInput } from "../shared/prediction.js";
 function fixture() {
   const db = new DatabaseSync(":memory:");
   db.exec(readFileSync("drizzle/0000_blushing_zombie.sql", "utf8"));
@@ -43,6 +44,49 @@ function fixture() {
   };
   return { db, call, DB };
 }
+test("hosted input acknowledges a complete delayed packed batch without granting extra movement time", async () => {
+  const { db, call } = fixture();
+  const created = await call("/api/create", {
+    name: "Batch",
+    mode: "tdm",
+    seed: 7231,
+    jet: "all",
+  });
+  const room = created.data.id;
+  const joined = await call("/api/join", { room, name: "Tester" });
+  const id = joined.data.welcome.id;
+  const row = db.prepare("SELECT data FROM game_rooms WHERE id=?");
+  const stored = JSON.parse((row.get(room) as any).data);
+  stored.players.find((v: any) => v.id === id).commandMode = true;
+  stored.clock = Date.now() - 1500;
+  stored.sessions[joined.data.token].seen = Date.now() - 1500;
+  db.prepare("UPDATE game_rooms SET data=? WHERE id=?").run(
+    JSON.stringify(stored),
+    room,
+  );
+  const p = joined.data.welcome.state.players.find((v: any) => v.id === id);
+  const commands = Array.from({ length: 42 }, (_, i) =>
+    packInput({ ...emptyInput(), seq: i + 1, forward: 1 }),
+  );
+  const result = await call("/api/input", {
+    room,
+    token: joined.data.token,
+    epoch: p.epoch,
+    commands,
+  });
+  assert.equal(result.status, 200);
+  const snapshot = result.data.messages
+    .find((m: any) => m.type === "state")
+    .state.players.find((v: any) => v.id === id);
+  assert.equal(
+    snapshot.lastSeq,
+    42,
+    "all credited commands acknowledged before response",
+  );
+  const persisted = JSON.parse((row.get(room) as any).data);
+  const authority = persisted.players.find((v: any) => v.id === id);
+  assert.ok(authority.movementCredit < 0.2, "consumed credit cannot be reused");
+});
 test("hosted outdoor rooms preserve prior-release sessions and share the day/night clock with late joins", async () => {
   const { db, call } = fixture();
   const created = await call("/api/create", {

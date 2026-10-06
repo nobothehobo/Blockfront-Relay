@@ -1,5 +1,7 @@
 # Verification
 
+2.12 adds `tests/reliability.test.ts` for stable elimination framing, Space-held airborne thrust, on-device squad balance and actual bounded packets/replay through simulated 1.4-second RTT. The SQL-backed worker regression checks that a 42-command delayed batch is fully acknowledged against elapsed-time credit. After `npm run build:hosted`, run `node --import tsx tests/practice-bundle.ts` to execute the production practice asset in a Node background worker and verify welcome, 16-player CTF and packed movement acknowledgment. This is not browser or physical iPad verification. Browser QA was unavailable for this release in the current managed environment; the supported control-browser skill was absent.
+
 2.11.1 adds touch-capable hardware keyboard regression checks and `test:keyboard`, which explicitly removes/rejects pointer lock in an iPad-sized browser while testing a desktop peer and hybrid input. The full unit/network/worker suite passes 137 checks. See [iPad keyboard controls and device limits](IPAD-KEYBOARD.md).
 
 Branching Battlegrounds (2.11) passes 135 automated checks. `tests/layout.test.ts` checks supported/headroom-cleared routes across map families and varied seeds, obstructed spawn sightlines, NPC lane choice/reverse routing and an autonomous foot-only CTF capture on every map without relocation. Hosted migration checks verify preserved prior-round terrain edits and sessions, then the fresh layout/map/epoch on normal round restart. Current browser verification is recorded in [UPDATE-211.md](UPDATE-211.md).

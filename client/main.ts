@@ -37,6 +37,8 @@ import {
 } from "./control-math.js";
 import { gameKey, hybridMovement, TrackpadLook } from "./hybrid-input.js";
 import { eliminationCamera } from "./elimination.js";
+import { spaceThrust } from "./hybrid-input.js";
+import type { RoomOptions } from "../server/room.js";
 import { Terrain } from "./mesh.js";
 import { Sound } from "./audio.js";
 import { jetVoices } from "./audio-mix.js";
@@ -144,6 +146,7 @@ let yaw = 0,
   httpToken = "",
   httpBusy = false,
   httpCursor = 0;
+let practiceWorker: Worker | null = null;
 let pendingInputs: Input[] = [];
 const snapshotClock = new SnapshotClock(),
   connectionStats = new ConnectionStats();
@@ -625,9 +628,11 @@ function disposePlayer(r: { group: THREE.Group; label: HTMLElement }) {
 }
 let eliminated: ReturnType<typeof makePlayer> | null = null;
 let eliminatedAt = 0;
+let deathAngle: number | undefined;
 function clearElimination() {
   if (eliminated) disposePlayer(eliminated);
   eliminated = null;
+  deathAngle = undefined;
   show("crosshair", true);
 }
 const flagMeshes = [0, 1].map((t) => {
@@ -864,7 +869,8 @@ async function refreshRooms() {
     try {
       serverCapabilities = await api("/api/health");
     } catch {}
-    networkMode = serverCapabilities.transport === "http" ? "http" : "ws";
+    if (!practiceWorker)
+      networkMode = serverCapabilities.transport === "http" ? "http" : "ws";
     const capacity = $<HTMLSelectElement>("capacity");
     capacity.querySelector<HTMLOptionElement>('option[value="32"]')!.disabled =
       networkMode === "http";
@@ -942,6 +948,10 @@ function message(msg: any) {
   } else if (msg.type === "error") disconnect(msg.message ?? "Server error");
 }
 function disconnect(reason = "Disconnected. Join a room to reconnect.") {
+  practiceWorker?.terminate();
+  practiceWorker = null;
+  if (networkMode === "local")
+    networkMode = serverCapabilities.transport === "http" ? "http" : "ws";
   battlefield.group.visible = false;
   sound.stopJets();
   combatFX.clear();
@@ -967,6 +977,50 @@ function disconnect(reason = "Disconnected. Join a room to reconnect.") {
   document.exitPointerLock?.();
   paused = false;
   resetInput();
+}
+function startPractice(options: RoomOptions) {
+  if (joining) return;
+  if (connected) disconnect();
+  const worker = new Worker(new URL("./practice-worker.ts", import.meta.url), {
+    type: "module",
+  });
+  joining = true;
+  sound.unlock();
+  localStorage.setItem("br-name", nameInput.value);
+  seq = 0;
+  input.seq = 0;
+  firstState = true;
+  resetInput();
+  $("solo-status").textContent = "Preparing on-device battlefield…";
+  practiceWorker = worker;
+  networkMode = "local";
+  ping = 0;
+  worker.onmessage = (event) => {
+    if (practiceWorker !== worker) return;
+    message(event.data);
+    if (event.data.type === "welcome" && hardwareActive)
+      void requestGamePointerLock();
+  };
+  worker.onerror = () => {
+    if (practiceWorker === worker) {
+      disconnect("On-device practice could not start. Try Online squad.");
+      $("solo-status").textContent =
+        "On-device practice could not start. Try Online squad.";
+    }
+  };
+  worker.postMessage({
+    type: "start",
+    options,
+    name: nameInput.value,
+    classId: selectedClass,
+  });
+  setTimeout(() => {
+    if (joining && practiceWorker === worker) {
+      disconnect("On-device practice timed out. Try Online squad.");
+      $("solo-status").textContent =
+        "On-device practice timed out. Try Online squad.";
+    }
+  }, 15000);
 }
 async function join(room: string) {
   if (joining) return;
@@ -1049,15 +1103,17 @@ function handleState(next: any) {
   const p = next.players.find((p: any) => p.id === id);
   if (!p) return;
   if (p.dead > 0 && !eliminated) {
-    eliminated = makePlayer({ ...(local ?? p), x: p.x, y: p.y, z: p.z });
+    eliminated = makePlayer({ ...p });
     eliminated.group.position.set(p.x, p.y + 0.28, p.z);
-    eliminated.group.rotation.set(0, local?.yaw ?? p.yaw, -1.25);
+    eliminated.group.rotation.set(0, p.yaw, -1.25);
     eliminated.label.style.display = "none";
     eliminatedAt = performance.now();
+    deathAngle = eliminationCamera(world, p, p.yaw, 0).angle;
     resetInput();
   } else if (p.dead <= 0 && eliminated) clearElimination();
   const reset = !local || firstState || predictionEpoch !== p.epoch;
   if (reset) {
+    resetInput();
     local = { ...p };
     pendingInputs = [];
     seq = 0;
@@ -1526,6 +1582,7 @@ function playSurface(target: EventTarget | null) {
   );
 }
 function mouseLook(dx: number, dy: number) {
+  if (paused || local?.dead) return;
   const gain = touchLookGain(input.aim, input.weapon);
   yaw -= dx * 0.002 * settings.mouse * gain;
   pitch = Math.max(
@@ -1565,6 +1622,18 @@ document.addEventListener("mousemove", (e) => {
     !paused
   )
     mouseLook(e.movementX, e.movementY);
+  else if (
+    connected &&
+    !paused &&
+    hardwareActive &&
+    fallbackActive &&
+    playSurface(e.target)
+  ) {
+    // Some iPad pointing devices emit compatibility mouse events only.
+    // Sampling absolute coordinates also deduplicates pointer+mouse pairs.
+    const delta = trackpad.sample(e.clientX, e.clientY);
+    mouseLook(delta.x, delta.y);
+  }
 });
 document.addEventListener("pointermove", (e) => {
   if (
@@ -1791,6 +1860,7 @@ for (const kind of ["pointerup", "pointercancel", "lostpointercapture"])
     }
   });
 function touchLook(dx: number, dy: number) {
+  if (paused || local?.dead) return;
   const gain = touchLookGain(input.aim, input.weapon);
   yaw -= dx * 0.004 * settings.mobile * gain;
   pitch = Math.max(
@@ -1969,6 +2039,20 @@ $("solo-start").onclick = async () => {
     const seed = map ? Number(map) : Date.now() >>> 0;
     const duration = Number($<HTMLSelectElement>("solo-duration").value);
     const name = `Solo ${mode.toUpperCase()} ${seed}`.slice(0, 30);
+    if ($<HTMLSelectElement>("solo-connection").value === "local") {
+      startPractice({
+        name,
+        mode: mode as RoomOptions["mode"],
+        jet: "all",
+        bots,
+        seed,
+        limit: 16,
+        duration,
+        arsenal: "sandbox",
+        practice: true,
+      });
+      return;
+    }
     await refreshRooms();
     const existing = rooms.find(
       (r) =>
@@ -2122,7 +2206,9 @@ function updateNetwork() {
       ? "Recovering connection…"
       : predictionBlocked
         ? "Waiting for server…"
-        : `${ping} ms · ${networkMode === "http" ? "HTTP" : "WS"}`;
+        : networkMode === "local"
+          ? "ON-DEVICE · NPC PRACTICE"
+          : `${ping} ms · ${networkMode === "http" ? "HTTP" : "WS"}`;
   $("connection-details").textContent =
     `${networkMode.toUpperCase()} · RTT ${ping} ms · snapshot age ${Math.round(age)} ms\n` +
     `Motion buffer ${Math.round(snapshotClock.delay)} ms · jitter ${Math.round(snapshotClock.jitter)} ms · gaps ${snapshotClock.gaps}\n` +
@@ -2135,6 +2221,15 @@ function updateNetwork() {
 }
 async function sendInput() {
   if (!connected || performance.now() < retryAt) return;
+  if (practiceWorker) {
+    const packet = inputPacket(
+      { type: "input", epoch: predictionEpoch },
+      pendingInputs.filter((c) => c.seq > sentCommand),
+    );
+    practiceWorker.postMessage(JSON.parse(packet.body));
+    if (packet.lastSeq !== undefined) sentCommand = packet.lastSeq;
+    return;
+  }
   const commands =
     networkMode === "ws"
       ? pendingInputs.filter((c) => c.seq > sentCommand)
@@ -2274,7 +2369,14 @@ function frame(now: number) {
     simulationFrame = now;
     while (accumulator >= TICK) {
       if (pendingInputs.length < MAX_PENDING_INPUTS) {
-        const command = { ...input, seq: ++seq };
+        const command = {
+          ...input,
+          seq: ++seq,
+          jet:
+            input.jet ||
+            (!paused &&
+              spaceThrust(held, local.ground, local.jetpack, local.dead)),
+        };
         if (state?.lagCompensation && snapshotClock.samples > 1)
           command.viewTime = snapshotClock.renderTime(now) / 1000;
         for (const [key, on] of Object.entries(pulses))
@@ -2311,6 +2413,7 @@ function frame(now: number) {
         eliminated.target,
         eliminated.target.yaw,
         (now - eliminatedAt) / 1000,
+        deathAngle,
       );
       camera.position.set(view.position.x, view.position.y, view.position.z);
       camera.lookAt(view.focus.x, view.focus.y, view.focus.z);
@@ -2645,7 +2748,10 @@ function frame(now: number) {
   sound.updateJets(
     jetVoices(
       connected ? local : null,
-      input.jet,
+      input.jet ||
+        (!!local &&
+          !paused &&
+          spaceThrust(held, local.ground, local.jetpack, local.dead)),
       state?.players ?? [],
       yaw,
       paused,

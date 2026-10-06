@@ -58,6 +58,7 @@ try {
     MAP_PRESETS.length + 1,
   );
   await a.locator("#solo-mode").selectOption("ctf");
+  await a.locator("#solo-connection").selectOption("online");
   await a.locator("#solo-map").selectOption("7233");
   await a.locator("#solo-bots").selectOption("15");
   await a.locator("#solo-duration").selectOption("480");

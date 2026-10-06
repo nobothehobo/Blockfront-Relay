@@ -39,7 +39,7 @@
       <div class="brand">
         <span class="brand-mark">BR</span
         ><span>BLOCKFRONT<br /><b>RELAY</b></span
-        ><small>2.11.1 · IPAD KEYBOARD FIX</small>
+        ><small>2.12.0 · CONNECTION & SOLO UPDATE</small>
       </div>
       <p class="eyebrow">PROCEDURAL FRONTIERS</p>
       <h1>Dig in.<br />Build your advantage.</h1>
@@ -155,10 +155,16 @@
         <button data-close="solo-setup">Close</button>
       </div>
       <p>
-        Your NPC squad uses the same server rules as multiplayer. Friends can
-        join your room later.
+        On-device practice uses multiplayer rules without internet latency.
+        Choose Online squad if you want friends to join your room.
       </p>
       <div class="create">
+        <label
+          >Connection<select id="solo-connection">
+            <option value="local">On-device — no server connection</option>
+            <option value="online">Online squad — friends can join</option>
+          </select></label
+        >
         <label
           >Mode<select id="solo-mode">
             <option value="ctf">Capture the flag / cooperative squad</option>
@@ -203,11 +209,11 @@
         <button data-close="controls">Close</button>
       </div>
       <p>
-        <b>PC / Mac</b><br />WASD move · Shift sprint · Space jump · C crouch<br />Mouse
-        aim · Left click fire / tool · Right click aim<br />R reload · 1–7 or
-        wheel select · Q dig · E place<br />F jetpack · M expand map · Tab
-        scoreboard · Esc pause · G grenade · V class ability · K field gear · B
-        cycle build kit
+        <b>PC / Mac / iPad keyboard</b><br />WASD move · Shift sprint · Space
+        jump / hold airborne to jet · C crouch<br />Mouse aim · Left click fire
+        / tool · Right click aim<br />R reload · 1–7 or wheel select · Q dig · E
+        place<br />F jetpack · M expand map · Tab scoreboard · Esc pause · G
+        grenade · V class ability · K field gear · B cycle build kit
       </p>
       <p>
         <b>iPhone / iPad</b><br />Left stick to move; push farther to sprint.

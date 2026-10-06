@@ -367,7 +367,10 @@ export default {
             if (body.commands) {
               r.queueInputs(session.id, body.commands, body.epoch);
               const player = r.players.get(session.id);
-              if (player) r.consumeMovement(player);
+              // A slow HTTP round-trip can legitimately contain a full batch.
+              // Consume its elapsed-time credit before returning the ack, not
+              // just 12 steps (which otherwise creates an ever-growing backlog).
+              if (player) r.consumeMovement(player, 64);
             } else r.input(session.id, body.input);
             if (r.events.length)
               append({ type: "events", events: r.events.splice(0) });

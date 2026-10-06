@@ -13,6 +13,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:hosted
+      - run: node --import tsx tests/practice-bundle.ts
       - run: npm test
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser

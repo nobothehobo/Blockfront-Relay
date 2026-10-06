@@ -1,20 +1,17 @@
 import { Input } from "../shared/game.js";
+import { packInput } from "../shared/prediction.js";
 
 // The hosted endpoint and WebSocket server both reject bodies over 8 KiB.
 // Bound bytes, not just command count: action flags and long floats vary in size.
-export const MAX_PENDING_INPUTS = 30;
+export const MAX_PENDING_INPUTS = 90;
 export function inputPacket(
   metadata: Record<string, unknown>,
   pending: Input[],
 ) {
-  const commands: Record<string, unknown>[] = [];
+  const commands: number[][] = [];
   let body = JSON.stringify({ ...metadata, commands });
-  for (const command of pending.slice(0, 24)) {
-    const compact = Object.fromEntries(
-      Object.entries(command).filter(
-        ([, value]) => value !== false && value !== undefined,
-      ),
-    );
+  for (const command of pending.slice(0, 64)) {
+    const compact = packInput(command);
     const candidate = JSON.stringify({
       ...metadata,
       commands: [...commands, compact],
@@ -23,7 +20,7 @@ export function inputPacket(
     commands.push(compact);
     body = candidate;
   }
-  return { body, lastSeq: commands.at(-1)?.seq as number | undefined };
+  return { body, lastSeq: commands.at(-1)?.[0] };
 }
 
 export class ApiError extends Error {

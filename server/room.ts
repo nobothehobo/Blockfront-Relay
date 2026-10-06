@@ -320,12 +320,12 @@ export class Room {
     }
     if (p.commands.length) p.lastCommandTime = this.time;
   }
-  consumeMovement(p: Player) {
+  consumeMovement(p: Player, maxSteps = 12) {
     let steps = 0;
     while (
       p.commands?.length &&
       (p.movementCredit ?? 0) + 1e-8 >= TICK &&
-      steps++ < 12
+      steps++ < Math.min(64, maxSteps)
     ) {
       const command = p.commands.shift()!;
       p.input = command;
@@ -591,7 +591,7 @@ export class Room {
       this.resupply(p, dt);
       if (p.commandMode) {
         // Retain enough real elapsed time for a delayed HTTP batch, never extra time.
-        p.movementCredit = Math.min(2, (p.movementCredit ?? 0) + dt);
+        p.movementCredit = Math.min(3, (p.movementCredit ?? 0) + dt);
         this.consumeMovement(p);
         if (this.time - (p.lastCommandTime ?? 0) > 0.5) {
           p.input = {

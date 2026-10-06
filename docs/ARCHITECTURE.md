@@ -1,5 +1,11 @@
 # Architecture
 
+## 2.12 transport and on-device practice
+
+`server/practice.ts` hosts the same Room authority inside `client/practice-worker.ts`, built as a separate lazy-loaded Vite asset. The client routes messages through its existing welcome/state/edit/map handlers and uses the same epoch-based prediction replay. This is an explicitly solo, device-local option, not a replacement for authoritative internet matches. Online squad and normal multiplayer remain server-backed.
+
+Input arrays use a lossless ten-number format with an action bitmask; legacy object inputs remain valid. Both transports cap batches at 64 commands/7,000 bytes. The client permits at most 90 unacknowledged fixed steps, and authority caps real elapsed-time credit at three seconds. HTTP consumes up to 64 credited steps before sending its snapshot; normal room ticks retain a 12-step workload cap. Neither form grants client-owned movement time.
+
 ## Simulation and authority
 
 `server/room.ts` owns players, ammunition, health, cooldowns, spawn shields, resources, scores, objectives, infection state, fuel and map edits. Clients send bounded inputs, never positions, health, hits or desired edit coordinates. The server steps movement against its own voxels, casts hitscan rays, checks occlusion, validates range and placement occupancy, and broadcasts accepted results.

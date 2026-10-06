@@ -1,16 +1,21 @@
 import { World, Vec, ray } from "../shared/game.js";
-// Choose an unobstructed shoulder/orbit position; the camera never crosses solid terrain.
+// Choose a shoulder once per death, then clip that same arm against terrain.
 export function eliminationCamera(
   world: World,
   body: Vec,
   yaw: number,
-  elapsed: number,
+  _elapsed: number,
+  lockedAngle?: number,
 ) {
   const focus = { x: body.x, y: body.y + 0.7, z: body.z };
   let best = { ...focus },
-    bestLength = -1;
-  for (const offset of [0.65, -0.65, Math.PI, 0]) {
-    const angle = yaw + offset + Math.min(elapsed, 4) * 0.12;
+    bestLength = -1,
+    bestAngle = yaw;
+  const angles =
+    lockedAngle === undefined
+      ? [0.65, -0.65, Math.PI, 0].map((offset) => yaw + offset)
+      : [lockedAngle];
+  for (const angle of angles) {
     const delta = { x: Math.sin(angle) * 4, y: 2.6, z: Math.cos(angle) * 4 };
     const length = Math.hypot(delta.x, delta.y, delta.z);
     const direction = {
@@ -37,6 +42,7 @@ export function eliminationCamera(
     }
     if (clear > bestLength) {
       bestLength = clear;
+      bestAngle = angle;
       best = {
         x: focus.x + direction.x * clear,
         y: focus.y + direction.y * clear,
@@ -44,5 +50,5 @@ export function eliminationCamera(
       };
     }
   }
-  return { position: best, focus };
+  return { position: best, focus, angle: bestAngle };
 }

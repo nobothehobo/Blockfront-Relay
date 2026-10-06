@@ -23,6 +23,14 @@ export function hybridMovement(
         : strafe,
   };
 }
+export function spaceThrust(
+  held: Set<string>,
+  ground: boolean,
+  jetpack: boolean,
+  dead: number,
+) {
+  return held.has("Space") && !ground && jetpack && dead <= 0;
+}
 // Safari can expose ordinary trackpad coordinates without relative pointer lock.
 // Moving to an edge continues turning; entering/leaving UI never produces a jump.
 export class TrackpadLook {

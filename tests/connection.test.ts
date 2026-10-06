@@ -2,7 +2,34 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { inputPacket, requestJson, ApiError } from "../client/network.js";
 import { emptyInput } from "../shared/game.js";
-import { sanitizeInput } from "../shared/prediction.js";
+import { sanitizeInput, packInput } from "../shared/prediction.js";
+
+test("packed controls preserve every action and reject malformed movement arrays", () => {
+  const command = {
+    ...emptyInput(),
+    seq: 1,
+    jump: true,
+    sprint: true,
+    crouch: true,
+    jet: true,
+    fire: true,
+    aim: true,
+    reload: true,
+    place: true,
+    dig: true,
+    grenade: true,
+    gear: true,
+    ability: true,
+    classId: 3,
+    buildKit: 2,
+    viewTime: 12.34,
+  };
+  assert.deepEqual(sanitizeInput(packInput(command)), sanitizeInput(command));
+  const invalid = packInput(command);
+  invalid[6] = Infinity;
+  assert.equal(sanitizeInput(invalid), null);
+  assert.equal(sanitizeInput([1, 2, 3]), null);
+});
 
 test("movement packets fit both 8 KiB transports and preserve commands, action pulses and sequence order", () => {
   const pending = Array.from({ length: 120 }, (_, i) => ({
@@ -33,7 +60,8 @@ test("movement packets fit both 8 KiB transports and preserve commands, action p
     const packet = inputPacket(metadata, pending);
     assert.ok(new TextEncoder().encode(packet.body).byteLength <= 7000);
     const wire = JSON.parse(packet.body).commands;
-    assert.ok(wire.length > 0 && wire.length <= 24);
+    assert.ok(wire.length > 0 && wire.length <= 64);
+    if (pending.length === 120) assert.ok(wire.length > 24);
     for (let i = 0; i < wire.length; i++)
       assert.deepEqual(sanitizeInput(wire[i]), sanitizeInput(pending[i]));
     assert.equal(packet.lastSeq, pending[wire.length - 1].seq);

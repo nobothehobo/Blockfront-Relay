@@ -19,11 +19,6 @@ import { flagAssignment } from "./ctf-tactics.js";
 import { approachWaypoint } from "./approaches.js";
 import { botProfile } from "./bot-profile.js";
 import { breachInput } from "./breach.js";
-import {
-  buildQuarter,
-  kitCells,
-  validateKit,
-} from "../shared/fortifications.js";
 export type BotBrain = NonNullable<Player["brain"]>;
 type Arena = {
   time: number;
@@ -549,58 +544,8 @@ export function thinkBot(p: Player, arena: Arena): Input {
     brain.burstUntil = arena.time + (primary === 1 ? 0.38 : 0.65);
     brain.nextBurst = brain.burstUntil + 0.18 + (personality % 3) * 0.04;
   }
-  // Brief defensive construction uses precisely the normal tool/raycast/kit path.
-  // Only exposed, pressured humans build; zombies breach instead. Never block a
-  // protected base, another player, existing terrain, or a teammate's nearby kit.
-  if (
-    target &&
-    ready &&
-    arena.phase === "active" &&
-    !p.zombie &&
-    p.ground &&
-    distance > 10 &&
-    (p.health < 65 ||
-      (p.lastDamage > 0 &&
-        arena.time - p.lastDamage < 1.5 &&
-        profile.style !== "assault")) &&
-    p.blocks >= 6 &&
-    !p.editCooldown &&
-    arena.time >= (brain.nextBuild ?? 0) &&
-    ![...arena.players.values()].some(
-      (v) =>
-        v.id !== p.id &&
-        v.team === p.team &&
-        horizontal(v, p) < 4 &&
-        arena.time - (v.brain?.nextBuild ?? -20) < 0,
-    )
-  ) {
-    brain.nextBuild = arena.time + profile.buildDelay;
-    const buildYaw = Math.atan2(-(target.x - p.x), -(target.z - p.z));
-    const buildPitch = -0.65;
-    const hit = ray(arena.world, origin, direction(buildYaw, buildPitch), 6);
-    if (
-      hit &&
-      validateKit(
-        arena.world,
-        kitCells(1, hit.previous, buildQuarter(buildYaw)),
-        [...arena.players.values()],
-        origin,
-        p.blocks,
-      ).valid
-    ) {
-      brain.route = [];
-      brain.nextPlan = 0;
-      return {
-        ...emptyInput(),
-        seq: p.lastSeq + 1,
-        weapon: 5,
-        buildKit: 1,
-        yaw: buildYaw,
-        pitch: buildPitch,
-        place: true,
-      };
-    }
-  }
+  // NPCs seek existing cover or retreat; never pop a prefab wall into combat.
+  // Player construction and objective-oriented digging remain separate systems.
   return {
     ...emptyInput(),
     seq: p.lastSeq + 1,

@@ -26,7 +26,8 @@ test(
     try {
       const packetsA: any[] = [],
         packetsB: any[] = [];
-      a = new WebSocket(`ws://127.0.0.1:${port}/ws?room=valley&name=NetA`);
+      // The marksman combat check must use a class that actually owns that gun.
+      a = new WebSocket(`ws://127.0.0.1:${port}/ws?room=valley&name=NetA&class=3`);
       b = new WebSocket(`ws://127.0.0.1:${port}/ws?room=valley&name=NetB`);
       a.on("message", (s) => packetsA.push(JSON.parse(String(s))));
       b.on("message", (s) => packetsB.push(JSON.parse(String(s))));

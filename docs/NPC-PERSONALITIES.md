@@ -1,5 +1,7 @@
 # 2.12.1 — NPC personalities
 
+**2.13.1 correction:** automatic combat cover construction described below was removed. Bots now use existing terrain, retreats and digging; players retain construction. The original release notes below describe historical behavior, not the current building policy. The cover regression now verifies repeated pressured decisions never request construction.
+
 Bots derive a stable profile from their ID and map seed. Skill and tactical style are independent: the distribution weights rookies at 30%, regulars at 50%, and veterans at 20% across hash buckets, not an exact quota in each small room. All tiers retain noticeable error; health, damage, weapon spread and server validation are unchanged.
 
 - Reactions vary roughly 0.28–0.83 seconds. Aim observations update at 0.18/0.28/0.40-second intervals, rather than tracking the opponent's exact current position at every decision. Moving targets can outrun that observation. Aim has a sustained side offset and drifting error, amplified while airborne or recently damaged. Veterans remain threatening but are not perfectly accurate.

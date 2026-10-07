@@ -1,5 +1,7 @@
 # 2.13 — Objective Fieldcraft
 
+**2.13.1:** NPC automatic combat cover building was removed. Existing cover seeking, retreats, player construction and objective tunnel breaches remain; references to NPC cover building below describe the initial 2.13 release only.
+
 ## NPC movement and objectives
 
 Bots track displacement from a progress anchor rather than only movement since the previous think. Repeated strafing in a small area now triggers a short escape toward a reachable forward/side/back candidate, invalidates the stale route, and replans. Invalid terrain steering is checked even when a route is cached. No teleport or terrain collision bypass is used.

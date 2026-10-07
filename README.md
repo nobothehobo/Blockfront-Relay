@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.13 — Objective Fieldcraft.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.13.1 — Grounded Combat.**
+
+**2.13.1:** removed autonomous NPC prefab cover construction. Bots use existing cover, retreats and digging instead of instant combat walls. Player building, class equipment and reactive objective breaches are unchanged. Applies to local practice and online NPCs. The regression suite checks pressured bots never request construction across repeated decisions; physical Safari testing remains outstanding.
 
 **2.13:** progress-based recovery from stuck strafing, reactive supported tunnel breaches for objective raiders, and class-restricted default/practice matches with only permitted ammunition and weapons. Class changes apply on respawn; custom sandbox rooms remain optional. See [changes and verification limits](docs/UPDATE-213.md). Refresh and start a new practice match after updating.
 

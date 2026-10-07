@@ -105,7 +105,7 @@ test("occlusion does not update aim memory; reacquiring a target requires a fres
   assert.equal(thinkBot(bot, room).fire, false);
   assert.equal(bot.brain!.acquired, 2.4);
 });
-test("pressured bot builds replicated cover through normal authority and respects resource/cooldown limits", () => {
+test("pressured bots never spawn combat cover or consume construction resources", () => {
   const { room, human, bot } = setup();
   const edits: any[] = [];
   room.peers.set("observer", { send: (s) => edits.push(JSON.parse(s)) });
@@ -120,18 +120,18 @@ test("pressured bot builds replicated cover through normal authority and respect
     acquired: 0,
     seenAt: 10,
   };
-  const command = thinkBot(bot, room);
-  assert.equal(command.place, true);
-  assert.equal(command.weapon, 5);
   const blocks = bot.blocks;
-  bot.input = command;
-  bot.yaw = command.yaw;
-  bot.pitch = command.pitch;
-  room.edit(bot, true);
-  assert.equal(bot.blocks, blocks - 6);
-  assert.ok(edits.some((v) => v.type === "edits" && v.edits.length === 6));
-  room.time += 0.2;
-  assert.equal(thinkBot(bot, room).place, false);
+  for (let i = 0; i < 100; i++) {
+    room.time += 0.2;
+    bot.lastDamage = room.time;
+    const command = thinkBot(bot, room);
+    assert.equal(command.place, false);
+    assert.equal(command.buildKit, undefined);
+    assert.notEqual(command.weapon, 5);
+    bot.input = command;
+  }
+  assert.equal(bot.blocks, blocks);
+  assert.equal(edits.filter((v) => v.type === "edits").length, 0);
   bot.zombie = true;
   bot.brain = undefined;
   room.time += 1;

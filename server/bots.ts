@@ -17,6 +17,12 @@ import {
 import { planRoute, walkHeight } from "./navigation.js";
 import { flagAssignment } from "./ctf-tactics.js";
 import { approachWaypoint } from "./approaches.js";
+import { botProfile } from "./bot-profile.js";
+import {
+  buildQuarter,
+  kitCells,
+  validateKit,
+} from "../shared/fortifications.js";
 export type BotBrain = NonNullable<Player["brain"]>;
 type Arena = {
   time: number;
@@ -65,6 +71,7 @@ export function thinkBot(p: Player, arena: Arena): Input {
   if (arena.time < brain.nextThink) return p.input;
   const dt = 0.18;
   brain.nextThink = arena.time + dt;
+  const profile = botProfile(p.id, arena.world.seed);
   const personality =
     [...p.id].reduce((n, c) => Math.imul(n, 31) + c.charCodeAt(0), 17) >>> 0;
   const origin = eye(p);
@@ -86,16 +93,19 @@ export function thinkBot(p: Player, arena: Arena): Input {
     visible.sort((a, b) => horizontal(a, escorted) - horizontal(b, escorted));
   const target = visible.find((v) => v.id === brain.target) ?? visible[0];
   if (target) {
-    if (brain.target !== target.id) {
+    if (brain.target !== target.id || brain.lostSight) {
       brain.target = target.id;
       brain.acquired = arena.time;
+      brain.aimPoint = undefined;
     }
     brain.lastSeen = { x: target.x, y: target.y, z: target.z };
     brain.seenAt = arena.time;
+    brain.lostSight = false;
   } else if (arena.time - (brain.seenAt ?? -10) > 2.5) {
     brain.target = "";
     brain.lastSeen = undefined;
   }
+  if (!target) brain.lostSight = true;
   if (!target && !brain.lastSeen) {
     const report = [...arena.players.values()].find(
       (v) =>
@@ -184,7 +194,7 @@ export function thinkBot(p: Player, arena: Arena): Input {
     }
   }
   const distance = target ? horizontal(target, p) : Infinity;
-  const ready = !!target && arena.time - brain.acquired > 0.4;
+  const ready = !!target && arena.time - brain.acquired > profile.reaction;
   const primary = classPrimary(
     p.classId,
     arena.options.arsenal === "specialists",
@@ -223,6 +233,21 @@ export function thinkBot(p: Player, arena: Arena): Input {
         goal = candidate;
       }
     }
+  }
+  if (
+    target &&
+    !retreat &&
+    !p.zombie &&
+    !objective &&
+    profile.style === "flanker" &&
+    distance > 12
+  ) {
+    const side = (profile.hash >>> 2) % 2 ? 7 : -7;
+    goal = {
+      x: target.x + ((target.z - p.z) / distance) * side,
+      y: target.y,
+      z: target.z - ((target.x - p.x) / distance) * side,
+    };
   }
   if (target && !p.zombie && visible.length >= 2 && friendlyCarrier !== p.id) {
     const support = [...arena.players.values()]
@@ -266,9 +291,19 @@ export function thinkBot(p: Player, arena: Arena): Input {
       : 0;
   brain.lastX = p.x;
   brain.lastZ = p.z;
-  const planningGoal = objective
-    ? approachWaypoint(p, arena.world, goal, (personality >>> 3) % 3)
-    : goal;
+  const lanes = [0, 0, 0];
+  for (const other of arena.players.values())
+    if (
+      other.id !== p.id &&
+      other.team === p.team &&
+      other.dead <= 0 &&
+      other.brain?.approach
+    )
+      lanes[other.brain.approach.lane]++;
+  const planningGoal =
+    objective || (!target && !brain.lastSeen)
+      ? approachWaypoint(p, arena.world, goal, profile.lane, lanes)
+      : goal;
   const desired = Math.atan2(-(planningGoal.x - p.x), -(planningGoal.z - p.z));
   const front = ray(
     arena.world,
@@ -317,12 +352,37 @@ export function thinkBot(p: Player, arena: Arena): Input {
   let aimYaw = navYaw,
     pitch = 0;
   if (target && ready) {
-    aimYaw = Math.atan2(-(target.x - p.x), -(target.z - p.z));
-    pitch = Math.atan2(eye(target).y - origin.y - 0.15, distance);
-    // Retain imperfect aim: better decisions, not higher accuracy or hidden damage.
+    if (
+      brain.aimTarget !== target.id ||
+      !brain.aimPoint ||
+      arena.time >= (brain.nextAim ?? 0)
+    ) {
+      brain.aimPoint = { ...eye(target) };
+      brain.aimTarget = target.id;
+      brain.nextAim = arena.time + profile.tracking;
+    }
+    const tracked = p.zombie ? eye(target) : brain.aimPoint;
+    aimYaw = Math.atan2(-(tracked.x - p.x), -(tracked.z - p.z));
+    pitch = Math.atan2(
+      tracked.y - origin.y - 0.35,
+      Math.max(0.1, horizontal(tracked, p)),
+    );
+    // Delayed observations and sustained offsets: no velocity-perfect tracking.
     if (!p.zombie) {
-      aimYaw += Math.sin(arena.time * 2.3 + personality) * 0.016;
-      pitch += Math.cos(arena.time * 1.7 + personality) * 0.008;
+      const stress =
+        (p.lastDamage > 0 && arena.time - p.lastDamage < 1.5) || !p.ground
+          ? 1.5
+          : 1;
+      const bias = (profile.hash >>> 3) % 2 ? 1 : -1;
+      aimYaw +=
+        (bias * 0.55 + Math.sin(arena.time * 2.1 + profile.hash) * 0.65) *
+        profile.error *
+        stress;
+      pitch +=
+        Math.cos(arena.time * 1.4 + profile.hash) *
+        profile.error *
+        0.55 *
+        stress;
     }
   }
   const tool = brain.stuck > 1.2 && !attack && !!navFront;
@@ -331,10 +391,19 @@ export function thinkBot(p: Player, arena: Arena): Input {
     pitch = -0.35;
   }
   const yaw =
-    p.yaw + Math.max(-dt * 3.5, Math.min(dt * 3.5, wrap(aimYaw - p.yaw)));
+    p.yaw +
+    Math.max(
+      -dt * profile.turn,
+      Math.min(dt * profile.turn, wrap(aimYaw - p.yaw)),
+    );
   const travel =
     horizontal(goal, p) > 2 &&
-    (objective || !attack || retreat || p.zombie || distance > 30);
+    (objective ||
+      !attack ||
+      retreat ||
+      p.zombie ||
+      distance > (profile.style === "assault" ? 18 : 35) ||
+      profile.style === "flanker");
   let forward = 0,
     strafe = 0;
   if (travel) {
@@ -346,7 +415,13 @@ export function thinkBot(p: Player, arena: Arena): Input {
       brain.side = -(brain.side ?? (personality % 2 ? 1 : -1));
       brain.nextStrafe = arena.time + 1.3 + (personality % 5) * 0.15;
     }
-    strafe = (brain.side ?? 1) * 0.55;
+    strafe =
+      (brain.side ?? 1) *
+      (profile.style === "guard"
+        ? 0.2
+        : profile.style === "flanker"
+          ? 0.75
+          : 0.5);
   }
   if (travel) {
     let awayX = 0,
@@ -408,6 +483,58 @@ export function thinkBot(p: Player, arena: Arena): Input {
   if (attack && !p.zombie && arena.time >= (brain.nextBurst ?? 0)) {
     brain.burstUntil = arena.time + (primary === 1 ? 0.38 : 0.65);
     brain.nextBurst = brain.burstUntil + 0.18 + (personality % 3) * 0.04;
+  }
+  // Brief defensive construction uses precisely the normal tool/raycast/kit path.
+  // Only exposed, pressured humans build; zombies breach instead. Never block a
+  // protected base, another player, existing terrain, or a teammate's nearby kit.
+  if (
+    target &&
+    ready &&
+    arena.phase === "active" &&
+    !p.zombie &&
+    p.ground &&
+    distance > 10 &&
+    (p.health < 65 ||
+      (p.lastDamage > 0 &&
+        arena.time - p.lastDamage < 1.5 &&
+        profile.style !== "assault")) &&
+    p.blocks >= 6 &&
+    !p.editCooldown &&
+    arena.time >= (brain.nextBuild ?? 0) &&
+    ![...arena.players.values()].some(
+      (v) =>
+        v.id !== p.id &&
+        v.team === p.team &&
+        horizontal(v, p) < 4 &&
+        arena.time - (v.brain?.nextBuild ?? -20) < 0,
+    )
+  ) {
+    brain.nextBuild = arena.time + profile.buildDelay;
+    const buildYaw = Math.atan2(-(target.x - p.x), -(target.z - p.z));
+    const buildPitch = -0.65;
+    const hit = ray(arena.world, origin, direction(buildYaw, buildPitch), 6);
+    if (
+      hit &&
+      validateKit(
+        arena.world,
+        kitCells(1, hit.previous, buildQuarter(buildYaw)),
+        [...arena.players.values()],
+        origin,
+        p.blocks,
+      ).valid
+    ) {
+      brain.route = [];
+      brain.nextPlan = 0;
+      return {
+        ...emptyInput(),
+        seq: p.lastSeq + 1,
+        weapon: 5,
+        buildKit: 1,
+        yaw: buildYaw,
+        pitch: buildPitch,
+        place: true,
+      };
+    }
   }
   return {
     ...emptyInput(),

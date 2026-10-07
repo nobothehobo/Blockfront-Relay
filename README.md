@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.12.0 — Connection & Solo Update.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.12.1 — NPC Personalities.**
+
+**2.12.1:** mixed rookie/regular/veteran aim and reaction profiles, delayed moving-target tracking, pressure-dependent aim errors, assault/flanker/support/guard tendencies, congestion-aware strategic routes and validated defensive cover building. These apply equally to on-device practice and online NPCs. See [behavior changes and testing limits](docs/NPC-PERSONALITIES.md).
 
 **2.12:** on-device NPC practice in a background worker, larger lossless input batches and a bounded three-second replay window, full elapsed-credit HTTP acknowledgments, a stable elimination camera, and Space jump/hold-airborne jetpack controls. Online squad remains available for friends. See [release notes and verification limits](docs/UPDATE-212.md). Refresh/rejoin for the update.
 

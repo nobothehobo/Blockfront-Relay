@@ -9,6 +9,7 @@ export function approachWaypoint(
   world: World,
   goal: Vec,
   preferred: number,
+  congestion: number[] = [0, 0, 0],
 ): Vec {
   if (!world.layoutVersion || distance(p, goal) < 30) {
     if (p.brain) p.brain.approach = undefined;
@@ -23,7 +24,10 @@ export function approachWaypoint(
       const from = nearestRoutePoint(route, p),
         to = nearestRoutePoint(route, goal);
       const value =
-        from.distance + to.distance * 0.15 + (i === preferred ? 0 : 5);
+        from.distance +
+        to.distance * 0.15 +
+        (i === preferred ? 0 : 16) +
+        (congestion[i] ?? 0) * 8;
       if (value < cost) {
         cost = value;
         lane = i;

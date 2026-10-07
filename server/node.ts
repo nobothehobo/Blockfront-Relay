@@ -36,10 +36,7 @@ for (const [id, mode, jet] of [
       jet,
       seed: 7231,
       rewind,
-      arsenal:
-        mode === "frontline" || mode === "demolition"
-          ? "specialists"
-          : "sandbox",
+      arsenal: "specialists",
     }),
   );
 const origins = (process.env.ALLOWED_ORIGINS ?? "").split(",").filter(Boolean);

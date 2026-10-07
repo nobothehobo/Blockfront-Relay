@@ -34,6 +34,8 @@ const defaults = [
 ] as const;
 const terrainCache = new Map<string, Uint8Array>();
 function restore(id: string, data: Data) {
+  if (defaults.some(([roomId]) => roomId === id))
+    data.options.arsenal = "specialists";
   const key = `${data.options.seed}:${data.terrainVersion ?? 0}`;
   let seed = terrainCache.get(key);
   const world = new World(data.options.seed, !seed, data.terrainVersion ?? 0);
@@ -127,10 +129,7 @@ async function ensure(db: DB) {
             jet,
             seed: 7231,
             limit: 16,
-            arsenal:
-              mode === "frontline" || mode === "demolition"
-                ? "specialists"
-                : "sandbox",
+            arsenal: "specialists",
           }),
         ),
         Date.now(),
@@ -176,7 +175,9 @@ export default {
               name: data.options.name,
               mode: data.options.mode,
               jet: data.options.jet,
-              arsenal: data.options.arsenal ?? "sandbox",
+              arsenal: defaults.some(([id]) => id === row.id)
+                ? "specialists"
+                : (data.options.arsenal ?? "sandbox"),
               duration: data.options.duration ?? 300,
               seed: data.options.seed,
               map: mapTheme(data.options.seed).name,

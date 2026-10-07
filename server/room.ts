@@ -400,8 +400,16 @@ export class Room {
       abilityTime: 0,
       gearCharges: p.zombie ? 0 : gearInfo(p.classId).charges,
       gearCooldown: 0,
-      ammo: WEAPONS.map((w) => w.mag),
-      reserve: WEAPONS.map((w) => w.reserve),
+      ammo: WEAPONS.map((w, i) =>
+        allowedWeapon(p.classId, i, this.options.arsenal === "specialists")
+          ? w.mag
+          : 0,
+      ),
+      reserve: WEAPONS.map((w, i) =>
+        allowedWeapon(p.classId, i, this.options.arsenal === "specialists")
+          ? w.reserve
+          : 0,
+      ),
       reload: 0,
       cooldown: 0,
       protected: 3,
@@ -639,7 +647,7 @@ export class Room {
               this.options.arsenal === "specialists",
             )
           ? p.input.weapon
-          : p.weapon;
+          : classPrimary(p.classId, this.options.arsenal === "specialists");
       if (selected !== p.weapon) {
         p.weapon = selected;
         p.reload = 0;
@@ -1346,7 +1354,9 @@ export class Room {
       (p.gearCharges ?? 0) < gearInfo(p.classId).charges ||
       WEAPONS.some(
         (w, i) =>
-          isFirearm(i) && (p.ammo[i] < w.mag || p.reserve[i] < w.reserve),
+          isFirearm(i) &&
+          allowedWeapon(p.classId, i, this.options.arsenal === "specialists") &&
+          (p.ammo[i] < w.mag || p.reserve[i] < w.reserve),
       );
     const station = this.supplyStations.find(
       (s) =>
@@ -1373,8 +1383,20 @@ export class Room {
     p.gearCharges = gearInfo(p.classId).charges;
     WEAPONS.forEach((w, i) => {
       if (isFirearm(i)) {
-        p.ammo[i] = w.mag;
-        p.reserve[i] = w.reserve;
+        p.ammo[i] = allowedWeapon(
+          p.classId,
+          i,
+          this.options.arsenal === "specialists",
+        )
+          ? w.mag
+          : 0;
+        p.reserve[i] = allowedWeapon(
+          p.classId,
+          i,
+          this.options.arsenal === "specialists",
+        )
+          ? w.reserve
+          : 0;
       }
     });
     p.reload = 0;

@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.12.1 — NPC Personalities.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.13 — Objective Fieldcraft.**
+
+**2.13:** progress-based recovery from stuck strafing, reactive supported tunnel breaches for objective raiders, and class-restricted default/practice matches with only permitted ammunition and weapons. Class changes apply on respawn; custom sandbox rooms remain optional. See [changes and verification limits](docs/UPDATE-213.md). Refresh and start a new practice match after updating.
 
 **2.12.1:** mixed rookie/regular/veteran aim and reaction profiles, delayed moving-target tracking, pressure-dependent aim errors, assault/flanker/support/guard tendencies, congestion-aware strategic routes and validated defensive cover building. These apply equally to on-device practice and online NPCs. See [behavior changes and testing limits](docs/NPC-PERSONALITIES.md).
 

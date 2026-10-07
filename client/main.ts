@@ -1481,7 +1481,7 @@ function updateHud() {
     jetButton.style.opacity = p.jetpack ? "1" : ".35";
     for (const b of document.querySelectorAll<HTMLButtonElement>(
       "[data-weapon]",
-    ))
+    )) {
       b.disabled = p.zombie
         ? Number(b.dataset.weapon) !== 4
         : !allowedWeapon(
@@ -1489,6 +1489,8 @@ function updateHud() {
             Number(b.dataset.weapon),
             state.arsenal === "specialists",
           );
+      b.hidden = b.disabled;
+    }
   }
   $("score-rows").replaceChildren();
   const header = document.createElement("div");
@@ -1995,7 +1997,15 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
 ))
   button.onclick = () => chooseWeapon(Number(button.dataset.weapon));
 $("build-mode").onclick = () =>
-  chooseWeapon(!isFirearm(input.weapon) ? lastGun : 5);
+  chooseWeapon(
+    !isFirearm(input.weapon)
+      ? allowedWeapon(local?.classId, lastGun, state?.arsenal === "specialists")
+        ? lastGun
+        : local?.classId === 2
+          ? 2
+          : CLASSES[local?.classId ?? 0].primary
+      : 5,
+  );
 const fireButton = document.querySelector<HTMLButtonElement>(
   '[data-action="fire"]',
 )!;
@@ -2043,12 +2053,12 @@ $("solo-start").onclick = async () => {
       startPractice({
         name,
         mode: mode as RoomOptions["mode"],
-        jet: "all",
+        jet: "classes",
         bots,
         seed,
         limit: 16,
         duration,
-        arsenal: "sandbox",
+        arsenal: "specialists",
         practice: true,
       });
       return;
@@ -2057,6 +2067,8 @@ $("solo-start").onclick = async () => {
     const existing = rooms.find(
       (r) =>
         r.name === name &&
+        r.arsenal === "specialists" &&
+        r.jet === "classes" &&
         r.mode === mode &&
         r.npcSlots === bots &&
         r.humans === 0 &&
@@ -2071,12 +2083,12 @@ $("solo-start").onclick = async () => {
         body: JSON.stringify({
           name,
           mode,
-          jet: "all",
+          jet: "classes",
           bots,
           seed,
           limit: 16,
           duration,
-          arsenal: "sandbox",
+          arsenal: "specialists",
           practice: true,
         }),
       }));

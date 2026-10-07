@@ -256,7 +256,11 @@ test("specialist rooms enforce weapons, spawn primaries and class-owned jetpacks
     });
     r.tick();
     assert.equal(a.weapon, original, "forbidden weapon rejected server-side");
-    assert.equal(a.ammo[6], 2, "cannot fire unauthorized launcher");
+    assert.equal(
+      a.ammo[6],
+      id === 2 ? 2 : 0,
+      "only Sapper owns launcher ammunition",
+    );
     const allowed = CLASS_WEAPONS[id][0];
     r.input(a.id, {
       ...emptyInput(),

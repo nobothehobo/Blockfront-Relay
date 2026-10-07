@@ -213,6 +213,10 @@ export type Player = Body & {
     aimTarget?: string;
     nextBuild?: number;
     lostSight?: boolean;
+    escapeUntil?: number;
+    escapeGoal?: Vec;
+    stalledAt?: Vec;
+    stalledSince?: number;
   };
   pendingActions?: Partial<Input>;
   epoch?: number;

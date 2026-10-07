@@ -18,6 +18,7 @@ import { planRoute, walkHeight } from "./navigation.js";
 import { flagAssignment } from "./ctf-tactics.js";
 import { approachWaypoint } from "./approaches.js";
 import { botProfile } from "./bot-profile.js";
+import { breachInput } from "./breach.js";
 import {
   buildQuarter,
   kitCells,
@@ -291,6 +292,72 @@ export function thinkBot(p: Player, arena: Arena): Input {
       : 0;
   brain.lastX = p.x;
   brain.lastZ = p.z;
+  // Detect oscillation as well as zero movement: tiny left/right steps used to
+  // keep resetting the stuck timer while the bot made no actual progress.
+  if (!brain.stalledAt || horizontal(brain.stalledAt, p) > 1.5) {
+    brain.stalledAt = { x: p.x, y: p.y, z: p.z };
+    brain.stalledSince = arena.time;
+  }
+  if (
+    Math.hypot(p.input.forward, p.input.strafe) > 0.2 &&
+    arena.time - (brain.stalledSince ?? arena.time) > 2.2 &&
+    arena.time >= (brain.escapeUntil ?? 0)
+  ) {
+    brain.route = [];
+    brain.approach = undefined;
+    brain.nextPlan = 0;
+    brain.side = -(brain.side ?? 1);
+    const choices = [0, Math.PI / 2, -Math.PI / 2, Math.PI]
+      .map((offset) => {
+        const angle = p.yaw + offset;
+        const point = {
+          x: p.x - Math.sin(angle) * 3,
+          y: p.y,
+          z: p.z - Math.cos(angle) * 3,
+        };
+        const height = walkHeight(arena.world, point.x, point.z, p.y);
+        return {
+          ...point,
+          y: height ?? p.y,
+          valid:
+            height !== null &&
+            !ray(arena.world, origin, direction(angle, 0), 3),
+          score: horizontal(point, goal),
+        };
+      })
+      .filter((v) => v.valid)
+      .sort((a, b) => a.score - b.score);
+    brain.escapeGoal = choices[0];
+    brain.escapeUntil = arena.time + 1.1;
+    brain.stalledSince = arena.time;
+  }
+  const escaping = arena.time < (brain.escapeUntil ?? 0) && !!brain.escapeGoal;
+  if (escaping) goal = brain.escapeGoal!;
+  // Raiders and breach specialists can cut a supported passage through a hill
+  // or base wall rather than repeatedly strafing into it. Carriers favor escape.
+  const breach =
+    objective &&
+    !escaping &&
+    !p.zombie &&
+    brain.role !== "carrier" &&
+    (p.classId === 4 || p.classId === 2 || profile.style === "flanker") &&
+    (!target || distance > 14) &&
+    (horizontal(goal, p) < 45 || brain.stuck > 1.2)
+      ? breachInput(arena.world, p, goal)
+      : null;
+  if (breach) {
+    brain.route = [];
+    brain.nextPlan = 0;
+    return {
+      ...emptyInput(),
+      seq: p.lastSeq + 1,
+      weapon: 4,
+      yaw: breach.yaw,
+      pitch: breach.pitch,
+      dig: true,
+      ability: p.classId === 4 && (p.abilityCooldown ?? 0) === 0,
+    };
+  }
   const lanes = [0, 0, 0];
   for (const other of arena.players.values())
     if (
@@ -301,7 +368,7 @@ export function thinkBot(p: Player, arena: Arena): Input {
     )
       lanes[other.brain.approach.lane]++;
   const planningGoal =
-    objective || (!target && !brain.lastSeen)
+    !escaping && (objective || (!target && !brain.lastSeen))
       ? approachWaypoint(p, arena.world, goal, profile.lane, lanes)
       : goal;
   const desired = Math.atan2(-(planningGoal.x - p.x), -(planningGoal.z - p.z));
@@ -403,7 +470,8 @@ export function thinkBot(p: Player, arena: Arena): Input {
       retreat ||
       p.zombie ||
       distance > (profile.style === "assault" ? 18 : 35) ||
-      profile.style === "flanker");
+      profile.style === "flanker" ||
+      escaping);
   let forward = 0,
     strafe = 0;
   if (travel) {
@@ -445,10 +513,7 @@ export function thinkBot(p: Player, arena: Arena): Input {
   const steerX = -Math.sin(yaw) * forward + Math.cos(yaw) * strafe;
   const steerZ = -Math.cos(yaw) * forward - Math.sin(yaw) * strafe;
   brain.obstructed = false;
-  if (
-    walkHeight(arena.world, p.x + steerX, p.z + steerZ, p.y) === null &&
-    !brain.route?.length
-  ) {
+  if (walkHeight(arena.world, p.x + steerX, p.z + steerZ, p.y) === null) {
     // A deliberately stopped move still needs a recovery timer. Previously this
     // reset "stuck" forever, so a tall wall could strand the bot without digging.
     brain.obstructed = !!navFront && Math.hypot(forward, strafe) > 0.2;

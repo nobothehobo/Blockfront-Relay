@@ -7,6 +7,7 @@ import {
   ray,
   basePosition,
 } from "../shared/game.js";
+import { walkHeight } from "./navigation.js";
 // Local, supported two-high breach. Does not excavate floors, protected bases,
 // or grant edits directly: the returned tool input must pass Room validation.
 export function breachInput(world: World, p: Player, goal: Vec) {
@@ -19,6 +20,8 @@ export function breachInput(world: World, p: Player, goal: Vec) {
     z = Math.floor(p.z) + (alongX ? 0 : sign),
     y = Math.floor(p.y + 0.05);
   if (y <= 0 || !world.get(x, y - 1, z)) return null;
+  // Do not turn a usable staircase into a pit just because its riser is solid.
+  if (walkHeight(world, x + 0.5, z + 0.5, p.y) !== null) return null;
   if (
     [0, 1].some((team) => {
       const b = basePosition(team);

@@ -1,4 +1,5 @@
-import { Player, Vec } from "../shared/game.js";
+import { Player, Vec, World } from "../shared/game.js";
+import { walkHeight } from "./navigation.js";
 type Flag = {
   team: number;
   home: Vec;
@@ -12,6 +13,7 @@ export function flagAssignment(
   p: Player,
   players: Map<string, Player>,
   flags: Flag[],
+  world?: World,
 ) {
   const own = flags[p.team],
     enemy = flags[1 - p.team];
@@ -59,13 +61,26 @@ export function flagAssignment(
       : [];
   if (carrier?.team === p.team && escorts.some((v) => v.id === p.id)) {
     const side = escorts.findIndex((v) => v.id === p.id) === 0 ? 3 : -3;
+    // Formation follows the route home, not every twitch of the carrier's aim.
+    const heading = Math.atan2(
+      -(own.home.x - carrier.x),
+      -(own.home.z - carrier.z),
+    );
+    const candidate = {
+      x: carrier.x + Math.cos(heading) * side + Math.sin(heading) * 2,
+      y: carrier.y,
+      z: carrier.z - Math.sin(heading) * side + Math.cos(heading) * 2,
+    };
+    const height = world
+      ? walkHeight(world, candidate.x, candidate.z, carrier.y)
+      : carrier.y;
     return {
       role: "escort",
-      goal: {
-        x: carrier.x + Math.cos(carrier.yaw) * side + Math.sin(carrier.yaw) * 2,
-        y: carrier.y,
-        z: carrier.z - Math.sin(carrier.yaw) * side + Math.cos(carrier.yaw) * 2,
-      },
+      // A narrow trench/tunnel cannot hold a wide formation: follow the carrier.
+      goal:
+        height === null
+          ? { x: carrier.x, y: carrier.y, z: carrier.z }
+          : { ...candidate, y: height },
     };
   }
   if (role === "defender")

@@ -14,7 +14,7 @@ import {
   D,
   basePosition,
 } from "../shared/game.js";
-import { planRoute, walkHeight } from "./navigation.js";
+import { planRoute, walkHeight, canTraverse } from "./navigation.js";
 import { flagAssignment } from "./ctf-tactics.js";
 import { approachWaypoint } from "./approaches.js";
 import { botProfile } from "./bot-profile.js";
@@ -127,7 +127,12 @@ export function thinkBot(p: Player, arena: Arena): Input {
     };
   let objective = false;
   if (arena.options.mode === "ctf") {
-    const assignment = flagAssignment(p, arena.players, arena.flags);
+    const assignment = flagAssignment(
+      p,
+      arena.players,
+      arena.flags,
+      arena.world,
+    );
     goal = assignment.goal;
     brain.role = assignment.role;
     objective = true;
@@ -294,7 +299,7 @@ export function thinkBot(p: Player, arena: Arena): Input {
     brain.stalledSince = arena.time;
   }
   if (
-    Math.hypot(p.input.forward, p.input.strafe) > 0.2 &&
+    (Math.hypot(p.input.forward, p.input.strafe) > 0.2 || brain.obstructed) &&
     arena.time - (brain.stalledSince ?? arena.time) > 2.2 &&
     arena.time >= (brain.escapeUntil ?? 0)
   ) {
@@ -316,7 +321,8 @@ export function thinkBot(p: Player, arena: Arena): Input {
           y: height ?? p.y,
           valid:
             height !== null &&
-            !ray(arena.world, origin, direction(angle, 0), 3),
+            !ray(arena.world, origin, direction(angle, 0), 3) &&
+            canTraverse(arena.world, p, { ...point, y: height ?? p.y }),
           score: horizontal(point, goal),
         };
       })
@@ -384,7 +390,10 @@ export function thinkBot(p: Player, arena: Arena): Input {
   const waypoint = brain.route?.[0];
   if (
     (brain.routeGoal && horizontal(brain.routeGoal, planningGoal) > 6) ||
-    (waypoint && walkHeight(arena.world, waypoint.x, waypoint.z, p.y) === null)
+    (waypoint &&
+      (walkHeight(arena.world, waypoint.x, waypoint.z, p.y) === null ||
+        (horizontal(waypoint, p) < 2 &&
+          !canTraverse(arena.world, p, waypoint))))
   ) {
     brain.route = [];
     brain.nextPlan = 0;
@@ -400,7 +409,11 @@ export function thinkBot(p: Player, arena: Arena): Input {
     brain.routeGoal = { ...planningGoal };
     brain.nextPlan = arena.time + 1.1 + (personality % 7) * 0.05;
   }
-  while (brain.route?.length && horizontal(brain.route[0], p) < 0.45)
+  while (
+    brain.route?.length &&
+    horizontal(brain.route[0], p) < 0.45 &&
+    Math.abs(brain.route[0].y - p.y) < 0.6
+  )
     brain.route.shift();
   const navigation = brain.route?.[0] ?? planningGoal;
   const navYaw = Math.atan2(-(navigation.x - p.x), -(navigation.z - p.z));
@@ -447,7 +460,14 @@ export function thinkBot(p: Player, arena: Arena): Input {
         stress;
     }
   }
-  const tool = brain.stuck > 1.2 && !attack && !!navFront;
+  const tool =
+    !escaping &&
+    (brain.stuck > 1.2 ||
+      (!!brain.obstructed &&
+        arena.time - (brain.stalledSince ?? arena.time) > 1.4)) &&
+    !attack &&
+    !!navFront &&
+    walkHeight(arena.world, navFront.x + 0.5, navFront.z + 0.5, p.y) === null;
   if (tool) {
     aimYaw = navYaw;
     pitch = -0.35;
@@ -508,10 +528,17 @@ export function thinkBot(p: Player, arena: Arena): Input {
   const steerX = -Math.sin(yaw) * forward + Math.cos(yaw) * strafe;
   const steerZ = -Math.cos(yaw) * forward - Math.sin(yaw) * strafe;
   brain.obstructed = false;
-  if (walkHeight(arena.world, p.x + steerX, p.z + steerZ, p.y) === null) {
+  if (
+    walkHeight(
+      arena.world,
+      Math.floor(p.x + steerX) + 0.5,
+      Math.floor(p.z + steerZ) + 0.5,
+      p.y,
+    ) === null
+  ) {
     // A deliberately stopped move still needs a recovery timer. Previously this
     // reset "stuck" forever, so a tall wall could strand the bot without digging.
-    brain.obstructed = !!navFront && Math.hypot(forward, strafe) > 0.2;
+    brain.obstructed = Math.hypot(forward, strafe) > 0.2;
     forward = 0;
     strafe = 0;
   }

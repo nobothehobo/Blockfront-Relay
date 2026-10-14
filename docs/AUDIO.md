@@ -1,6 +1,6 @@
 # Original retro combat audio
 
-All sounds are synthesized in Web Audio. No Ace of Spades or other game's samples are downloaded, reproduced or bundled. The design direction is dry, punchy voxel combat, with quieter melodic HUD feedback.
+Combat and interface sound effects are synthesized in Web Audio. No Ace of Spades or other game's samples are downloaded, reproduced or bundled. The design direction is dry, punchy voxel combat, with quieter melodic HUD feedback.
 
 Rifle, SMG, shotgun and marksman use distinct filtered noise reports, low-frequency bodies and short mechanical tails. The launcher has its own lower whoosh. Reloads use a timed three-click mechanical sequence; digging/placement use crunchy impacts and thumps. Footsteps and jumps are subdued. Explosions combine a short crack, low rumble and bass decay; damage, hit/kill, objective, pickup and infection have distinct cues.
 
@@ -9,3 +9,7 @@ Jetpacks use a cached two-second noise loop plus a low engine tone. Thrust fades
 Loops stop on release, depleted fuel, death, leaving, pausing, hidden tabs and muting. Master/effects levels update the shared bus while playing. Original startup/shutdown transients accompany engine transitions. One-shots are capped at 32 simultaneous source nodes; engine voices at four. Two reusable noise buffers avoid repeated large allocations. Short gain envelopes and a shared compressor control clicks and busy-match peaks; ended nodes disconnect.
 
 AudioContext unlocks/resumes from the existing Play/Join or touch gesture. Modern Safari is supported by standard Web Audio, with a prefixed context fallback, but physical iPhone/iPad speaker/headphone and silent-mode behavior still need device testing. Browser audio/PCM and desktop/touch lifecycle tests are automated; sound balance and subjective tone require listening on actual hardware.
+
+## Licensed soundtrack (2.17)
+
+Scott Buckley’s “Neon” (menu) and “Machina” (gameplay) are licensed under CC BY 4.0. See [attribution, original download sources, modifications and license](../assets/music/ATTRIBUTION.md). Streamed native MP3 elements feed independent Web Audio gain nodes; music does not share the effects compressor. The default music level is 0.14 multiplied by master (0.55); gameplay is additionally reduced to 65%, and local firing/damage/hit confirmation ducks it to 30%. Pause reduces it to 55%. Music ramps between menu/gameplay and stops when disabled, master-muted or hidden. Inactive songs park after a fade, retaining playback position. Both elements are primed only by a trusted gesture for Safari; autoplay failure is contained and retries on the next gesture. Whole songs are not decoded into large Web Audio buffers. Both production transports support native single-byte-range MP3 requests. Physical Safari playback and the final sound mix still need device testing.

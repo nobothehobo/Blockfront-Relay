@@ -17,6 +17,9 @@ import {
   ApiError,
 } from "./network.js";
 import "./style.css";
+import "./front-menu.css";
+import { MenuScene } from "./menu-scene.js";
+import { Music } from "./music.js";
 import {
   World,
   Player,
@@ -79,6 +82,7 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const show = (id: string, on = true) => $(id).classList.toggle("hidden", !on);
 const sound = new Sound();
+const music = new Music();
 const touch =
   matchMedia("(pointer:coarse)").matches || navigator.maxTouchPoints > 0;
 document.body.classList.toggle("touch", touch);
@@ -104,6 +108,8 @@ type Settings = {
   fov: number;
   master: number;
   volume: number;
+  music: number;
+  musicEnabled: boolean;
   mouse: number;
   mobile: number;
   scale: number;
@@ -121,6 +127,8 @@ const defaults: Settings = {
   fov: 80,
   master: 0.55,
   volume: 0.75,
+  music: 0.14,
+  musicEnabled: true,
   mouse: 1,
   mobile: 1,
   scale: 1,
@@ -253,6 +261,7 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.rotation.order = "YXZ";
 scene.add(camera);
+const menuScene = new MenuScene(camera);
 const water = new WaterSurface();
 scene.add(water.mesh);
 const battlefield = new BattlefieldView();
@@ -730,6 +739,11 @@ function applySettings() {
   updateInputUi();
   sound.master = settings.master;
   sound.effects = settings.volume;
+  music.configure(settings.master, settings.music, settings.musicEnabled);
+  $("music-toggle").textContent = settings.musicEnabled
+    ? "MUSIC: ON"
+    : "MUSIC: OFF";
+  $("music-toggle").setAttribute("aria-pressed", String(settings.musicEnabled));
   terrain.textureStrength.value = settings.textures ? 1 : 0;
   renderer.setPixelRatio(
     Math.min(
@@ -790,6 +804,8 @@ function settingsUi() {
     ["fov", "Field of view", 60, 105, 1],
     ["master", "Master volume", 0, 1, 0.05],
     ["volume", "Effects volume", 0, 1, 0.05],
+    ["music", "Music volume", 0, 1, 0.01],
+    ["musicEnabled", "Menu & in-game music"],
     ["inputMode", "Input: auto / touch / keyboard-trackpad"],
     ["mouse", "Mouse / trackpad sensitivity", 0.2, 3, 0.1],
     ["mobile", "Touch sensitivity", 0.2, 3, 0.1],
@@ -812,7 +828,8 @@ function settingsUi() {
       key === "invert" ||
       key === "shadows" ||
       key === "textures" ||
-      key === "sunRays"
+      key === "sunRays" ||
+      key === "musicEnabled"
     ) {
       field = document.createElement("input");
       field.type = "checkbox";
@@ -841,7 +858,8 @@ function settingsUi() {
         key === "invert" ||
         key === "shadows" ||
         key === "textures" ||
-        key === "sunRays"
+        key === "sunRays" ||
+        key === "musicEnabled"
           ? (field as HTMLInputElement).checked
           : min !== undefined
             ? Number(field.value)
@@ -878,6 +896,27 @@ function settingsUi() {
 applySettings();
 settingsUi();
 window.addEventListener("resize", applySettings);
+const unlockMusic = () => {
+  sound.unlock();
+  if (sound.ctx) music.unlock(sound.ctx);
+};
+document.addEventListener("pointerdown", unlockMusic, { capture: true });
+document.addEventListener(
+  "keydown",
+  (event) => {
+    if (!event.repeat) unlockMusic();
+  },
+  { capture: true },
+);
+document.addEventListener("visibilitychange", () =>
+  music.update(connected ? "game" : "menu", document.hidden, false, paused),
+);
+$("music-toggle").onclick = () => {
+  settings.musicEnabled = !settings.musicEnabled;
+  applySettings();
+  settingsUi();
+  unlockMusic();
+};
 let ws: WebSocket | null = null,
   rooms: any[] = [];
 const nameInput = $<HTMLInputElement>("name");
@@ -953,6 +992,7 @@ function message(msg: any) {
     minimap.reset();
     firstState = true;
     connected = true;
+    document.body.classList.remove("front-menu");
     joining = false;
     show("menu", false);
     show("browser", false);
@@ -1004,6 +1044,7 @@ function disconnect(reason = "Disconnected. Join a room to reconnect.") {
   combatFX.clear();
   clearElimination();
   connected = false;
+  document.body.classList.add("front-menu");
   joining = false;
   local = null;
   state = null;
@@ -1634,7 +1675,9 @@ function resetInput() {
   joystick.classList.remove("sprinting");
   joystick.querySelector("small")!.textContent = "MOVE";
   show("weapon-picker", false);
-  for (const b of document.querySelectorAll("[aria-pressed]"))
+  for (const b of document.querySelectorAll(
+    "[aria-pressed]:not(#music-toggle)",
+  ))
     b.setAttribute("aria-pressed", "false");
   $("stick").style.transform = "translate(-50%,-50%)";
   for (const b of document.querySelectorAll(".held"))
@@ -2228,6 +2271,9 @@ for (let i = 0; i < CLASSES.length; i++) {
   button.innerHTML = `<strong>${role.name}</strong><span>${role.description}</span><small>${role.health} HP · ${role.blocks} blocks · ${role.grenades} grenades · ${role.ability}<br>${gearInfo(i).charges} ${gearInfo(i).name} · ${gearInfo(i).description}</small>`;
   button.onclick = () => {
     selectedClass = i;
+    $("menu-class-name").textContent = role.name.toUpperCase();
+    $("menu-class-kit").textContent =
+      `${WEAPONS[role.primary].name} · ${role.ability}`;
     input.classId = i;
     localStorage.setItem("br-class", String(i));
     $("class-open").textContent = `Class: ${role.name} ▾`;
@@ -2243,6 +2289,22 @@ for (let i = 0; i < CLASSES.length; i++) {
   $("class-cards").append(button);
 }
 $("class-open").textContent = `Class: ${classInfo(selectedClass).name} ▾`;
+$("menu-class-name").textContent = classInfo(selectedClass).name.toUpperCase();
+$("menu-class-kit").textContent =
+  `${WEAPONS[classInfo(selectedClass).primary].name} · ${classInfo(selectedClass).ability}`;
+$("connection-open").onclick = () => show("connection");
+$("credits-open").onclick = () => show("credits");
+$("pause-credits").onclick = () => show("credits");
+$("copy-music-credits").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(
+      $("music-credit-text").textContent ?? "",
+    );
+    $("music-credit-status").textContent = "Music credits copied.";
+  } catch {
+    $("music-credit-status").textContent = "Select and copy the credits above.";
+  }
+};
 document
   .querySelector(`[data-class-id="${selectedClass}"]`)
   ?.classList.add("selected");
@@ -2269,7 +2331,7 @@ $("toggle-stats").onclick = () => {
 $("copy-diagnostics").onclick = async () => {
   try {
     await navigator.clipboard.writeText(
-      `Blockfront Relay 2.16.0\n${$("connection-details").textContent}`,
+      `Blockfront Relay 2.17.0\n${$("connection-details").textContent}`,
     );
     $("diagnostic-status").textContent =
       "Report copied—paste it when reporting stutter or lag.";
@@ -2910,6 +2972,13 @@ function frame(now: number) {
     terrain.distance(W / 2, D / 2, 160);
   }
   combatFX.quality = settings.effects === "low" ? "low" : "high";
+  menuScene.update(camera, selectedClass, now, !connected);
+  music.update(
+    connected ? "game" : "menu",
+    document.hidden,
+    connected && (now - lastShot < 900 || now < damageUntil || hitUntil > now),
+    paused,
+  );
   if (connected && local && local.dead <= 0) {
     const shake = combatFX.shake * Math.exp(-dt * 7);
     camera.position.x += Math.sin(now * 0.049) * shake;

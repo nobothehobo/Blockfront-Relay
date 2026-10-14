@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.16 — Lumen Fields.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.17 — Frontline Edition.**
+
+**2.17:** a new original block-letter title logo, classic field-terminal main menu, live class-model preview, and quiet licensed synth music: “Neon” in menus and “Machina” during matches by Scott Buckley (CC BY 4.0). Music starts after a tap/key gesture, fades between states, ducks during combat and pauses in hidden tabs. Music has a separate volume and mute; credits and artist/license links are available from the main and pause menus. See [release notes](docs/UPDATE-217.md) and [music attribution](assets/music/ATTRIBUTION.md).
 
 **2.16:** original pixel material tiles repeat per voxel across merged terrain, with grass/soil edges, stone facets, timber grain, masonry, metal and snow detail. Characters and weapons gain subtle surface grain. Richer blue skies, layered cloud shading, warmer sunlight/cooler shade, restrained sun shafts, faceted reflective water and batched night-city lamp glows keep the cubic world readable. Graphics settings include **Terrain pixel detail** and **Sun rays**; the mobile preset disables rays and lamp glows. See [costs, verification and device-testing limits](docs/UPDATE-216.md). Refresh/rejoin to load this version.
 
@@ -166,7 +168,7 @@ Build the hosted artifact with `npm run build:hosted`. `.openai/hosting.json` de
 
 Construction kits include a cover wall, ramp, shelter and eight-block bridge. Sapper's ability also breaches nearby terrain along the aim ray.
 
-Settings save locally: quality preset, render distance, effects, FOV, master/effects volume, desktop/touch sensitivity, touch control scale, invert look and crosshair. Mobile preset uses contact shadows; balanced/high can enable nearby terrain/character sun shadows, including on touch devices. High effects allow at most two nearby beacon lights. Background music, controller support and custom keyboard bindings are not implemented.
+Settings save locally: separate music volume/mute, quality preset, render distance, effects, FOV, master/effects volume, desktop/touch sensitivity, touch control scale, invert look and crosshair. Mobile preset uses contact shadows; balanced/high can enable nearby terrain/character sun shadows, including on touch devices. High effects allow at most two nearby beacon lights. Controller support and custom keyboard bindings are not implemented.
 
 ## Source layout
 
@@ -207,4 +209,4 @@ See [testing](docs/TESTING.md) for what has actually been verified and what need
 
 ## License and originality
 
-MIT. Original map, UI, models, implementation and procedural audio. Three.js and the other packages retain their own licenses. No proprietary source, textures, maps, branding, models or sounds are incorporated. General voxel FPS mechanics are the inspiration.
+MIT for game code; the two soundtrack recordings retain their separate CC BY 4.0 licenses. Original map, UI, models, implementation and procedural sound effects. Three.js and the other packages retain their own licenses. No proprietary source, textures, maps, branding, models or sounds are incorporated. General voxel FPS mechanics are the inspiration.

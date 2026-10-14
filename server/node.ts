@@ -5,6 +5,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { Room, RoomOptions } from "./room.js";
 import { randomUUID } from "node:crypto";
 import { performance } from "node:perf_hooks";
+import { assetRange } from "../shared/asset-range.js";
 const tickSamples: { cost: number; gap: number }[] = [];
 let previousTick = performance.now();
 const rewind = process.env.REWIND_ENABLED !== "false";
@@ -164,16 +165,43 @@ const app = http.createServer(async (req, res) => {
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
       ".png": "image/png",
+      ".mp3": "audio/mpeg",
     };
-    res.writeHead(200, {
+    const headers: Record<string, string> = {
       "Content-Type":
         mime[path.extname(filename)] ?? "application/octet-stream",
       "Cache-Control": filename.includes("/assets/")
         ? "public, max-age=31536000, immutable"
         : "no-cache",
       "X-Content-Type-Options": "nosniff",
-    });
-    res.end(file);
+    };
+    const range =
+      path.extname(filename) === ".mp3"
+        ? assetRange(req.headers.range ?? null, file.byteLength)
+        : null;
+    if (path.extname(filename) === ".mp3") headers["Accept-Ranges"] = "bytes";
+    if (range === "invalid") {
+      res.writeHead(416, {
+        ...headers,
+        "Content-Range": `bytes */${file.byteLength}`,
+      });
+      res.end();
+      return;
+    }
+    headers["Content-Length"] = String(
+      range ? range.end - range.start + 1 : file.byteLength,
+    );
+    if (range)
+      headers["Content-Range"] =
+        `bytes ${range.start}-${range.end}/${file.byteLength}`;
+    res.writeHead(range ? 206 : 200, headers);
+    res.end(
+      req.method === "HEAD"
+        ? undefined
+        : range
+          ? file.subarray(range.start, range.end + 1)
+          : file,
+    );
   } catch {
     res.writeHead(404);
     res.end("Build client first: npm run build");

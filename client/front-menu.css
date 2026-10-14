@@ -1,0 +1,443 @@
+/* Original field-terminal presentation over the actual voxel world. */
+body.front-menu #vignette {
+  background:
+    linear-gradient(90deg, #111914d9, #17221d55 48%, #0e171322),
+    linear-gradient(
+      0deg,
+      #101511c9,
+      transparent 38%,
+      transparent 75%,
+      #18201655
+    );
+}
+#menu.panel {
+  position: fixed;
+  inset: 0;
+  transform: none;
+  width: 100%;
+  max-width: none;
+  max-height: 100dvh;
+  padding: max(18px, env(safe-area-inset-top))
+    max(5vw, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
+    max(5vw, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #efe7cd;
+  scrollbar-width: thin;
+  scrollbar-color: #8a846c #202924;
+}
+.menu-masthead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.menu-title {
+  margin: 0;
+  line-height: 0;
+  width: min(58vw, 620px);
+  flex-shrink: 0;
+}
+.menu-title img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 8px 5px #07110b80);
+}
+.menu-callsign {
+  margin-top: 14px;
+  width: 190px;
+  font:
+    700 11px/1.2 "Arial Narrow",
+    Arial,
+    sans-serif;
+  letter-spacing: 0.16em;
+  color: #e2dcc5;
+}
+.menu-callsign input {
+  padding: 9px 11px;
+  border-radius: 0;
+  background: #1b2723e6;
+  border: 1px solid #b0aa8670;
+  box-shadow: 2px 2px 0 #0a100d80;
+  color: #eee7cf;
+}
+.menu-layout {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 30px;
+  flex: 1;
+  min-height: min-content;
+}
+.menu-command {
+  width: min(360px, 43vw);
+  flex-shrink: 0;
+  background: #1a231fe8;
+  border: 1px solid #8c917052;
+  box-shadow: 5px 5px 0 #08100c70;
+}
+.menu-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #343e32;
+  border-bottom: 2px solid #9e9657;
+  padding: 8px 13px;
+  color: #f1e8c8;
+  font:
+    800 11px/1.1 "Arial Narrow",
+    Arial,
+    sans-serif;
+  letter-spacing: 0.13em;
+}
+.menu-strip span {
+  color: #b9b99c;
+  font-size: 9px;
+  letter-spacing: 0.07em;
+}
+.menu-actions {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+}
+#menu button {
+  border-radius: 0;
+  font-family: "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+}
+.menu-actions > button,
+.menu-options button {
+  text-align: left;
+  border: 1px solid #7c806550;
+  border-top-color: #c2c5a04d;
+  background: linear-gradient(#4b5546, #343e33);
+  color: #eae7d1;
+  box-shadow: 0 2px 0 #101710;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
+}
+.menu-actions > button:hover,
+.menu-options button:hover {
+  background: #616951;
+  border-color: #d6c581;
+}
+#menu .menu-action {
+  position: relative;
+  min-height: 59px;
+  padding: 10px 14px 10px 18px;
+}
+.menu-action:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #8c9674;
+}
+.menu-action span {
+  display: block;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.035em;
+  text-shadow: 1px 2px #101b1490;
+}
+.menu-action small {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #c4c9b3;
+}
+#menu #play {
+  margin: 0;
+  width: 100%;
+  background: linear-gradient(#baa866, #8e814c);
+  color: #fff7de;
+  border: 1px solid #e0cf8d90;
+}
+#menu #play:before {
+  background: #ead995;
+}
+#menu #play:hover {
+  background: #c1ae6b;
+}
+#menu #play small {
+  color: #eee2bd;
+}
+#menu .menu-class {
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.menu-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.menu-options button {
+  padding: 11px 13px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+#menu #status {
+  margin: 0;
+  padding: 0 13px 11px;
+  font:
+    11px/1.5 Arial,
+    sans-serif;
+  color: #cad1bd;
+  min-height: 27px;
+}
+.menu-deployment {
+  align-self: flex-end;
+  text-align: right;
+  margin: 0 4vw 6px 0;
+  display: grid;
+  gap: 5px;
+  max-width: 40%;
+  text-shadow: 1px 2px 3px #041008;
+}
+.menu-deployment-label {
+  font:
+    800 10px/1.2 Arial,
+    sans-serif;
+  letter-spacing: 0.2em;
+  color: #cfcca8;
+}
+.menu-deployment strong {
+  font:
+    900 clamp(20px, 2.2vw, 31px)/1.1 "Arial Narrow",
+    Arial,
+    sans-serif;
+  letter-spacing: 0.07em;
+  color: #f8edd0;
+}
+#menu-class-kit {
+  font:
+    12px/1.4 Arial,
+    sans-serif;
+  color: #d4dcca;
+}
+.menu-team-tag {
+  border-top: 2px solid #8cb2a27d;
+  margin-top: 5px;
+  padding-top: 7px;
+  font:
+    800 9px/1.2 Arial,
+    sans-serif;
+  letter-spacing: 0.13em;
+  color: #b7d7c8;
+}
+.menu-footer {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #bec5a242;
+  padding-top: 10px;
+}
+.menu-version {
+  font:
+    800 10px/1.4 Arial,
+    sans-serif;
+  letter-spacing: 0.11em;
+  color: #c5c7ad;
+}
+.menu-footer-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+#menu .menu-footer button {
+  padding: 8px 10px;
+  background: #202b24b3;
+  border: 1px solid #a4ae8052;
+  color: #e1e2c8;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+}
+#menu .menu-footer button:hover {
+  background: #46503be8;
+  border-color: #d6c581;
+}
+#menu #install-tip {
+  margin: 0;
+  color: #bbc6b2;
+  font-size: 10px;
+  line-height: 1.3;
+}
+body.front-menu .modal {
+  background: #202a22fa;
+  border: 2px solid #878d68;
+  border-radius: 0;
+  backdrop-filter: none;
+  box-shadow: 7px 7px 0 #10170dd9;
+  color: #f0e7cf;
+}
+body.front-menu .modal p {
+  color: #c5cfb7;
+}
+body.front-menu .modal button {
+  background: #424e3d;
+  border-radius: 0;
+  color: #f0e7cf;
+}
+body.front-menu .modal input,
+body.front-menu .modal select {
+  background: #151f18;
+  border-radius: 0;
+  border-color: #80856485;
+}
+body.front-menu .modal .primary {
+  background: #b4a367;
+  color: #151e12;
+}
+body.front-menu button:focus-visible,
+body.front-menu input:focus-visible,
+body.front-menu select:focus-visible {
+  outline-color: #edce78;
+}
+#credits a {
+  color: #e5cd88;
+  text-underline-offset: 3px;
+}
+#credits pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  color: #e2e0cd;
+  background: #101b16;
+  border: 1px solid #757d585c;
+  padding: 12px;
+  line-height: 1.65;
+}
+@media (max-width: 650px) and (orientation: portrait) {
+  #menu.panel {
+    padding-left: max(6vw, env(safe-area-inset-left));
+    padding-right: max(6vw, env(safe-area-inset-right));
+    gap: 14px;
+  }
+  .menu-masthead {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+  .menu-title {
+    width: min(88vw, 440px);
+  }
+  .menu-callsign {
+    width: 100%;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  .menu-callsign input {
+    flex: 1;
+    width: 100%;
+  }
+  .menu-layout {
+    display: block;
+  }
+  .menu-command {
+    width: 100%;
+  }
+  .menu-deployment {
+    display: none;
+  }
+  .menu-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .menu-footer-actions {
+    width: 100%;
+  }
+  #menu .menu-footer button {
+    flex: 1;
+    padding: 10px 6px;
+    font-size: 9px;
+  }
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  #menu.panel {
+    gap: 6px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+  }
+  .menu-title {
+    width: 210px;
+  }
+  .menu-callsign {
+    margin-top: 8px;
+    width: 160px;
+  }
+  .menu-callsign input {
+    padding: 7px 9px;
+  }
+  .menu-command {
+    width: min(330px, 43vw);
+  }
+  .menu-strip {
+    padding: 6px 10px;
+  }
+  .menu-actions {
+    padding: 6px;
+    gap: 4px;
+  }
+  #menu .menu-action {
+    min-height: 34px;
+    padding: 6px 13px;
+  }
+  .menu-action span {
+    font-size: 13px;
+  }
+  .menu-action small {
+    display: none;
+  }
+  #menu .menu-class {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .menu-options button {
+    padding: 6px 11px;
+    font-size: 11px;
+  }
+  #menu #status {
+    padding: 0 9px 7px;
+    font-size: 10px;
+    min-height: 20px;
+  }
+  .menu-footer {
+    padding-top: 5px;
+  }
+  #menu .menu-footer button {
+    padding: 6px 8px;
+    font-size: 9px;
+  }
+  .menu-version {
+    font-size: 9px;
+  }
+  .menu-deployment {
+    gap: 3px;
+    margin-right: 0;
+  }
+  .menu-deployment strong {
+    font-size: 20px;
+  }
+  .menu-team-tag {
+    display: none;
+  }
+  #menu #install-tip {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-actions > button {
+    transition: none;
+  }
+}

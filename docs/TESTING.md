@@ -1,5 +1,7 @@
 # Verification
 
+2.17 Frontline Edition passes 184 automated checks. Seven new checks cover soundtrack gain/mute, pre-gesture silence, Safari element priming, menu/game lifecycle, hidden tabs, autoplay denial/retry and byte-range boundaries. The hosted production artifact serves the logo and both MP3s byte-for-byte with native media MIME/range/HEAD behavior; see [release verification and device limits](UPDATE-217.md). Browser and physical Safari QA were unavailable in this managed session.
+
 2.12 adds `tests/reliability.test.ts` for stable elimination framing, Space-held airborne thrust, on-device squad balance and actual bounded packets/replay through simulated 1.4-second RTT. The SQL-backed worker regression checks that a 42-command delayed batch is fully acknowledged against elapsed-time credit. After `npm run build:hosted`, run `node --import tsx tests/practice-bundle.ts` to execute the production practice asset in a Node background worker and verify welcome, 16-player CTF and packed movement acknowledgment. This is not browser or physical iPad verification. Browser QA was unavailable for this release in the current managed environment; the supported control-browser skill was absent.
 
 2.11.1 adds touch-capable hardware keyboard regression checks and `test:keyboard`, which explicitly removes/rejects pointer lock in an iPad-sized browser while testing a desktop peer and hybrid input. The full unit/network/worker suite passes 137 checks. See [iPad keyboard controls and device limits](IPAD-KEYBOARD.md).

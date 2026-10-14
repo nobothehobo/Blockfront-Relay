@@ -29,56 +29,153 @@
     />
     <title>Blockfront Relay</title>
   </head>
-  <body>
+  <body class="front-menu">
     <canvas id="game" aria-label="Blockfront Relay game world"></canvas>
     <div id="vignette"></div>
     <div id="scope" class="hidden" aria-hidden="true">
       <div class="scope-reticle"><i></i><b></b><span>FIELD OPTIC</span></div>
     </div>
-    <section id="menu" class="panel">
-      <div class="brand">
-        <span class="brand-mark">BR</span
-        ><span>BLOCKFRONT<br /><b>RELAY</b></span
-        ><small>2.16 · LUMEN FIELDS</small>
+    <section id="menu" class="panel" aria-label="Main menu">
+      <header class="menu-masthead">
+        <h1 class="menu-title">
+          <img
+            src="/branding/blockfront-relay-logo.png"
+            width="1983"
+            height="793"
+            alt="Blockfront Relay"
+            fetchpriority="high"
+          />
+        </h1>
+        <label class="menu-callsign"
+          >CALLSIGN<input
+            id="name"
+            maxlength="20"
+            value="Builder"
+            autocomplete="nickname"
+        /></label>
+      </header>
+      <div class="menu-layout">
+        <div class="menu-command">
+          <div class="menu-strip">MAIN MENU<span>AZURE / EMBER</span></div>
+          <nav class="menu-actions" aria-label="Play and options">
+            <button id="play" class="primary menu-action">
+              <span>PLAY MULTIPLAYER</span><small>Join a battlefield</small>
+            </button>
+            <button id="practice" class="menu-action">
+              <span>SOLO PRACTICE</span><small>Deploy with an NPC squad</small>
+            </button>
+            <button id="browse" class="menu-action">
+              <span>SERVER BROWSER</span><small>Find or create a match</small>
+            </button>
+            <button id="class-open" class="menu-class">
+              Class: Trailguard ▾
+            </button>
+            <div class="menu-options">
+              <button id="settings-open">SETTINGS</button
+              ><button id="controls-open">CONTROLS</button>
+            </div>
+          </nav>
+          <p id="status" role="status">Connecting to the server…</p>
+        </div>
+        <aside class="menu-deployment" aria-label="Selected class">
+          <span class="menu-deployment-label">READY TO DEPLOY</span>
+          <strong id="menu-class-name">TRAILGUARD</strong>
+          <span id="menu-class-kit">Rifle · nearby healing</span>
+          <span class="menu-team-tag">AZURE FIELD COMPANY</span>
+        </aside>
       </div>
-      <p class="eyebrow">PROCEDURAL FRONTIERS</p>
-      <h1>Dig in.<br />Build your advantage.</h1>
-      <p class="intro">
-        An original voxel battlefield. Fight for your team, run the relay, or
-        survive the outbreak.
+      <footer class="menu-footer">
+        <span class="menu-version">2.17 · FRONTLINE EDITION</span>
+        <div class="menu-footer-actions">
+          <button id="music-toggle" aria-pressed="true">MUSIC: ON</button
+          ><button id="credits-open">MUSIC & CREDITS</button
+          ><button id="connection-open">ABOUT & CONNECTION</button>
+        </div>
+      </footer>
+      <p id="install-tip" hidden>
+        Safari → Share → Add to Home Screen for full-screen play.
+      </p>
+    </section>
+    <section id="connection" class="modal hidden">
+      <div class="modal-head">
+        <h2>About & connection</h2>
+        <button data-close="connection">Close</button>
+      </div>
+      <p>
+        Blockfront Relay is an original voxel FPS. Code is MIT licensed; music
+        has its own artist licenses. Best played in landscape on a phone.
       </p>
       <label
-        >CALLSIGN<input
-          id="name"
-          maxlength="20"
-          value="Builder"
-          autocomplete="nickname" /></label
-      ><button id="class-open">Class: Trailguard ▾</button
-      ><button id="play" class="primary">Play multiplayer</button
-      ><button id="practice">Solo practice / NPC squad</button>
-      <div class="menu-row">
-        <button id="browse">Server browser</button
-        ><button id="settings-open">Settings</button
-        ><button id="controls-open">Controls</button>
+        >SERVER URL<input
+          id="server-url"
+          placeholder="Same origin, or https://your-server.example" /></label
+      ><button id="connect-server">Connect</button>
+      <p id="transport-note"></p>
+    </section>
+    <section id="credits" class="modal hidden">
+      <div class="modal-head">
+        <h2>Music & credits</h2>
+        <button data-close="credits">Close</button>
       </div>
-      <p id="status" role="status">Connecting to the server…</p>
-      <p id="install-tip" hidden>
-        Install on iPhone / iPad: open in Safari, tap Share → Add to Home
-        Screen, then open Blockfront from its icon for the full-screen game.
+      <h3>Soundtrack · Scott Buckley</h3>
+      <p>
+        'Neon' by Scott Buckley - released under CC-BY 4.0.
+        <a
+          href="https://www.scottbuckley.com.au/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >www.scottbuckley.com.au</a
+        ><br /><a
+          href="https://www.scottbuckley.com.au/library/neon/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Track & original download</a
+        >
+        · Main menu
+      </p>
+      <p>
+        'Machina' by Scott Buckley - released under CC-BY 4.0.
+        <a
+          href="https://www.scottbuckley.com.au/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >www.scottbuckley.com.au</a
+        ><br /><a
+          href="https://www.scottbuckley.com.au/library/machina/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Track & original download</a
+        >
+        · In-game
+      </p>
+      <p>
+        <a
+          href="https://creativecommons.org/licenses/by/4.0/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Creative Commons Attribution 4.0 International</a
+        >. Tracks are compressed for the game, looped and faded for playback.
+        Scott Buckley retains ownership of the music.
       </p>
       <details>
-        <summary>About & connection</summary>
+        <summary>Credits for gameplay videos</summary>
         <p>
-          Original terrain, models, UI, code and synthesized sounds. MIT
-          licensed. Best played in landscape on a phone.
+          Include these credits in your video description when recording with
+          music enabled:
         </p>
-        <label
-          >SERVER URL<input
-            id="server-url"
-            placeholder="Same origin, or https://your-server.example" /></label
-        ><button id="connect-server">Connect</button>
-        <p id="transport-note"></p>
+        <pre id="music-credit-text">
+'Neon' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
+'Machina' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
+https://creativecommons.org/licenses/by/4.0/</pre>
+        <button id="copy-music-credits">Copy music credits</button>
+        <p id="music-credit-status" role="status"></p>
       </details>
+      <h3>Blockfront Relay</h3>
+      <p>
+        Original game code, voxel worlds, characters, equipment and synthesized
+        sound effects. Title artwork created for Blockfront Relay. Three.js is
+        used under the MIT license.
+      </p>
     </section>
     <section id="browser" class="modal hidden">
       <div class="modal-head">
@@ -472,6 +569,7 @@
       </details>
       <button id="resume" class="primary">Resume</button
       ><button id="pause-settings">Settings</button
+      ><button id="pause-credits">Music & credits</button
       ><button id="pause-class">Change class</button
       ><button id="leave">Leave match</button>
     </section>

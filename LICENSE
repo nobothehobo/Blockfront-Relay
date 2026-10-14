@@ -19,3 +19,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+Third-party music exception: client/public/music/neon.mp3 and
+client/public/music/machina.mp3 are recordings by Scott Buckley,
+licensed under Creative Commons Attribution 4.0 International, not MIT.
+See assets/music/ATTRIBUTION.md and https://creativecommons.org/licenses/by/4.0/.

@@ -2,6 +2,7 @@ import { gearInfo } from "../shared/gear.js";
 import { Room, RoomOptions } from "../server/room.js";
 import { World, W, D, mapTheme, mapLayout } from "../shared/game.js";
 import { assets } from "./assets.generated.js";
+import { assetRange } from "../shared/asset-range.js";
 // Sites-compatible authoritative fallback: SQL CAS serializes room mutations across isolates.
 // The dedicated Node transport remains the primary 30 Hz WebSocket architecture.
 type DB = {
@@ -146,14 +147,39 @@ export default {
       const body = asset.binary
         ? Uint8Array.from(atob(asset.body), (char) => char.charCodeAt(0))
         : asset.body;
-      return new Response(body, {
-        headers: {
-          "Content-Type": asset.mime,
-          "Cache-Control": url.pathname.startsWith("/assets/")
-            ? "public,max-age=31536000,immutable"
-            : "no-cache",
-        },
-      });
+      const headers: Record<string, string> = {
+        "Content-Type": asset.mime,
+        "Cache-Control": url.pathname.startsWith("/assets/")
+          ? "public,max-age=31536000,immutable"
+          : "no-cache",
+      };
+      if (asset.mime === "audio/mpeg" && body instanceof Uint8Array) {
+        headers["Accept-Ranges"] = "bytes";
+        const range = assetRange(request.headers.get("Range"), body.byteLength);
+        if (range === "invalid")
+          return new Response(null, {
+            status: 416,
+            headers: {
+              ...headers,
+              "Content-Range": `bytes */${body.byteLength}`,
+            },
+          });
+        headers["Content-Length"] = String(
+          range ? range.end - range.start + 1 : body.byteLength,
+        );
+        if (range)
+          headers["Content-Range"] =
+            `bytes ${range.start}-${range.end}/${body.byteLength}`;
+        return new Response(
+          request.method === "HEAD"
+            ? null
+            : range
+              ? body.slice(range.start, range.end + 1)
+              : body,
+          { status: range ? 206 : 200, headers },
+        );
+      }
+      return new Response(request.method === "HEAD" ? null : body, { headers });
     }
     const db = env.DB;
     if (!db)

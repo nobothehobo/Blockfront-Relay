@@ -5,6 +5,12 @@ import { SnapshotClock, ConnectionStats } from "./net-timing.js";
 import { Timings } from "../shared/timings.js";
 import { CombatFeedback } from "./combat-feedback.js";
 import {
+  attachmentWorld,
+  visualAimEnd,
+  forwardTracer,
+  firstPersonMounts,
+} from "./shot-origin.js";
+import {
   inputPacket,
   MAX_PENDING_INPUTS,
   requestJson,
@@ -521,13 +527,14 @@ function setWeaponModel(n: number) {
       local?.team === 1 ? 0xff9d59 : 0x57ded0,
       weaponGroup,
     );
+    const mounts = firstPersonMounts(n);
     const flash: THREE.Mesh = box(
       0.17,
       0.17,
       0.12,
-      0.23,
-      n === 6 ? -0.22 : -0.185,
-      n === 3 ? -1.47 : n === 6 ? -1.1 : -1.12,
+      mounts.muzzle.x,
+      mounts.muzzle.y,
+      mounts.muzzle.z,
       0xffdc80,
       weaponGroup,
     );
@@ -565,6 +572,8 @@ function setWeaponModel(n: number) {
       toneMapped: false,
     });
     flash.visible = false;
+    weaponGroup.userData.muzzle = flash.position.clone();
+    weaponGroup.userData.ejection = mounts.ejection;
     weaponGroup.userData.flash = flash;
   }
   // Batch all solid weapon/hand pieces; preserve the separately animated flash.
@@ -1233,7 +1242,7 @@ function handleEvent(e: any) {
         lastShotWeapon = e.weapon;
       }
     } else if (e.origin) playSpatial("shot", e.origin, e.weapon);
-    if (isFirearm(e.weapon) && e.origin) {
+    if (isFirearm(e.weapon) && e.origin && e.id !== id) {
       let origin = e.origin;
       const gun = shooter?.group.userData.gun as THREE.Mesh | undefined;
       if (gun?.userData.muzzle) {
@@ -1242,6 +1251,15 @@ function handleEvent(e: any) {
         origin = remoteMuzzle;
       }
       combatFX.shot(origin, e.traces ?? [], e.impacts ?? []);
+    }
+    if (e.id === id) {
+      // The local tracer was already emitted at the rendered gun at fire time.
+      // Never replay a delayed eye-origin tracer through the current camera.
+      for (const impact of (e.impacts ?? []).slice(
+        0,
+        settings.effects === "high" ? 7 : 2,
+      ))
+        combatFX.impact(impact);
     }
     if (
       e.id !== id &&
@@ -1252,8 +1270,17 @@ function handleEvent(e: any) {
         local.y - e.origin.y,
         local.z - e.origin.z,
       ) < 40
-    )
-      combatFX.eject(e.origin, e.dir, e.weapon);
+    ) {
+      const gun = shooter?.group.userData.gun as THREE.Mesh | undefined;
+      if (gun?.userData.ejection)
+        combatFX.eject(
+          attachmentWorld(gun, gun.userData.ejection),
+          e.dir,
+          e.weapon,
+          true,
+        );
+      else combatFX.eject(e.origin, e.dir, e.weapon);
+    }
     if (local && e.traces?.length) {
       const distance = Math.min(
         ...e.traces.map((p: any) =>
@@ -2213,7 +2240,7 @@ $("toggle-stats").onclick = () => {
 $("copy-diagnostics").onclick = async () => {
   try {
     await navigator.clipboard.writeText(
-      `Blockfront Relay 2.15\n${$("connection-details").textContent}`,
+      `Blockfront Relay 2.15.1\n${$("connection-details").textContent}`,
     );
     $("diagnostic-status").textContent =
       "Report copied—paste it when reporting stutter or lag.";
@@ -2404,9 +2431,43 @@ async function sendInput() {
 let lastFrame = performance.now(),
   simulationFrame = lastFrame,
   accumulator = 0;
+function emitLocalShotFX() {
+  if (
+    !local ||
+    local.dead > 0 ||
+    lastShotWeapon !== local.weapon ||
+    !isFirearm(local.weapon)
+  )
+    return;
+  const aimOrigin = {
+    x: camera.position.x,
+    y: camera.position.y,
+    z: camera.position.z,
+  };
+  const dir = direction(yaw, pitch);
+  const muzzle =
+    weaponGroup.visible && weaponGroup.userData.muzzle
+      ? attachmentWorld(weaponGroup, weaponGroup.userData.muzzle)
+      : new THREE.Vector3(
+          aimOrigin.x + dir.x * 0.2,
+          aimOrigin.y + dir.y * 0.2,
+          aimOrigin.z + dir.z * 0.2,
+        );
+  const end = visualAimEnd(world, aimOrigin, dir, WEAPONS[local.weapon].range);
+  if (local.weapon !== 6 && forwardTracer(muzzle, end, dir))
+    combatFX.shot(muzzle, [end], [], false);
+  if (weaponGroup.visible && weaponGroup.userData.ejection)
+    combatFX.eject(
+      attachmentWorld(weaponGroup, weaponGroup.userData.ejection),
+      dir,
+      local.weapon,
+      true,
+    );
+}
 function frame(now: number) {
   requestAnimationFrame(frame);
   const workStarted = performance.now();
+  let localShotVisual = false;
   if (
     connected &&
     !document.hidden &&
@@ -2461,7 +2522,7 @@ function frame(now: number) {
       sound.play("shot", 1, input.weapon);
       lastShot = now;
       lastShotWeapon = input.weapon;
-      combatFX.eject(eye(local), direction(yaw, pitch), input.weapon);
+      localShotVisual = true;
       predictedShotTimes.push(now);
       nextShotFeedback = now + WEAPONS[input.weapon].interval * 1000;
     }
@@ -2820,11 +2881,14 @@ function frame(now: number) {
     terrain.distance(W / 2, D / 2, 160);
   }
   combatFX.quality = settings.effects === "low" ? "low" : "high";
-  combatFX.update(now, dt);
   if (connected && local && local.dead <= 0) {
-    camera.position.x += Math.sin(now * 0.049) * combatFX.shake;
-    camera.position.y += Math.cos(now * 0.053) * combatFX.shake;
+    const shake = combatFX.shake * Math.exp(-dt * 7);
+    camera.position.x += Math.sin(now * 0.049) * shake;
+    camera.position.y += Math.cos(now * 0.053) * shake;
   }
+  // Capture only after all camera offsets, including explosion shake, are set.
+  if (localShotVisual) emitLocalShotFX();
+  combatFX.update(now, dt);
   updateAtmosphere(now);
   sky.update(camera, now / 1000);
   neon.update(

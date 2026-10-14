@@ -135,19 +135,22 @@ export class CombatFX {
       color: new THREE.Color(color),
     });
   }
-  eject(origin: Vec, dir: Vec, weapon: number) {
+  eject(origin: Vec, dir: Vec, weapon: number, atPort = false) {
     if (weapon < 0 || weapon > 3) return;
     this.ejections++;
     if (this.casings.length >= (this.quality === "high" ? 64 : 16))
       this.casingPool.push(this.casings.shift()!);
     const c = this.casingPool.pop()!;
-    const sideX = -dir.z,
-      sideZ = dir.x;
-    c.pos.set(
-      origin.x + dir.x * 0.5 + sideX * 0.18,
-      origin.y + dir.y * 0.5 - 0.18,
-      origin.z + dir.z * 0.5 + sideZ * 0.18,
-    );
+    const sideLength = Math.hypot(dir.x, dir.z) || 1;
+    const sideX = -dir.z / sideLength,
+      sideZ = dir.x / sideLength;
+    if (atPort) c.pos.set(origin.x, origin.y, origin.z);
+    else
+      c.pos.set(
+        origin.x + dir.x * 0.5 + sideX * 0.18,
+        origin.y + dir.y * 0.5 - 0.18,
+        origin.z + dir.z * 0.5 + sideZ * 0.18,
+      );
     c.vel.set(
       sideX * (2 + Math.random()) + dir.x * 0.4,
       1.4 + Math.random() * 0.6,
@@ -190,8 +193,14 @@ export class CombatFX {
         true,
       );
   }
-  shot(origin: Vec, ends: Vec[], impacts: ShotImpact[] = []) {
-    this.particle(origin, { x: 0, y: 0, z: 0 }, 0.2, 0.055, 0xffd181);
+  shot(
+    origin: Vec,
+    ends: Vec[],
+    impacts: ShotImpact[] = [],
+    muzzleFlash = true,
+  ) {
+    if (muzzleFlash)
+      this.particle(origin, { x: 0, y: 0, z: 0 }, 0.2, 0.055, 0xffd181);
     for (const end of ends.slice(0, this.quality === "high" ? 7 : 2)) {
       if (this.tracers.length >= 96) this.tracers.shift();
       const start = new THREE.Vector3(origin.x, origin.y, origin.z),

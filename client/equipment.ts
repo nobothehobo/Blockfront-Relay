@@ -73,6 +73,7 @@ export function createEquipment(weapon: number, team: number, role = 0) {
     0.025,
     weapon === 3 ? -0.65 : weapon === 6 ? -0.51 : -0.55,
   );
+  item.userData.ejection = new THREE.Vector3(0.055, 0.01, -0.18);
   return item;
 }
 

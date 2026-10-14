@@ -1,0 +1,11 @@
+# 2.15.1 — Muzzle effects
+
+The local gun previously emitted its visible tracer from the server's eye-origin shot event, after network delay, while shell casings also used eye-relative offsets. Walking/turning between the shot and confirmation could put the visible streak near or behind the player's current view rather than at the gun. The marksman flash was also farther ahead than the modeled barrel tip.
+
+- First-person muzzle and ejection attachments follow the actual camera and animated weapon transforms. Parent matrices refresh explicitly, without depending on a prior render.
+- Local cosmetic tracers emit at fire-feedback time, after that frame's movement, camera pose and weapon pose are set. They aim toward the local crosshair terrain ray; they do not generate hit sparks, damage, health or ammo changes. Server-confirmed impacts are presented separately, and local server shot acknowledgments no longer duplicate an old eye-origin tracer.
+- This local ray is cosmetic center-line feedback, not a simulation of the server's random spread or shotgun pellet pattern. Authoritative hits, pellets, damage, terrain occlusion and networking remain unchanged. Rocket physics remain server-owned.
+- Remote firearm tracers retain confirmed endpoints and begin at the visible held-gun muzzle. Remote casings use its transformed ejection port; local casings use the first-person port. Ejection retains a stable sideways impulse when looking steeply up.
+- Captured origins are independent world-space values; subsequent camera/player motion cannot drag an existing tracer around. A clipping barrel pointing beyond a very close wall does not draw a reverse tracer toward the player's face. Scoped fire uses a centered forward origin without an extra eye flash.
+
+Regression tests cover nested camera/bone transforms, captured-origin independence, explicit casing spawn positions, steep-angle ejection, terrain ray endpoints, no fake predicted impacts and suppression of close-wall reverse paths. The full multiplayer suite and production practice-worker build are checked before publishing. Browser control is unavailable in this managed session: no new visual screenshots or physical iPad/Safari playtest is claimed. Refresh/rejoin to load 2.15.1 and compare while stationary, aiming, turning and strafing.

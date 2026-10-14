@@ -39,8 +39,9 @@ try {
           options: {
             name: "Local",
             mode: "ctf",
-            jet: "all",
-            seed: 7233,
+            jet: "classes",
+            arsenal: "specialists",
+            seed: 7231,
             bots: 15,
             limit: 16,
             practice: true,
@@ -61,6 +62,8 @@ try {
         });
       }
       if (message.type === "state") {
+        assert.ok(Number.isFinite(message.state.diagnostics.tickMs));
+        assert.ok(Number.isFinite(message.state.diagnostics.npcMs));
         const player = message.state.players.find(
           (p: any) => p.id === "practice-player",
         );

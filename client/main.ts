@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { replay } from "../shared/prediction.js";
 import { SnapshotClock, ConnectionStats } from "./net-timing.js";
+import { Timings } from "../shared/timings.js";
+import { CombatFeedback } from "./combat-feedback.js";
 import {
   inputPacket,
   MAX_PENDING_INPUTS,
@@ -41,7 +43,7 @@ import { spaceThrust } from "./hybrid-input.js";
 import type { RoomOptions } from "../server/room.js";
 import { Terrain } from "./mesh.js";
 import { Sound } from "./audio.js";
-import { jetVoices } from "./audio-mix.js";
+import { jetVoices, spatialVoice } from "./audio-mix.js";
 import { Sky } from "./sky.js";
 import { playerPose } from "./animation.js";
 import { createCharacter } from "./character.js";
@@ -150,6 +152,10 @@ let practiceWorker: Worker | null = null;
 let pendingInputs: Input[] = [];
 const snapshotClock = new SnapshotClock(),
   connectionStats = new ConnectionStats();
+const frameTimings = new Timings(),
+  cpuTimings = new Timings(),
+  combatFeedback = new CombatFeedback();
+let liveStats = false;
 let predictionBlocked = false;
 let lastNetworkUi = -1000;
 let predictionEpoch = 0;
@@ -890,6 +896,9 @@ function message(msg: any) {
   if (msg.type === "welcome") {
     snapshotClock.reset();
     connectionStats.reset();
+    frameTimings.reset();
+    cpuTimings.reset();
+    combatFeedback.reset();
     predictionBlocked = false;
     lastStateAt = performance.now();
     combatFX.clear();
@@ -1184,6 +1193,31 @@ function handleState(next: any) {
     }
   updateHud();
 }
+function playSpatial(
+  kind: string,
+  source: { x: number; y: number; z: number },
+  weapon = 0,
+  volume = 0.65,
+  radius = 60,
+) {
+  if (!local) return;
+  const o = eye(local),
+    dx = source.x - o.x,
+    dy = source.y - o.y,
+    dz = source.z - o.z;
+  const distance = Math.hypot(dx, dy, dz);
+  if (distance >= radius) return;
+  const muffled =
+    distance > 0.1 &&
+    !!ray(
+      world,
+      o,
+      { x: dx / distance, y: dy / distance, z: dz / distance },
+      Math.max(0, distance - 0.5),
+    );
+  const voice = spatialVoice(o, source, yaw, radius, muffled);
+  sound.play(kind, voice.gain * volume, weapon, voice.pan, voice.muffled);
+}
 function handleEvent(e: any) {
   if (e.kind === "shot") {
     const shooter = remote.get(e.id);
@@ -1198,12 +1232,7 @@ function handleEvent(e: any) {
         lastShot = performance.now();
         lastShotWeapon = e.weapon;
       }
-    } else if (
-      local &&
-      e.origin &&
-      Math.hypot(local.x - e.origin.x, local.z - e.origin.z) < 40
-    )
-      sound.play("shot", 0.25, e.weapon);
+    } else if (e.origin) playSpatial("shot", e.origin, e.weapon);
     if (isFirearm(e.weapon) && e.origin) {
       let origin = e.origin;
       const gun = shooter?.group.userData.gun as THREE.Mesh | undefined;
@@ -1251,8 +1280,7 @@ function handleEvent(e: any) {
       if (distance < 25)
         sound.play("throw", e.id === id ? 0.7 : 0.25 * (1 - distance / 25));
     } else {
-      if (e.id !== id && distance < 60)
-        sound.play("shot", 0.45 * (1 - distance / 60), 6);
+      if (e.id !== id && distance < 60) playSpatial("shot", e.projectile, 6);
       if (e.id === id && !predictedShotTimes.length) {
         sound.play("shot", 0.8, 6);
         lastShot = performance.now();
@@ -1265,8 +1293,7 @@ function handleEvent(e: any) {
     const distance = camera.position.distanceTo(
       new THREE.Vector3(e.pos.x, e.pos.y, e.pos.z),
     );
-    if (distance < 100)
-      sound.play("explosion", Math.max(0.1, 1 - distance / 100));
+    if (distance < 100) playSpatial("explosion", e.pos, 0, 0.9, 100);
   }
   if (e.kind === "gear" && e.id === id) sound.play("place", 0.7);
   if (e.kind === "collapse")
@@ -1300,6 +1327,7 @@ function handleEvent(e: any) {
     combatFX.particle(e.pos, { x: 0, y: 0.7, z: 0 }, 0.35, 0.4, 0x68d3c7);
   if (e.kind === "hit") {
     if (e.id === id) {
+      combatFeedback.confirm(e.target, e.amount, performance.now());
       sound.play("hit");
       hitUntil = performance.now() + 150;
       $("hitmarker").dataset.kind = "hit";
@@ -1310,13 +1338,15 @@ function handleEvent(e: any) {
     }
   }
   if (e.kind === "headshot" && e.id === id) {
-    hitUntil = performance.now() + 220;
-    $("hitmarker").dataset.kind = "head";
+    combatFeedback.highlight("head", performance.now());
+    hitUntil = Math.max(hitUntil, performance.now() + 220);
+    $("hitmarker").dataset.kind = combatFeedback.kind;
     sound.play("hit", 0.6);
   }
   if (e.id === id && ["dig", "place", "pickup"].includes(e.kind))
     sound.play(e.kind);
   if (e.kind === "kill" && e.id === id) {
+    combatFeedback.highlight("kill", performance.now());
     sound.play("kill");
     hitUntil = performance.now() + 300;
     $("hitmarker").dataset.kind = "kill";
@@ -1394,7 +1424,7 @@ function updateHud() {
   $("grenade-button").textContent = `FRAG ${p.grenades ?? 0}`;
   $("ability-button").textContent =
     (p.abilityCooldown ?? 0) > 0
-      ? `${Math.ceil(p.abilityCooldown ?? 0)}s`
+      ? `${classInfo(p.classId).ability.toUpperCase()} ${Math.ceil(p.abilityCooldown ?? 0)}s`
       : classInfo(p.classId).ability.toUpperCase();
   $<HTMLButtonElement>("grenade-button").disabled =
     p.zombie || p.dead > 0 || !(p.grenades ?? 0);
@@ -1404,6 +1434,8 @@ function updateHud() {
     `${gearInfo(p.classId).name.toUpperCase()} ${p.gearCharges ?? 0}`;
   $<HTMLButtonElement>("gear-button").disabled =
     p.zombie || p.dead > 0 || !p.gearCharges || (p.gearCooldown ?? 0) > 0;
+  $<HTMLButtonElement>("equipment-toggle").disabled = p.zombie || p.dead > 0;
+  if (p.zombie || p.dead > 0) setEquipment(false);
   $("blocks").textContent = `${p.blocks} blocks`;
   $("fuel-label").style.opacity = p.jetpack ? "1" : ".45";
   $("fuel").textContent = p.jetpack ? `${Math.round(p.fuel)}%` : "NO PACK";
@@ -1495,7 +1527,7 @@ function updateHud() {
   $("score-rows").replaceChildren();
   const header = document.createElement("div");
   header.className = "score-row";
-  for (const text of ["PLAYER", "KILLS", "DEATHS"]) {
+  for (const text of ["PLAYER", "KILLS", "DEATHS", "HEAL"]) {
     const s = document.createElement("span");
     s.textContent = text;
     header.append(s);
@@ -1510,6 +1542,7 @@ function updateHud() {
       `${rp.name}${rp.id === id ? " (you)" : ""}${rp.zombie ? " [Z]" : ""}${rp.bot ? " [NPC]" : ""}`,
       rp.kills,
       rp.deaths,
+      Math.round(rp.healingGiven ?? 0),
     ]) {
       const s = document.createElement("span");
       s.textContent = String(text);
@@ -1935,6 +1968,8 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
       (input as any)[action] = true;
       pulses[action] = true;
       button.classList.add("held");
+      if (touch && ["grenade", "ability", "gear"].includes(action))
+        setEquipment(false);
     }
   });
   for (const kind of ["pointerup", "pointercancel", "lostpointercapture"])
@@ -2039,6 +2074,14 @@ $("map-preset").onchange = () => {
   $<HTMLInputElement>("seed").value = $<HTMLSelectElement>("map-preset").value;
 };
 $("practice").onclick = () => show("solo-setup");
+$("recommended-ctf").onclick = () => {
+  $<HTMLSelectElement>("solo-mode").value = "ctf";
+  $<HTMLSelectElement>("solo-map").value = "7231";
+  $<HTMLSelectElement>("solo-bots").value = "7";
+  $<HTMLSelectElement>("solo-duration").value = "300";
+  $("solo-status").textContent =
+    "Foundry CTF · 4 vs 4 · 5 minutes. Choose your class, then Deploy with squad.";
+};
 $("solo-start").onclick = async () => {
   const button = $<HTMLButtonElement>("solo-start");
   button.disabled = true;
@@ -2153,6 +2196,32 @@ $("class-close").onclick = () => {
 };
 $("score-button").onclick = () => show("scoreboard");
 $("pause-button").onclick = () => setPause(true);
+function setEquipment(open: boolean) {
+  $("tactical-controls").classList.toggle("equipment-open", open);
+  $("equipment-toggle").setAttribute("aria-expanded", String(open));
+}
+$("equipment-toggle").onclick = () =>
+  setEquipment(!$("tactical-controls").classList.contains("equipment-open"));
+$("toggle-stats").onclick = () => {
+  liveStats = !liveStats;
+  show("live-stats", liveStats);
+  $("toggle-stats").textContent = liveStats
+    ? "Hide live stats"
+    : "Show live stats";
+  $("toggle-stats").setAttribute("aria-pressed", String(liveStats));
+};
+$("copy-diagnostics").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(
+      `Blockfront Relay 2.15\n${$("connection-details").textContent}`,
+    );
+    $("diagnostic-status").textContent =
+      "Report copied—paste it when reporting stutter or lag.";
+  } catch {
+    $("diagnostic-status").textContent =
+      "Copy unavailable. Select the report text above to copy manually.";
+  }
+};
 $("resume").onclick = () => setPause(false);
 $("leave").onclick = () => {
   if (httpToken)
@@ -2213,6 +2282,14 @@ function updateNetwork() {
   if (performance.now() - lastNetworkUi < 250) return;
   lastNetworkUi = performance.now();
   const age = Math.max(0, performance.now() - lastStateAt);
+  const frames = frameTimings.summary(),
+    cpu = cpuTimings.summary();
+  const fps = frames.mean ? Math.round(1000 / frames.mean) : 0;
+  const sim = state?.diagnostics;
+  const performanceLine = `${fps || "—"} FPS · frame p95 ${frames.p95.toFixed(1)} ms · CPU ${cpu.mean.toFixed(1)} ms\nSimulation ${sim?.tickMs ?? "—"} ms · NPC decisions ${sim?.npcMs ?? "—"} ms · ${renderer.info.render.calls} draw calls`;
+  $("live-stats").textContent =
+    `${fps || "—"} FPS · ${networkMode === "local" ? "LOCAL" : `${ping} ms`} · ${renderer.info.render.calls} draws`;
+  $<HTMLButtonElement>("copy-diagnostics").disabled = !connected;
   $("network").textContent =
     age > 1500 || networkFailures
       ? "Recovering connection…"
@@ -2222,6 +2299,10 @@ function updateNetwork() {
           ? "ON-DEVICE · NPC PRACTICE"
           : `${ping} ms · ${networkMode === "http" ? "HTTP" : "WS"}`;
   $("connection-details").textContent =
+    performanceLine +
+    "\n" +
+    `${state?.mode ?? "—"} · ${state?.map ?? "—"} · seed ${state?.seed ?? "—"} · ${state?.players?.length ?? 0} players\n` +
+    `${settings.preset} · distance ${settings.distance} · effects ${settings.effects} · viewport ${innerWidth}×${innerHeight}\n` +
     `${networkMode.toUpperCase()} · RTT ${ping} ms · snapshot age ${Math.round(age)} ms\n` +
     `Motion buffer ${Math.round(snapshotClock.delay)} ms · jitter ${Math.round(snapshotClock.jitter)} ms · gaps ${snapshotClock.gaps}\n` +
     `Queued inputs ${pendingInputs.length}/${MAX_PENDING_INPUTS} · prediction pauses ${connectionStats.predictionStops}\n` +
@@ -2325,6 +2406,14 @@ let lastFrame = performance.now(),
   accumulator = 0;
 function frame(now: number) {
   requestAnimationFrame(frame);
+  const workStarted = performance.now();
+  if (
+    connected &&
+    !document.hidden &&
+    now - lastFrame > 0 &&
+    now - lastFrame < 1000
+  )
+    frameTimings.add(now - lastFrame);
   const dt = Math.min(0.1, (now - lastFrame) / 1000);
   lastFrame = now;
   if (!connected || !local) simulationFrame = now;
@@ -2585,6 +2674,8 @@ function frame(now: number) {
       void sendInput();
     }
     show("hitmarker", now < hitUntil);
+    $("hit-confirmation").textContent = combatFeedback.label(now);
+    $("hit-confirmation").dataset.kind = combatFeedback.kind;
     $("vignette").style.background =
       now < damageUntil
         ? "radial-gradient(ellipse,transparent 30%,#d7464b66)"
@@ -2773,6 +2864,8 @@ function frame(now: number) {
   if (connected && local && state)
     minimap.update(now, state, { ...local, yaw });
   renderer.render(scene, camera);
+  if (connected && !document.hidden)
+    cpuTimings.add(performance.now() - workStarted);
 }
 requestAnimationFrame(frame);
 void refreshRooms();

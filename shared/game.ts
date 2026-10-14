@@ -180,6 +180,7 @@ export type Player = Body & {
   lastSeq: number;
   lastDamage: number;
   nextClass?: number;
+  healingGiven?: number;
   grenades?: number;
   grenadeCooldown?: number;
   supplyCooldown?: number;
@@ -196,6 +197,8 @@ export type Player = Body & {
     target: string;
     acquired: number;
     lastSeen?: Vec;
+    heard?: Vec;
+    heardAt?: number;
     seenAt?: number;
     nextPlan?: number;
     route?: Vec[];
@@ -244,7 +247,7 @@ export const MAP_PRESETS = [
   {
     seed: 7231,
     name: "Copperwater Foundry",
-    description: "Industrial flanks, offset yard and watch terraces",
+    description: "Covered depots, stepped trench bypasses and an offset yard",
   },
   {
     seed: 7233,
@@ -371,7 +374,8 @@ export class World {
   generate() {
     if (citySeed(this.seed)) {
       generateCity(this.blocks, this.seed);
-      if (this.layoutVersion) applyBattleLayout(this.blocks, this.seed);
+      if (this.layoutVersion)
+        applyBattleLayout(this.blocks, this.seed, this.layoutVersion);
       return;
     }
     let n = this.seed >>> 0;
@@ -698,7 +702,8 @@ export class World {
               );
       }
     }
-    if (this.layoutVersion) applyBattleLayout(this.blocks, this.seed);
+    if (this.layoutVersion)
+      applyBattleLayout(this.blocks, this.seed, this.layoutVersion);
   }
   encode() {
     const runs: number[] = [];

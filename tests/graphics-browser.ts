@@ -363,6 +363,7 @@ try {
     await phone.evaluate(() => (window as any).BR.lighting.beaconLights),
     0,
   );
+  await phone.locator("#equipment-toggle").tap();
   const gearRect = await phone.locator("#gear-button").boundingBox();
   assert.ok(gearRect && gearRect.x >= 0 && gearRect.y + gearRect.height < 844);
   const fireRect = await phone.locator('[data-action="fire"]').boundingBox();

@@ -39,7 +39,7 @@
       <div class="brand">
         <span class="brand-mark">BR</span
         ><span>BLOCKFRONT<br /><b>RELAY</b></span
-        ><small>2.14 · TERRAIN TACTICS</small>
+        ><small>2.15 · FIELD FEEL</small>
       </div>
       <p class="eyebrow">PROCEDURAL FRONTIERS</p>
       <h1>Dig in.<br />Build your advantage.</h1>
@@ -198,6 +198,7 @@
             <option value="600">10 minutes</option>
           </select></label
         >
+        <button id="recommended-ctf">Recommended Foundry CTF setup</button>
         <button id="solo-start" class="primary">Deploy with squad</button>
       </div>
       <p id="solo-status" role="status">
@@ -314,6 +315,13 @@
         <small id="kit-hint" role="status"></small>
       </div>
       <button id="class-hud">TRAILGUARD ▾</button>
+      <button
+        id="equipment-toggle"
+        aria-expanded="false"
+        aria-controls="tactical-controls"
+      >
+        GEAR ▴
+      </button>
       <div id="tactical-controls">
         <button
           id="grenade-button"
@@ -337,6 +345,8 @@
         </button>
       </div>
       <div id="hitmarker" class="hidden">×</div>
+      <div id="hit-confirmation" aria-live="off"></div>
+      <div id="live-stats" class="hidden"></div>
       <div id="feed"></div>
       <div id="banner" class="hidden"></div>
       <div id="objective-hud"></div>
@@ -449,13 +459,16 @@
       <h2>Take a breather</h2>
       <p>The match continues while paused.</p>
       <details>
-        <summary>Connection diagnostics</summary>
+        <summary>Performance &amp; connection diagnostics</summary>
         <p
           id="connection-details"
           style="white-space: pre-line; font-size: 0.85rem"
         >
           Joining…
         </p>
+        <button id="toggle-stats" aria-pressed="false">Show live stats</button>
+        <button id="copy-diagnostics">Copy report</button>
+        <p id="diagnostic-status" role="status"></p>
       </details>
       <button id="resume" class="primary">Resume</button
       ><button id="pause-settings">Settings</button

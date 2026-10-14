@@ -118,8 +118,12 @@ export function thinkBot(p: Player, arena: Arena): Input {
       // Investigate the reported location; firing still requires this bot's own sight.
     }
   }
-  let goal: Vec = brain.lastSeen ?? basePosition(1 - p.team);
-  if (!target && !brain.lastSeen && horizontal(goal, p) < 8)
+  const heard =
+    brain.heard && arena.time - (brain.heardAt ?? -10) < 4
+      ? brain.heard
+      : undefined;
+  let goal: Vec = brain.lastSeen ?? heard ?? basePosition(1 - p.team);
+  if (!target && !brain.lastSeen && !heard && horizontal(goal, p) < 8)
     goal = {
       x: W / 2 + Math.sin(arena.time * 0.09 + personality) * 35,
       y: p.y,
@@ -202,12 +206,28 @@ export function thinkBot(p: Player, arena: Arena): Input {
   );
   const ammoLow =
     !p.zombie && p.ammo[primary] < Math.max(1, WEAPONS[primary].mag / 4);
+  const nearbySupport = [...arena.players.values()].filter(
+    (v) =>
+      v.id !== p.id &&
+      v.team === p.team &&
+      v.dead <= 0 &&
+      horizontal(v, p) < 16,
+  );
+  const outnumbered =
+    visible.filter((v) => horizontal(v, p) < 30).length >
+    nearbySupport.length + 1;
+  const rallyNeeded =
+    p.classId === 0 &&
+    [...nearbySupport, p].some((v) => horizontal(v, p) < 8 && v.health < 70);
   const retreat =
     !!target &&
     !p.zombie &&
     (p.health < 35 ||
       p.reload > 0 ||
       ammoLow ||
+      (outnumbered &&
+        profile.style !== "assault" &&
+        friendlyCarrier !== p.id) ||
       (arena.options.mode === "infection" && target.zombie && distance < 12));
   if (retreat && target) {
     const length = Math.max(1, distance),
@@ -598,9 +618,10 @@ export function thinkBot(p: Player, arena: Arena): Input {
     ability:
       !p.zombie &&
       (p.abilityCooldown ?? 0) === 0 &&
-      (p.classId === 4
-        ? tool
-        : retreat || (attack && (p.classId !== 0 || p.health < 70))),
+      (rallyNeeded ||
+        (p.classId === 4
+          ? tool
+          : retreat || (attack && (p.classId !== 0 || p.health < 70)))),
     gear:
       !p.zombie &&
       p.ground &&

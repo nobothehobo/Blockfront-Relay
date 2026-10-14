@@ -190,7 +190,7 @@ test("2.10 hosted rounds retain terrain and sessions until the next round adopts
   assert.equal(next.status, 200);
   assert.equal(next.data.round, 2);
   const updated = JSON.parse((row.get(room) as any).data);
-  assert.equal(updated.terrainVersion, 1);
+  assert.equal(updated.terrainVersion, 2);
   assert.deepEqual(updated.edits, []);
   assert.equal(updated.sessions[a.data.token].id, player.id);
   assert.equal(updated.sessions[b.data.token].id, b.data.welcome.id);

@@ -1,6 +1,8 @@
 import { basePosition, mapTheme, nextMapSeed } from "../shared/game.js";
 import { sectors, supplies, Sector } from "../shared/battlefield.js";
 import { thinkBot } from "./bots.js";
+import { hearShot } from "./bot-awareness.js";
+import { Timings } from "../shared/timings.js";
 import { sanitizeInput } from "../shared/prediction.js";
 import { FieldGear, gearInfo } from "../shared/gear.js";
 import { atmosphere } from "../shared/environment.js";
@@ -62,6 +64,8 @@ export type RoomOptions = {
   practice?: boolean;
 };
 export class Room {
+  readonly tickTimings = new Timings(90);
+  readonly npcTimings = new Timings(90);
   world: World;
   players = new Map<string, Player>();
   peers = new Map<string, Peer>();
@@ -485,6 +489,7 @@ export class Room {
       p.zombie = false;
       p.kills = 0;
       p.deaths = 0;
+      p.healingGiven = 0;
       this.spawn(p);
     }
     this.broadcast({
@@ -507,6 +512,10 @@ export class Room {
   }
   state() {
     return {
+      diagnostics: {
+        tickMs: +this.tickTimings.summary().mean.toFixed(2),
+        npcMs: +this.npcTimings.summary().mean.toFixed(2),
+      },
       fieldGear: this.fieldGear,
       time: this.time,
       atmosphere: atmosphere(this.options.seed, this.time),
@@ -564,6 +573,8 @@ export class Room {
     };
   }
   tick(dt = TICK) {
+    const tickStarted = performance.now();
+    let npcMs = 0;
     this.time += dt;
     if (this.players.size < 2 && this.phase !== "finished") {
       this.phase = "waiting";
@@ -587,7 +598,9 @@ export class Room {
     }
     for (const p of this.players.values()) {
       if (p.bot && p.dead <= 0) {
+        const started = performance.now();
         p.input = thinkBot(p, this);
+        npcMs += performance.now() - started;
         p.lastSeq = p.input.seq;
       }
       p.cooldown = Math.max(0, p.cooldown - dt);
@@ -770,6 +783,8 @@ export class Room {
     }
     if (this.options.rewind)
       this.hitHistory.record(this.time, this.players.values());
+    this.npcTimings.add(npcMs);
+    this.tickTimings.add(performance.now() - tickStarted);
     if (this.time - this.lastBroadcast >= 0.099) {
       this.lastBroadcast = this.time;
       this.broadcast({
@@ -925,6 +940,8 @@ export class Room {
           });
       }
     }
+    if (isFirearm(p.weapon))
+      hearShot(this.players.values(), this.world, origin, p.team, this.time);
     this.event("shot", "", p.id, {
       origin,
       dir: base,
@@ -981,11 +998,15 @@ export class Room {
           !v.zombie &&
           v.dead <= 0 &&
           Math.hypot(v.x - p.x, v.y - p.y, v.z - p.z) < 8
-        )
+        ) {
+          const before = v.health;
           v.health = Math.min(
             classInfo(v.classId).health,
             v.health + (v.id === p.id ? 20 : 15),
           );
+          if (v.id !== p.id)
+            p.healingGiven = (p.healingGiven ?? 0) + v.health - before;
+        }
       }
     else if (p.classId === 2) {
       p.blocks = Math.min(200, p.blocks + 35);
@@ -1169,10 +1190,15 @@ export class Room {
             clearSight(g, p),
         );
         if (patient) {
+          const before = patient.health;
           patient.health = Math.min(
             classInfo(patient.classId).health,
             patient.health + 30,
           );
+          const owner = this.players.get(g.owner);
+          if (owner && owner.id !== patient.id)
+            owner.healingGiven =
+              (owner.healingGiven ?? 0) + patient.health - before;
           consumed = true;
           this.event("pickup", `${patient.name} used a medbox`, patient.id);
         }

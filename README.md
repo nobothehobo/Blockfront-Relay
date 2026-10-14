@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.14 — Terrain Tactics.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.15 — Field Feel.**
+
+**2.15:** cosmetic weapon settle/lateral recoil, confirmed damage/headshot/elimination labels, spatial and cover-muffled gunfire, bounded performance reports, a mobile equipment drawer, gunfire-aware/outnumbered NPC tactics, split flag interceptions, teammate Rally behavior and healing credit. Foundry adds two covered depots and stepped bypass tunnels; older hosted terrain survives until the next round. Solo setup includes a recommended Foundry CTF preset. See [changes and verification limits](docs/UPDATE-215.md).
 
 **2.14:** swept path clearance, height-aware route completion, recovery from blocked steering, stair-preserving objective breaches and stable terrain-aware flag escorts. A simulated NPC crosses a stepped trench/tunnel, steals a flag and returns it through normal physics. See [details and testing limits](docs/UPDATE-214.md). Refresh and start a fresh practice match.
 

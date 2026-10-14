@@ -21,7 +21,16 @@ export function weaponPose(
   const age = Math.max(0, ageMs);
   const recovery = [160, 95, 250, 230, 180, 180, 300][weapon] ?? 180;
   const envelope = Math.max(0, 1 - age / recovery);
-  const kick = envelope * envelope * strength * (aim ? 0.65 : 1);
+  // Cosmetic impulse and damped settle; never changes camera aim or damage.
+  const settle =
+    age < recovery * 1.6
+      ? Math.sin((age / recovery) * Math.PI * 2) *
+        Math.exp((-age / recovery) * 3)
+      : 0;
+  const kick =
+    (envelope * envelope + settle * 0.12) * strength * (aim ? 0.65 : 1);
+  const kickRoll =
+    kick * ([0.013, -0.018, 0.032, 0.01, 0, 0, 0.024][weapon] ?? 0);
   const bob = Math.min(0.018, speed * 0.002) * (aim ? 0.22 : 1);
   const reloading = reload > 0;
   const progress = reloading
@@ -50,7 +59,9 @@ export function weaponPose(
   const reloadPitch = [0.22, 0.16, 0.1, 0.28, 0, 0, 0.18][weapon] ?? 0.22;
   const toolSwing = weapon === 4 ? pulse(age / 1000, 0, 0.28) : 0;
   return {
-    x: aim ? -0.22 : Math.cos(timeMs * 0.005) * bob * 0.5,
+    x:
+      (aim ? -0.22 : Math.cos(timeMs * 0.005) * bob * 0.5) +
+      kick * ([0.002, -0.005, 0.012, 0.003, 0, 0, 0.008][weapon] ?? 0),
     y:
       Math.sin(timeMs * 0.01) * bob +
       kick * 0.008 -
@@ -61,6 +72,7 @@ export function weaponPose(
     pitch: kick * 0.065 - tilt * reloadPitch + run * 0.09 + toolSwing * 0.65,
     roll:
       Math.sin(timeMs * 0.005) * bob * 0.6 +
+      kickRoll +
       tilt * reloadRoll -
       toolSwing * 0.3,
     magazine,

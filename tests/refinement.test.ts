@@ -153,7 +153,11 @@ test("weapon recoil recovery and reload poses differ, with reduced motion when a
   const rifle = weaponPose(100, 0, 0, 0, false, 0),
     smg = weaponPose(100, 1, 0, 0, false, 0),
     shotgun = weaponPose(100, 2, 0, 0, false, 0);
-  assert.equal(smg.z, 0);
+  assert.ok(
+    Math.abs(smg.z) < 0.0001,
+    "SMG returns quickly with only tiny cosmetic settle",
+  );
+  assert.equal(weaponPose(300, 1, 0, 0, false, 0).z, 0);
   assert.ok(shotgun.z > rifle.z);
   assert.ok(
     weaponPose(30, 0, 0, 0, true, 0).pitch <

@@ -1,6 +1,7 @@
 import { W, D, H, idx, mapLayout, basePosition, Vec } from "./game.js";
+import { foundryFieldworks } from "./fieldworks.js";
 
-export const LAYOUT_VERSION = 1;
+export const LAYOUT_VERSION = 2;
 export type BattleRoute = { name: string; points: Vec[] };
 const routeCache = new Map<number, Int16Array>();
 export function sectorSites(seed: number): [number, number][] {
@@ -177,7 +178,11 @@ export function routeField(seed: number) {
 }
 
 // Generation only. Runtime edits continue to go through Room's validation/deltas.
-export function applyBattleLayout(blocks: Uint8Array, seed: number) {
+export function applyBattleLayout(
+  blocks: Uint8Array,
+  seed: number,
+  version = LAYOUT_VERSION,
+) {
   const layout = mapLayout(seed),
     field = routeField(seed);
   const set = (x: number, y: number, z: number, v: number) => {
@@ -266,6 +271,7 @@ export function applyBattleLayout(blocks: Uint8Array, seed: number) {
         set(x, feet - 1, z, layout === 3 ? 26 : 6);
       }
   }
+  if (version >= 2 && layout === 0) foundryFieldworks(blocks);
 }
 
 export function nearestRoutePoint(route: BattleRoute, position: Vec) {

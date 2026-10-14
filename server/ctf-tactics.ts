@@ -41,11 +41,27 @@ export function flagAssignment(
           distance(a, threat) - distance(b, threat) || a.id.localeCompare(b.id),
       )
       .slice(0, 2);
-    if (rescuers.some((v) => v.id === p.id))
+    if (rescuers.some((v) => v.id === p.id)) {
+      let goal = { ...threat };
+      if (own.carrier && rescuers[1]?.id === p.id) {
+        const home = enemy.home;
+        const distanceHome = Math.max(1, distance(threat, home));
+        const lead = Math.min(10, distanceHome * 0.25);
+        const candidate = {
+          x: threat.x + ((home.x - threat.x) / distanceHome) * lead,
+          y: threat.y,
+          z: threat.z + ((home.z - threat.z) / distanceHome) * lead,
+        };
+        const y = world
+          ? walkHeight(world, candidate.x, candidate.z, threat.y)
+          : threat.y;
+        if (y !== null) goal = { ...candidate, y };
+      }
       return {
         role: own.carrier ? "interceptor" : "recover",
-        goal: { ...threat },
+        goal,
       };
+    }
   }
   const carrier = enemy.carrier ? players.get(enemy.carrier) : undefined;
   const escorts =

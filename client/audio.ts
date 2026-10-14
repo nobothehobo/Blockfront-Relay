@@ -139,7 +139,7 @@ export class Sound {
     o.start(t);
     o.stop(t + duration);
   }
-  play(kind: string, volume = 1, weapon = 0, pan = 0) {
+  play(kind: string, volume = 1, weapon = 0, pan = 0, muffled = false) {
     if (
       !this.ctx ||
       this.ctx.state !== "running" ||
@@ -162,7 +162,7 @@ export class Sound {
         return;
       }
       const p = profiles[weapon] ?? profiles[0];
-      this.burst(v * p.gain, 0.055, p.crack, 0, false, pan);
+      this.burst(v * p.gain, 0.055, muffled ? 650 : p.crack, 0, false, pan);
       this.burst(v * 0.15, p.tail, 680, 0, false, pan);
       this.tone(v * 0.1, p.tail, p.body, 45, "sine", 0, pan);
       this.burst(v * 0.035, 0.035, 1900, 0.06, true, pan);

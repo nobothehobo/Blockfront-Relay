@@ -515,7 +515,7 @@ summary {
 }
 .score-row {
   display: grid;
-  grid-template-columns: 1fr 80px 80px;
+  grid-template-columns: minmax(0, 1fr) repeat(3, minmax(42px, 60px));
   gap: 8px;
   padding: 12px 4px;
   border-bottom: 1px solid #739c9730;
@@ -1146,6 +1146,64 @@ body.touch #construction-panel {
   display: flex;
   gap: 8px;
   pointer-events: auto;
+}
+#equipment-toggle {
+  display: none;
+}
+#hit-confirmation {
+  position: absolute;
+  top: calc(50% + 30px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: #d9eae4;
+  text-shadow: 0 1px 3px #000;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#hit-confirmation[data-kind="head"] {
+  color: #ffe0a4;
+}
+#hit-confirmation[data-kind="kill"] {
+  color: #73e0d0;
+}
+#live-stats {
+  position: absolute;
+  bottom: max(8px, env(safe-area-inset-bottom));
+  left: max(8px, env(safe-area-inset-left));
+  padding: 5px 7px;
+  background: #102c38dd;
+  color: #c4e6dd;
+  font: 10px monospace;
+  pointer-events: none;
+}
+body.touch #equipment-toggle {
+  display: block;
+  position: absolute;
+  pointer-events: auto;
+  bottom: max(58px, calc(env(safe-area-inset-bottom) + 50px));
+  left: 50%;
+  transform: translateX(-50%);
+  min-height: 44px;
+  min-width: 88px;
+  padding: 8px;
+  font-size: 11px;
+  touch-action: none;
+}
+body.touch #tactical-controls:not(.equipment-open) {
+  display: none;
+}
+body.touch #tactical-controls.equipment-open {
+  z-index: 12;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: max(110px, calc(env(safe-area-inset-bottom) + 102px));
+  flex-direction: row;
+  background: #102c38f2;
+  padding: 8px;
+  border: 1px solid #658d8b;
+  border-radius: 10px;
 }
 #tactical-controls button {
   min-width: 72px;

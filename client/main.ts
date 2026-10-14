@@ -51,6 +51,8 @@ import { Terrain } from "./mesh.js";
 import { Sound } from "./audio.js";
 import { jetVoices, spatialVoice } from "./audio-mix.js";
 import { Sky } from "./sky.js";
+import { SunRays, raysEnabled } from "./sun-rays.js";
+import { pixelFinish } from "./pixel-finish.js";
 import { playerPose } from "./animation.js";
 import { createCharacter } from "./character.js";
 import { setCharacterEquipment } from "./equipment.js";
@@ -97,6 +99,8 @@ type Settings = {
   distance: number;
   effects: string;
   shadows: boolean;
+  textures: boolean;
+  sunRays: boolean;
   fov: number;
   master: number;
   volume: number;
@@ -112,6 +116,8 @@ const defaults: Settings = {
   distance: touch ? 80 : 112,
   effects: touch ? "low" : "high",
   shadows: true,
+  textures: true,
+  sunRays: !touch,
   fov: 80,
   master: 0.55,
   volume: 0.75,
@@ -255,6 +261,8 @@ const contactShadows = new ContactShadows();
 scene.add(contactShadows.mesh);
 const sky = new Sky();
 scene.add(sky.mesh);
+const sunRays = new SunRays();
+scene.add(sunRays.mesh);
 function applyTheme(mode = state?.mode) {
   const outbreak = mode === "infection";
   const theme = mapTheme(world.seed);
@@ -297,7 +305,7 @@ function updateAtmosphere(now: number) {
     a = currentAtmosphere;
   sky.atmosphere(a.day, a.twilight, a.sun);
   combatFX.fogColor.copy(sky.material.uniforms.horizon.value);
-  water.atmosphere(a.day, sky.material.uniforms.horizon.value);
+  water.atmosphere(a.day, sky.material.uniforms.horizon.value, a.sun);
   (scene.fog as THREE.Fog).color.copy(sky.material.uniforms.horizon.value);
   atmosphereDayColor.setHex(
     outbreak ? 0xc7d8e5 : theme.kind === 0 ? 0xffdfad : 0xfff0d5,
@@ -306,10 +314,10 @@ function updateAtmosphere(now: number) {
     .copy(atmosphereMoonColor)
     .lerp(atmosphereDayColor, a.day)
     .lerp(atmosphereWarmColor, a.twilight * 0.35);
-  sun.intensity = THREE.MathUtils.lerp(0.8, baseLight.sun, a.day);
-  ambient.intensity = THREE.MathUtils.lerp(1.05, baseLight.ambient, a.day);
+  sun.intensity = THREE.MathUtils.lerp(0.65, baseLight.sun, a.day);
+  ambient.intensity = THREE.MathUtils.lerp(0.86, baseLight.ambient, a.day);
   ambient.color.copy(atmosphereNightFill).lerp(atmosphereDayFill, a.day);
-  bounce.intensity = THREE.MathUtils.lerp(0.42, baseLight.bounce, a.day);
+  bounce.intensity = THREE.MathUtils.lerp(0.3, baseLight.bounce, a.day);
   renderer.toneMappingExposure = THREE.MathUtils.lerp(
     0.94,
     baseLight.exposure,
@@ -344,7 +352,11 @@ let lastShotWeapon = -1;
 const weaponOffset = new THREE.Vector3();
 const remoteMuzzle = new THREE.Vector3();
 const mat = (color: number) =>
-  new THREE.MeshStandardMaterial({ color, roughness: 0.75, metalness: 0.18 });
+  pixelFinish(
+    new THREE.MeshStandardMaterial({ color, roughness: 0.75, metalness: 0.18 }),
+    48,
+    0.16,
+  );
 function box(
   w: number,
   h: number,
@@ -602,11 +614,15 @@ function setWeaponModel(n: number) {
   weaponGroup.add(
     new THREE.Mesh(
       geometry,
-      new THREE.MeshStandardMaterial({
-        vertexColors: true,
-        roughness: 0.75,
-        metalness: 0.18,
-      }),
+      pixelFinish(
+        new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          roughness: 0.75,
+          metalness: 0.18,
+        }),
+        48,
+        0.16,
+      ),
     ),
   );
 }
@@ -714,6 +730,7 @@ function applySettings() {
   updateInputUi();
   sound.master = settings.master;
   sound.effects = settings.volume;
+  terrain.textureStrength.value = settings.textures ? 1 : 0;
   renderer.setPixelRatio(
     Math.min(
       devicePixelRatio,
@@ -768,6 +785,8 @@ function settingsUi() {
     ["distance", "Render distance", 32, 192, 4],
     ["effects", "Effects quality"],
     ["shadows", "Shadows (mobile: contact only)"],
+    ["textures", "Terrain pixel detail"],
+    ["sunRays", "Sun rays (balanced / high effects)"],
     ["fov", "Field of view", 60, 105, 1],
     ["master", "Master volume", 0, 1, 0.05],
     ["volume", "Effects volume", 0, 1, 0.05],
@@ -789,7 +808,12 @@ function settingsUi() {
       field.max = String(max);
       field.step = String(step);
       field.value = String(settings[key]);
-    } else if (key === "invert" || key === "shadows") {
+    } else if (
+      key === "invert" ||
+      key === "shadows" ||
+      key === "textures" ||
+      key === "sunRays"
+    ) {
       field = document.createElement("input");
       field.type = "checkbox";
       field.checked = settings[key];
@@ -814,7 +838,10 @@ function settingsUi() {
     val.textContent = String(settings[key]);
     field.oninput = () => {
       (settings as any)[key] =
-        key === "invert" || key === "shadows"
+        key === "invert" ||
+        key === "shadows" ||
+        key === "textures" ||
+        key === "sunRays"
           ? (field as HTMLInputElement).checked
           : min !== undefined
             ? Number(field.value)
@@ -828,6 +855,8 @@ function settingsUi() {
               : 176;
         settings.effects = field.value === "mobile" ? "low" : "high";
         settings.shadows = true;
+        settings.sunRays = field.value !== "mobile";
+        settingsUi();
       }
       val.textContent = String(settings[key]);
       if (key === "inputMode") {
@@ -2240,7 +2269,7 @@ $("toggle-stats").onclick = () => {
 $("copy-diagnostics").onclick = async () => {
   try {
     await navigator.clipboard.writeText(
-      `Blockfront Relay 2.15.1\n${$("connection-details").textContent}`,
+      `Blockfront Relay 2.16.0\n${$("connection-details").textContent}`,
     );
     $("diagnostic-status").textContent =
       "Report copied—paste it when reporting stutter or lag.";
@@ -2891,6 +2920,16 @@ function frame(now: number) {
   combatFX.update(now, dt);
   updateAtmosphere(now);
   sky.update(camera, now / 1000);
+  sunRays.update(
+    world,
+    camera,
+    currentAtmosphere.sun,
+    currentAtmosphere.day,
+    connected &&
+      raysEnabled(settings.preset, settings.effects, settings.sunRays),
+    now,
+    dt,
+  );
   neon.update(
     world,
     camera.position,
@@ -3009,6 +3048,9 @@ setInterval(() => {
   get lighting() {
     return {
       sunShadows: renderer.shadowMap.enabled,
+      surfaceDetail: terrain.textureStrength.value > 0,
+      sunRays: sunRays.mesh.visible,
+      sunVisibility: sunRays.visibility,
       shadowSize: sun.shadow.mapSize.x,
       exposure: renderer.toneMappingExposure,
       sun: sun.intensity,
@@ -3017,6 +3059,7 @@ setInterval(() => {
       waterDaylight: water.material.uniforms.daylight.value,
       neonLights: neon.lights.filter((l) => l.visible && l.intensity > 0)
         .length,
+      lampGlows: neon.glows.visible ? neon.glows.count : 0,
       gearInstances: fieldGear.solid.count,
       beaconLights: fieldGear.lights.filter((l) => l.intensity > 0).length,
     };

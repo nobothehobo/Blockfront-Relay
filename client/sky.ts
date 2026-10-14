@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { mapTheme } from "../shared/game.js";
 
-// Original deterministic cloud texture, generated once. Three cloud samples per pixel,
+// Original deterministic cloud texture, generated once. Five cloud samples per pixel,
 // no raymarching, downloaded sky assets, postprocessing or additional scene lights.
 function cloudTexture() {
   const size = 128,
@@ -76,20 +76,26 @@ export class Sky {
       void main(){
         vec3 d=normalize(skyDirection);
         float elevation=max(0.0,d.y);
-        vec3 color=mix(horizon,top,smoothstep(0.0,.82,elevation));
+        vec3 color=mix(horizon,top,pow(smoothstep(0.0,.78,elevation),.72));
         float sunlight=max(0.0,dot(d,sunDirection));
-        color+=sunColor*(pow(sunlight,18.0)*.10+pow(sunlight,180.0)*.25)*(1.0-night);
+        color+=sunColor*(pow(sunlight,14.0)*.075+pow(sunlight,180.0)*.22)*(1.0-night);
         vec2 uv=d.xz/(.32+elevation)*.24+vec2(time*.0018,time*.0007);
-        float n=texture2D(clouds,uv).r*.76+texture2D(clouds,uv*1.93-vec2(time*.0012)).r*.24;
-        float body=smoothstep(cloudCoverage,cloudCoverage+.14,n);
+        float n=texture2D(clouds,uv).r*.72+texture2D(clouds,uv*1.93-vec2(time*.0012)).r*.28;
+        float body=smoothstep(cloudCoverage,cloudCoverage+.12,n);
         body*=smoothstep(.03,.20,elevation);
-        float shade=texture2D(clouds,uv+sunDirection.xz*.025).r;
-        float rim=smoothstep(.0,.10,n-shade)*.16*pow(sunlight,4.0);
-        vec3 cloud=mix(horizon*.64,mix(vec3(1.0,.97,.90),vec3(.10,.14,.24),night),smoothstep(cloudCoverage+.03,cloudCoverage+.20,n));
-        cloud+=sunColor*rim;
-        color=mix(color,cloud,body*.90);
+        float shade=texture2D(clouds,uv+sunDirection.xz*.040).r;
+        float upper=texture2D(clouds,uv+vec2(.008,-.014)).r;
+        float fine=texture2D(clouds,uv*3.1+vec2(time*.0004)).r;
+        float depth=smoothstep(cloudCoverage-.01,cloudCoverage+.13,n);
+        float rim=smoothstep(.0,.09,n-shade)*pow(sunlight,3.0);
+        float light=clamp(.36+depth*.40+(n-upper)*2.6+(fine-.5)*.25,0.0,1.0);
+        vec3 underside=mix(horizon*.57,vec3(.032,.052,.11),night);
+        vec3 crest=mix(vec3(1.03,1.01,.96),vec3(.14,.20,.31),night);
+        vec3 cloud=mix(underside,crest,light);
+        cloud+=sunColor*rim*.23*(1.0-night);
+        color=mix(color,cloud,body*.94);
         float disc=smoothstep(.99935,.99965,sunlight)*(1.0-body*.80)*(1.0-night);
-        color=mix(color,sunColor*2.0,disc);
+        color=mix(color,sunColor*1.65,disc);
         if (night > .001) {
         float moon=max(0.0,dot(d,-sunDirection));
         float moonDisc=smoothstep(.9993,.9996,moon)*night*(1.0-body*.9);
@@ -118,13 +124,13 @@ export class Sky {
     const theme = mapTheme(seed),
       u = this.material.uniforms;
     u.top.value.setHex(
-      theme.kind === 0 ? 0x719fc4 : theme.kind === 2 ? 0x6aa5d1 : 0x498fc7,
+      theme.kind === 0 ? 0x427ca8 : theme.kind === 2 ? 0x367dad : 0x2875b3,
     );
     u.horizon.value.setHex(
-      theme.kind === 0 ? 0xf0c39c : theme.kind === 2 ? 0xc5dae8 : 0xc9dce4,
+      theme.kind === 0 ? 0xe4c8a7 : theme.kind === 2 ? 0xc5d7e1 : 0xc2d8df,
     );
     u.sunColor.value.setHex(theme.kind === 0 ? 0xffd69b : 0xffedd1);
-    u.cloudCoverage.value = theme.kind === 2 ? 0.49 : 0.56;
+    u.cloudCoverage.value = theme.kind === 2 ? 0.48 : 0.52;
     if (outbreak) {
       u.top.value.setHex(0x34485f);
       u.horizon.value.setHex(0x9baa9b);
@@ -144,7 +150,7 @@ export class Sky {
     const u = this.material.uniforms;
     u.top.value.copy(this.nightTop).lerp(this.dayTop, day);
     u.horizon.value.copy(this.nightHorizon).lerp(this.dayHorizon, day);
-    u.horizon.value.lerp(this.dusk, twilight * 0.34);
+    u.horizon.value.lerp(this.dusk, twilight * 0.52);
     u.sunDirection.value.set(sun.x, sun.y, sun.z).normalize();
     u.night.value = 1 - day;
   }

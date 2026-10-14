@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { setCharacterEquipment } from "./equipment.js";
+import { pixelFinish } from "./pixel-finish.js";
 type Appearance = {
   id: string;
   team: number;
@@ -274,6 +275,7 @@ export function createCharacter(p: Appearance) {
       "#include <emissivemap_fragment>\ntotalEmissiveRadiance += (selfLight * 1.5 + 0.025) * vColor.rgb;",
     );
   };
+  pixelFinish(material, 32, 0.18);
   const body = new THREE.SkinnedMesh(geometry, material);
   body.castShadow = body.receiveShadow = true;
   body.add(root);

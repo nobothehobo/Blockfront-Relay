@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import { pixelFinish } from "./pixel-finish.js";
 
 type Part = [number, number, number, number, number, number, number];
 // Original silhouettes in arm-local coordinates. One solid draw per held item.
@@ -58,11 +59,15 @@ export function createEquipment(weapon: number, team: number, role = 0) {
   geometries.forEach((g) => g.dispose());
   const item = new THREE.Mesh(
     geometry,
-    new THREE.MeshStandardMaterial({
-      vertexColors: true,
-      roughness: 0.68,
-      metalness: 0.16,
-    }),
+    pixelFinish(
+      new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.68,
+        metalness: 0.16,
+      }),
+      48,
+      0.16,
+    ),
   );
   item.position.set(-0.12, -0.21, -0.22);
   item.castShadow = true;

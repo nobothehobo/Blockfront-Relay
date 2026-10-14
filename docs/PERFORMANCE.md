@@ -1,5 +1,9 @@
 # Performance notes — alpha 0.4
 
+## 2.16 visual budget
+
+Terrain gains one small 32 KiB generated atlas, one texture sample per fragment and one material-ID float per vertex. Greedy face counts stay unchanged. Character/weapon surface grain stays in their current materials. Sky cloud sampling rises from three to five; water adds faceted glints in its existing draw. Fine detail fades with screen derivatives. Optional sun shafts add one screen quad and five periodically throttled voxel traces; city glows add one instance batch capped at eight nearby intact lamps. Neither effect allocates render targets, adds shadow maps or increases network traffic. Mobile/low disables both effects. See [2.16 changes and native shader/device-testing limits](UPDATE-216.md).
+
 ## 2.10 squad and handling budget
 
 Weapon recovery, reload cue progress and class-specific tilts add no rendering passes or textures; the compressed client is about 164 KB. Recent squad reports expire using their original timestamp. Existing eight-candidate sight checks, roughly five-Hz NPC thinking and bounded local path planning remain. The new obstruction timer lets safely stopped NPCs reach normal validated digging instead of resetting their recovery indefinitely. A 1,800-tick local CTF run per map with one human/fifteen NPCs measured mean 0.366–0.427 ms and p95 0.997–1.349 ms, with all bodies finite. These are container simulation figures, not physical iOS or geographic network results. See UPDATE-210.md for release checks and limitations.

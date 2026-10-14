@@ -136,15 +136,25 @@ export class WaterSurface {
       detail: { value: 1 },
       daylight: { value: 1 },
       skyTint: { value: new THREE.Color(0xc9dce4) },
+      sunDirection: { value: new THREE.Vector3(-0.48, 0.64, -0.6).normalize() },
     },
     vertexShader: `varying vec3 worldPoint; void main(){ vec4 p=modelMatrix*vec4(position,1.0); worldPoint=p.xyz; gl_Position=projectionMatrix*viewMatrix*p; }`,
-    fragmentShader: `uniform float time; uniform float detail; uniform float daylight; uniform vec3 tint; uniform vec3 skyTint; varying vec3 worldPoint;
-      void main(){ vec3 view=normalize(cameraPosition-worldPoint); float fresnel=pow(1.0-abs(view.y),3.0);
-        float wave=sin(worldPoint.x*.75+worldPoint.z*.35+time*.65)*sin(worldPoint.z*1.2-time*.5);
-        float glint=pow(max(0.0,wave),18.0)*detail;
+    fragmentShader: `uniform float time; uniform float detail; uniform float daylight; uniform vec3 tint; uniform vec3 skyTint; uniform vec3 sunDirection; varying vec3 worldPoint;
+      void main(){ vec3 view=normalize(cameraPosition-worldPoint);
+        vec2 pixel=fwidth(worldPoint.xz);
+        float waterDetail=detail*(1.0-smoothstep(.2,.65,max(pixel.x,pixel.y)));
+        vec2 cell=floor(worldPoint.xz*2.0)*.5;
+        float phase=cell.x*.72+cell.y*.45+time*.65;
+        vec3 rippleNormal=normalize(vec3(cos(phase)*.055*waterDetail,1.0,sin(cell.y*1.17-time*.5)*.045*waterDetail));
+        float fresnel=pow(1.0-clamp(abs(dot(view,rippleNormal)),0.0,1.0),3.0);
+        float wave=sin(phase)*sin(cell.y*1.2-time*.5);
+        float glint=pow(max(0.0,dot(reflect(-sunDirection,rippleNormal),view)),80.0)*waterDetail*daylight;
         vec3 reflection=mix(vec3(.69,.82,.88),vec3(.35,.61,.76),clamp(abs(view.y)*2.0,0.0,1.0));
         reflection=mix(skyTint*.8,reflection,daylight);
-        vec3 color=mix(tint*(.25+.55*daylight),reflection,fresnel*.68)+glint*vec3(.18,.25,.24)*(.25+.75*daylight);
+        vec3 color=mix(tint*(.25+.55*daylight)*(1.0+wave*.065*waterDetail),reflection,fresnel*.73)+glint*vec3(.42,.36,.23);
+        vec2 edge=min(fract(worldPoint.xz),1.0-fract(worldPoint.xz));
+        float foam=(1.0-smoothstep(.0,.025+max(pixel.x,pixel.y)*.35,min(edge.x,edge.y)))*pow(max(0.0,wave),12.0)*waterDetail;
+        color+=foam*vec3(.06,.10,.10)*daylight;
         gl_FragColor=vec4(color,.78+fresnel*.18);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -158,9 +168,17 @@ export class WaterSurface {
   theme(color: number) {
     this.material.uniforms.tint.value.setHex(color);
   }
-  atmosphere(day: number, sky: THREE.Color) {
+  atmosphere(
+    day: number,
+    sky: THREE.Color,
+    sun?: { x: number; y: number; z: number },
+  ) {
     this.material.uniforms.daylight.value = day;
     this.material.uniforms.skyTint.value.copy(sky);
+    if (sun)
+      this.material.uniforms.sunDirection.value
+        .set(sun.x, sun.y, sun.z)
+        .normalize();
   }
   update(time: number, detail: boolean) {
     this.material.uniforms.time.value = time;

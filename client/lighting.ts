@@ -15,8 +15,8 @@ export function shadowQuality(
 // Exposure and fill are matched to terrain albedo, including the bright snow biome.
 export function sceneLighting(kind: number, outbreak: boolean) {
   return outbreak
-    ? { exposure: 0.94, sun: 1.4, ambient: 0.65, bounce: 0.25 }
+    ? { exposure: 0.92, sun: 1.5, ambient: 0.62, bounce: 0.27 }
     : kind === 2
-      ? { exposure: 0.9, sun: 1.65, ambient: 0.75, bounce: 0.35 }
-      : { exposure: 0.98, sun: 1.9, ambient: 0.8, bounce: 0.45 };
+      ? { exposure: 0.88, sun: 1.6, ambient: 0.7, bounce: 0.32 }
+      : { exposure: 0.95, sun: 2.05, ambient: 0.7, bounce: 0.36 };
 }

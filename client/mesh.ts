@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { World, W, H, D, CHUNK, palette } from "../shared/game.js";
 import { faceOcclusion } from "./voxel-shading.js";
+import { voxelTexture } from "./voxel-texture.js";
 // Greedy merge adjacent coplanar faces with identical material; one mesh per column chunk.
 export function meshChunk(world: World, cx: number, cz: number) {
   const dims = [CHUNK, H, CHUNK],
@@ -8,6 +9,7 @@ export function meshChunk(world: World, cx: number, cz: number) {
     positions: number[] = [],
     normals: number[] = [],
     emissions: number[] = [],
+    surfaces: number[] = [],
     colors: number[] = [],
     indices: number[] = [];
   const color = new THREE.Color();
@@ -88,6 +90,7 @@ export function meshChunk(world: World, cx: number, cz: number) {
             const cornerShade = shade * (0.92 - occlusion * 0.1);
             positions.push(pt[0] + off[0], pt[1] + off[1], pt[2] + off[2]);
             emissions.push(block >= 22 && block <= 25 ? 0.85 : 0);
+            surfaces.push(block);
             const normal = [0, 0, 0];
             normal[axis] = m > 0 ? 1 : -1;
             normals.push(...normal);
@@ -134,10 +137,16 @@ export function meshChunk(world: World, cx: number, cz: number) {
     new THREE.Float32BufferAttribute(emissions, 1),
   );
   geometry.setIndex(indices);
+  geometry.setAttribute(
+    "surface",
+    new THREE.Float32BufferAttribute(surfaces, 1),
+  );
   geometry.computeBoundingSphere();
   return geometry;
 }
 export class Terrain {
+  readonly texture = voxelTexture();
+  readonly textureStrength = { value: 1 };
   group = new THREE.Group();
   chunks = new Map<string, THREE.Mesh>();
   dirty = new Set<string>();
@@ -150,15 +159,20 @@ export class Terrain {
   });
   constructor(public world: World) {
     this.material.onBeforeCompile = (shader) => {
+      shader.uniforms.voxelTexture = { value: this.texture };
+      shader.uniforms.voxelDetail = this.textureStrength;
+      shader.uniforms.soilTint = { value: new THREE.Color(palette[2]) };
+      shader.uniforms.grassTint = { value: new THREE.Color(palette[1]) };
+      shader.uniforms.grassAltTint = { value: new THREE.Color(palette[13]) };
       shader.vertexShader =
-        "attribute float emission; varying float voxelEmission; varying vec3 voxelPosition; varying vec3 voxelNormal;\n" +
+        "attribute float emission; attribute float surface; varying float voxelSurface; varying float voxelEmission; varying vec3 voxelPosition; varying vec3 voxelNormal;\n" +
         shader.vertexShader;
       shader.vertexShader = shader.vertexShader.replace(
         "#include <begin_vertex>",
-        "#include <begin_vertex>\nvoxelPosition = position - normal * 0.001; voxelNormal = normal; voxelEmission = emission;",
+        "#include <begin_vertex>\nvoxelPosition = position - normal * 0.001; voxelNormal = normal; voxelEmission = emission; voxelSurface = surface;",
       );
       shader.fragmentShader =
-        "varying float voxelEmission; varying vec3 voxelPosition; varying vec3 voxelNormal;\n" +
+        "uniform sampler2D voxelTexture; uniform float voxelDetail; uniform vec3 soilTint; uniform vec3 grassTint; uniform vec3 grassAltTint; varying float voxelSurface; varying float voxelEmission; varying vec3 voxelPosition; varying vec3 voxelNormal;\n" +
         shader.fragmentShader;
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <color_fragment>",
@@ -171,11 +185,29 @@ export class Terrain {
         vec3 pixel = fwidth(voxelPosition);
         float footprint = max(max(pixel.x,pixel.y),pixel.z);
         float detail = 1.0-smoothstep(.12,.6,footprint);
+        vec2 tilePoint = abs(voxelNormal.y)>.5 ? voxelPosition.xz : abs(voxelNormal.x)>.5 ? voxelPosition.zy : voxelPosition.xy;
+        float kind=floor(voxelSurface+.5);
+        float soil=0.0;
+        if ((kind==1.0 || kind==13.0) && abs(voxelNormal.y)<.5) {
+          soil=(1.0-smoothstep(.79,.90,f.y+grain*.045))*voxelDetail;
+          vec3 grassColor=kind==1.0?grassTint:grassAltTint;
+          diffuseColor.rgb *= mix(vec3(1.0),soilTint/max(grassColor,vec3(.01)),soil);
+          kind=mix(kind,2.0,step(.5,soil));
+        }
+        vec2 tile=vec2(mod(kind,4.0),floor(kind/4.0));
+        vec2 texel=(floor(fract(tilePoint)*16.0)+.5)/16.0;
+        float pattern=texture2D(voxelTexture,(tile+texel)/vec2(4.0,8.0)).r;
+        float textureFade=(1.0-smoothstep(.035,.2,footprint))*voxelDetail;
+        diffuseColor.rgb *= mix(1.0,.65+pattern*.70,textureFade);
         float seam = 1.0-smoothstep(0.015,0.055+footprint*.45,min(min(edge.x,edge.y),edge.z));
         float bevel = smoothstep(.035,.065,min(min(edge.x,edge.y),edge.z))*(1.0-smoothstep(.065,.1,min(min(edge.x,edge.y),edge.z)));
         // Screen derivatives fade fine edges at distance; no postprocess or extra faces.
         diffuseColor.rgb *= (1.0 + (grain-.5)*.13*detail) * (1.0-seam*.09*detail+bevel*.025*detail);
       `,
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <roughnessmap_fragment>",
+        "#include <roughnessmap_fragment>\nroughnessFactor=clamp(roughnessFactor*mix(1.0,.82+pattern*.35,textureFade),.72,1.0);",
       );
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <emissivemap_fragment>",

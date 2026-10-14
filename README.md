@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.15.1 — Muzzle Effects.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.16 — Lumen Fields.**
+
+**2.16:** original pixel material tiles repeat per voxel across merged terrain, with grass/soil edges, stone facets, timber grain, masonry, metal and snow detail. Characters and weapons gain subtle surface grain. Richer blue skies, layered cloud shading, warmer sunlight/cooler shade, restrained sun shafts, faceted reflective water and batched night-city lamp glows keep the cubic world readable. Graphics settings include **Terrain pixel detail** and **Sun rays**; the mobile preset disables rays and lamp glows. See [costs, verification and device-testing limits](docs/UPDATE-216.md). Refresh/rejoin to load this version.
 
 **2.15.1:** local cosmetic tracers now originate at the rendered weapon muzzle immediately, rather than replaying delayed server-eye tracers near a moving player. Casings originate at local/remote gun ejection ports, flashes align with barrel tips, and close-wall reverse tracers are suppressed. Hits, impacts, spread and damage remain server-authoritative. See [verification and limits](docs/MUZZLE-EFFECTS.md).
 

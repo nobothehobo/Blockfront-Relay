@@ -1,0 +1,9 @@
+# 2.21.1 — Packaged Effects
+
+Following continued missing-effects reports, live logs showed a Safari request for `/api/audio/chibi-ninja.mp3?v=221` returning 404, plus another failed hashed stylesheet request. Successful health/rooms requests and failing asset requests showed different server script versions. This establishes a live delivery mismatch for at least one music request, not proof of every individual effects failure or the cause of the routing behavior. Prior anonymous file checks did not reproduce that user's request path.
+
+The client now imports all 46 licensed PCM effects as eager inline assets. An injected local recording reader decodes those packaged bytes through the existing SampleBank, without HTTP requests to `/api/sfx/` or `/sfx/`. Gunshots, reloads, explosions, deaths, steps and burner jetpack effects therefore travel in the same content-hashed main JavaScript file as their cue mappings. Existing API routes remain for compatibility; no production routing credentials or platform settings are altered. Diagnostics identify `packaged-with-game` delivery.
+
+This trades a larger main download (approximately 1.46 MB gzipped, including effects) for self-contained recorded effects and removes their separate fetch/version failure path. All 46 embedded data payloads were hash-compared against source WAVs in the actual Vite production bundle. All 197 tests pass; TypeScript and the hosted build pass. The full embedded Worker is about 8.22 MB gzipped. Physical Safari listening remains unverified.
+
+Music is deliberately not swapped again in this patch. Research of The Naive Machine's original Ace of Spades soundtrack identifies electronic/future-beat/hip-hop/bass influences rather than pure chiptune. The original album is all rights reserved. Proposed licensed alternatives will be previewed with the user before another soundtrack change.

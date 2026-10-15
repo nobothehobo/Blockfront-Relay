@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.21 — Arcade Frequency.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.21.1 — Packaged Effects.**
+
+**2.21.1:** all 46 effects are embedded with the game code, so new clients do not depend on separate SFX requests reaching the same server build. See [delivery evidence and verification](docs/UPDATE-2211.md). Music is unchanged pending selection of a closer bass/beat-driven soundtrack.
 
 **2.21:** four brighter licensed Eric Skiff 8-bit tracks replace the dark soundtrack; stationary real burner recordings replace Doppler jet effects. Safari playback-session handling, short pre-match recording preparation, clearer audio state, repair control and a stronger gun/jet mix. See [changes and verification limits](docs/UPDATE-221.md).
 

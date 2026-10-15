@@ -55,6 +55,7 @@ import { spaceThrust } from "./hybrid-input.js";
 import type { RoomOptions } from "../server/room.js";
 import { Terrain } from "./mesh.js";
 import { Sound } from "./audio.js";
+import { packagedEffectsFetch } from "./packaged-effects.js";
 import { jetVoices, spatialVoice } from "./audio-mix.js";
 import { Sky } from "./sky.js";
 import { SunRays, raysEnabled } from "./sun-rays.js";
@@ -84,7 +85,7 @@ import { gearInfo } from "../shared/gear.js";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const show = (id: string, on = true) => $(id).classList.toggle("hidden", !on);
-const sound = new Sound();
+const sound = new Sound(packagedEffectsFetch, "packaged-with-game");
 const music = new Music();
 const touch =
   matchMedia("(pointer:coarse)").matches || navigator.maxTouchPoints > 0;
@@ -2431,7 +2432,7 @@ $("toggle-stats").onclick = () => {
 $("copy-diagnostics").onclick = async () => {
   try {
     await navigator.clipboard.writeText(
-      `Blockfront Relay 2.21.0\n${$("connection-details").textContent}\nAudio: ${JSON.stringify(sound.diagnostics)}\nMusic: ${JSON.stringify(music.diagnostics)}`,
+      `Blockfront Relay 2.21.1\n${$("connection-details").textContent}\nAudio: ${JSON.stringify(sound.diagnostics)}\nMusic: ${JSON.stringify(music.diagnostics)}`,
     );
     $("diagnostic-status").textContent =
       "Report copied—paste it when reporting stutter or lag.";

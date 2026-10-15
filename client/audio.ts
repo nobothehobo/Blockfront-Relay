@@ -20,7 +20,7 @@ export class Sound {
   private sampleVolumes = new Map<AudioScheduledSourceNode, number>();
   private engines = new Map<string, Engine>();
   private starts = 0;
-  private readonly samples = new SampleBank();
+  private readonly samples: SampleBank;
   private sampleVariant = 0;
   private recordedStarts = 0;
   private fallbackStarts = 0;
@@ -28,6 +28,12 @@ export class Sound {
   private echo: DelayNode | null = null;
   private session = "not-requested";
   private resumeError = "";
+  constructor(
+    fetchFile: typeof fetch = fetch,
+    private readonly delivery = "network",
+  ) {
+    this.samples = new SampleBank(fetchFile);
+  }
   unlock() {
     this.session = requestPlaybackSession(navigator as any);
     if (!this.ctx) {
@@ -550,6 +556,7 @@ export class Sound {
   get diagnostics() {
     return {
       state: this.ctx?.state ?? "locked",
+      delivery: this.delivery,
       session: this.session,
       resumeError: this.resumeError,
       engines: this.engines.size,

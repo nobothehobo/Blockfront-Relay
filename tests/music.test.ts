@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { Music, musicGain } from "../client/music.js";
 import { assetRange } from "../shared/asset-range.js";
 
@@ -174,5 +176,29 @@ test("menu and game playlists advance to their other credited tracks", async () 
   game.onended?.call(game, new Event("ended"));
   await Promise.resolve();
   assert.ok(game.src.includes("/api/audio/twilight-echo.mp3"));
+  menu.onended?.call(menu, new Event("ended"));
+  assert.ok(menu.src.includes("/api/audio/moonlit-skyline.mp3"));
+  game.onended?.call(game, new Event("ended"));
+  await Promise.resolve();
+  assert.ok(game.src.includes("/api/audio/motion-blur.mp3"));
+  menu.onended?.call(menu, new Event("ended"));
+  game.onended?.call(game, new Event("ended"));
+  assert.ok(menu.src.includes("/api/audio/neon.mp3"));
+  assert.ok(game.src.includes("/api/audio/machina.mp3"));
   h.music.update("game", true, false, false);
+});
+
+test("added synthwave cues retain source hashes and visible title/artist/license credits", async () => {
+  const rows = JSON.parse(
+    await readFile("assets/music/synthwave-manifest.json", "utf8"),
+  );
+  const html = await readFile("client/index.html", "utf8");
+  const credits = await readFile("client/public/music/ATTRIBUTION.txt", "utf8");
+  for (const row of rows) {
+    const bytes = await readFile(row.file);
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), row.sha256);
+    assert.equal(bytes.length, row.bytes);
+    assert.ok(html.includes(row.title) && html.includes(row.artist));
+    assert.ok(credits.includes(row.title) && credits.includes(row.licenseUrl));
+  }
 });

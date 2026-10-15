@@ -20,3 +20,22 @@ For gameplay videos, include the artist credit lines in the video description.
 Source: https://www.scottbuckley.com.au/library/electric-dreams/
 'Twilight Echo' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
 Source: https://www.scottbuckley.com.au/library/twilight-echo/
+
+## Additional synthwave tracks in 2.19
+
+"Motion Blur" by Nihilore — licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
+
+"Moonlit Skyline" by Nihilore — licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
+
+Artist and source catalog: https://www.nihilore.com/synthwave
+Artist license terms: https://www.nihilore.com/license
+License: https://creativecommons.org/licenses/by/4.0/
+
+| Track | Shipped file | Original download |
+| --- | --- | --- |
+| Motion Blur | motion-blur.mp3 | https://www.nihilore.com/s/Motion-Blur.mp3 |
+| Moonlit Skyline | moonlit-skyline.mp3 | https://www.nihilore.com/s/Moonlit-Skyline.mp3 |
+
+The artist categorizes both recordings in the official "Synthwave / Chillwave / Outrun" catalog and explicitly offers Creative Commons music for video games. The CC BY 4.0 license permits redistribution and adaptation, including commercial games, with attribution, a license link and identification of changes. The artist additionally requests that original track names not be changed or censored; the original names are preserved here and in the game. This use is under the free CC BY license, not the separate paid non-exclusive resale agreement. No endorsement is implied.
+
+Changes: each recording is excerpted as a 120-second game cue beginning 10 seconds into the original, with a 0.3-second fade in and a 2-second fade out, attenuated by 2 dB for headroom, and re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Runtime playback may fade or lower the music during combat. Embedded metadata retains the original title, artist, license and edit/source notice. Source and shipped-file SHA-256 hashes, filenames, download URLs and verification date are recorded in `assets/music/synthwave-manifest.json`. Official catalog and license were checked October 15, 2026. These licensed recordings are excluded from the game's MIT source-code license.

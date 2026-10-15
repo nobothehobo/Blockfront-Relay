@@ -1,4 +1,4 @@
-// Original procedural audio: no samples or assets from another game.
+// Licensed recorded effects with procedural fallback; see assets/sfx/ATTRIBUTION.md.
 import { JetVoice } from "./audio-mix.js";
 import { SampleBank, sampleCue, type StepSurface } from "./sampled-audio.js";
 type Engine = {
@@ -330,14 +330,18 @@ export class Sound {
       kind === "step" ? 0.97 + (this.sampleVariant % 3) * 0.03 : 1;
     const level =
       kind === "shot"
-        ? [0.45, 0.33, 0.6, 0.52][weapon]
-        : kind === "step"
-          ? 0.35
-          : kind === "death"
-            ? 0.5
-            : kind === "fall"
-              ? 0.22
-              : 0.26;
+        ? [0.45, 0.33, 0.6, 0.52, 0, 0, 0.5][weapon]
+        : kind === "explosion"
+          ? 0.7
+          : kind.startsWith("reload-") || kind === "action"
+            ? 0.32
+            : kind === "step"
+              ? 0.35
+              : kind === "death"
+                ? 0.5
+                : kind === "fall"
+                  ? 0.22
+                  : 0.26;
     gain.gain.value = volume * level;
     panner.pan.value = Math.max(-1, Math.min(1, pan));
     let filter: BiquadFilterNode | null = null;

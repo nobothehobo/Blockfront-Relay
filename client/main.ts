@@ -913,7 +913,15 @@ function updateAudioUi() {
               : "START MUSIC";
   if ($("music-toggle").textContent !== label)
     $("music-toggle").textContent = label;
-  const track = music.diagnostics.track.replaceAll("-", " ");
+  const trackNames: Record<string, string> = {
+    neon: "Neon · Scott Buckley",
+    "electric-dreams": "Electric Dreams · Scott Buckley",
+    machina: "Machina · Scott Buckley",
+    "twilight-echo": "Twilight Echo · Scott Buckley",
+    "moonlit-skyline": "Moonlit Skyline · Nihilore",
+    "motion-blur": "Motion Blur · Nihilore",
+  };
+  const track = trackNames[music.diagnostics.track];
   if ($("music-track").textContent !== track)
     $("music-track").textContent = track;
   const effects = sound.diagnostics.samples;
@@ -954,7 +962,8 @@ $("music-toggle").onclick = () => {
 };
 $("audio-test").onclick = () => {
   unlockMusic();
-  sound.play("pickup", 0.7);
+  const [cue, weapon] = $<HTMLSelectElement>("audio-preview").value.split(":");
+  sound.play(cue, 0.7, Number(weapon));
 };
 $("audio-retry").onclick = () => {
   unlockMusic();
@@ -2381,7 +2390,7 @@ $("toggle-stats").onclick = () => {
 $("copy-diagnostics").onclick = async () => {
   try {
     await navigator.clipboard.writeText(
-      `Blockfront Relay 2.18.0\n${$("connection-details").textContent}\nAudio: ${JSON.stringify(sound.diagnostics)}\nMusic: ${JSON.stringify(music.diagnostics)}`,
+      `Blockfront Relay 2.19.0\n${$("connection-details").textContent}\nAudio: ${JSON.stringify(sound.diagnostics)}\nMusic: ${JSON.stringify(music.diagnostics)}`,
     );
     $("diagnostic-status").textContent =
       "Report copied—paste it when reporting stutter or lag.";

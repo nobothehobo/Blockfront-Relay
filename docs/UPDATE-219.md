@@ -1,0 +1,11 @@
+# 2.19 — Night Operations
+
+Gunfire now uses new AK-47, PPSh, Benelli Nova and Savage .300 Blackout recording excerpts with fuller 1.25–1.75-second tails. Two variants per weapon replace the previous reports. Rifle/SMG/marksman magazine removal, seating and charging use staged recorded foley; shotgun shell loading and pump action, marksman bolt action and launcher reloads are also sampled. Existing accepted-state reload/action logic drives the cues and cancels future stages on death, switching, cancellation or hidden/pause state. Reload foley includes airsoft recordings; fictional launcher and explosion sounds adapt actual gas-cannon recordings. These distinctions and exact edits are documented, without claiming recordings of actual grenades or launchers.
+
+There are 46 recorded effects, including the retained footsteps, pickups, deaths and jets. All new effects use CC0. See [source-by-source credits and modifications](../assets/sfx/ATTRIBUTION.md). Required existing jetpack credit is preserved. Sound previews in Settings select each weapon family, magazine/shell/action or explosion. The cache version changes to 219 so clients fetch replacements.
+
+Two Nihilore synthwave tracks, Moonlit Skyline (menu) and Motion Blur (gameplay), expand the playlists to six total tracks. Nihilore uses CC BY 4.0 and requires original track names to be preserved. These are 120-second excerpts with fades and compression, identified in the credits, now-playing text, video-credit copy block and asset notices. See [music sources](../assets/music/ATTRIBUTION.md). Quiet volume/combat ducking and range-enabled native music delivery remain.
+
+Validation: 190 automated tests pass, along with TypeScript and the hosted build. Tests check each sample’s PCM format/provenance, actual sample-buffer routing for guns/reloads/launcher/explosions, load/retry containment, playlist wraparound and new music hashes/credits. The production Worker returns all 46 WAVs byte-for-byte and valid Range/HEAD responses for all six music cues. HTML has 127 unique IDs and no missing literal UI references. Embedded Worker gzip size is 9,744,739 bytes; main JS gzip 176.50 kB.
+
+Browser control is unavailable in this managed session; no browser listening, screenshots or physical iOS playback verification is claimed. Final subjective sound balance still needs device listening.

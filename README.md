@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.18 — Field Radio.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.19 — Night Operations.**
+
+**2.19:** fuller recorded gunfire, weapon-specific magazine/shell reload and pump/bolt handling, launcher and explosion effects, plus Nihilore synthwave tracks “Moonlit Skyline” and “Motion Blur” (CC BY 4.0). Settings has individual sound previews. See [release notes](docs/UPDATE-219.md) and source credits.
 
 **2.18:** 25 licensed recorded effects replace fallback gunfire, footsteps, pickups and death cues once loaded; jetpacks use an attributed jet-engine sample. Nearby players have material-aware spatial footsteps. The soundtrack now rotates four Scott Buckley tracks through menu/game playlists, with a Safari music-delivery fix, Start music / loading / retry feedback and Settings → Test sound / Retry sounds. Menu panels share the field-terminal style; close-body clipping and delayed NPC labels are corrected. See [changes and verification limits](docs/UPDATE-218.md) and [sound credits](assets/sfx/ATTRIBUTION.md). Refresh/rejoin for this update.
 

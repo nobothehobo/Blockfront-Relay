@@ -1,123 +1,131 @@
 [
   {
     "file": "rifle-1.wav",
-    "use": "rifle single shot",
-    "original": "Prepared SFX Library/AR-15/D_32P.wav",
-    "modifications": "Excerpt 0.690\u20131.490 sec; quiet preroll removed with 8 ms retained before shot; 2 ms onset/20 ms tail fades; reverberant tail retained; downmixed mono, resampled 32 kHz, normalized peak -1.1 dBFS, PCM16 WAV",
-    "duration": 0.7943,
-    "bytes": 50878,
+    "use": "rifle live firearm report",
+    "original": "Prepared SFX Library/AK-47/C_28P.wav",
+    "modifications": "Excerpt 0.604\u20132.004 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. New near-distance recording and fuller outdoor decay; distinct shot event for each variant; original sharp transient retained, no synthetic layers.",
+    "duration": 1.4,
+    "bytes": 89644,
     "archive": "Prepared SFX Library.7z",
     "title": "The Free Firearm Sound Library",
     "creator": "Ben Jaszczak, Brian Nelson, Kevin Heras, Matthew Nanney",
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://opengameart.org/content/the-free-firearm-sound-library",
-    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z"
+    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z",
+    "sha256": "8b660b8fb782d115bcfd138487eb282308a31863a61f454994035c2a8bf33175"
   },
   {
     "file": "rifle-2.wav",
-    "use": "rifle single shot",
-    "original": "Prepared SFX Library/AR-15/D_32P.wav",
-    "modifications": "Excerpt 5.580\u20136.380 sec; quiet preroll removed with 8 ms retained before shot; 2 ms onset/20 ms tail fades; reverberant tail retained; downmixed mono, resampled 32 kHz, normalized peak -1.1 dBFS, PCM16 WAV",
-    "duration": 0.7406,
-    "bytes": 47442,
+    "use": "rifle live firearm report",
+    "original": "Prepared SFX Library/AK-47/C_28P.wav",
+    "modifications": "Excerpt 3.244\u20134.644 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. New near-distance recording and fuller outdoor decay; distinct shot event for each variant; original sharp transient retained, no synthetic layers.",
+    "duration": 1.4,
+    "bytes": 89644,
     "archive": "Prepared SFX Library.7z",
     "title": "The Free Firearm Sound Library",
     "creator": "Ben Jaszczak, Brian Nelson, Kevin Heras, Matthew Nanney",
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://opengameart.org/content/the-free-firearm-sound-library",
-    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z"
+    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z",
+    "sha256": "f58d95ee791221dab3a61edc75d2594c290023ccbe4feaac143e29fc6bc12928"
   },
   {
     "file": "smg-1.wav",
-    "use": "smg single shot",
-    "original": "Prepared SFX Library/Carl Gustav M45/G_31P.wav",
-    "modifications": "Excerpt 0.290\u20130.990 sec; quiet preroll removed with 8 ms retained before shot; 2 ms onset/20 ms tail fades; reverberant tail retained; downmixed mono, resampled 32 kHz, normalized peak -1.1 dBFS, PCM16 WAV",
-    "duration": 0.6877,
-    "bytes": 44058,
+    "use": "smg live firearm report",
+    "original": "Prepared SFX Library/PPSh/P_30P.wav",
+    "modifications": "Excerpt 0.952\u20132.202 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. New near-distance recording and fuller outdoor decay; distinct shot event for each variant; original sharp transient retained, no synthetic layers.",
+    "duration": 1.25,
+    "bytes": 80044,
     "archive": "Prepared SFX Library.7z",
     "title": "The Free Firearm Sound Library",
     "creator": "Ben Jaszczak, Brian Nelson, Kevin Heras, Matthew Nanney",
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://opengameart.org/content/the-free-firearm-sound-library",
-    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z"
+    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z",
+    "sha256": "b034477bbd8e7c124ccdd7b03afb6ccc74cfae7d859097279b003836b3e8a31e"
   },
   {
     "file": "smg-2.wav",
-    "use": "smg single shot",
-    "original": "Prepared SFX Library/Carl Gustav M45/G_31P.wav",
-    "modifications": "Excerpt 3.490\u20134.190 sec; quiet preroll removed with 8 ms retained before shot; 2 ms onset/20 ms tail fades; reverberant tail retained; downmixed mono, resampled 32 kHz, normalized peak -1.1 dBFS, PCM16 WAV",
-    "duration": 0.6967,
-    "bytes": 44636,
+    "use": "smg live firearm report",
+    "original": "Prepared SFX Library/PPSh/P_30P.wav",
+    "modifications": "Excerpt 4.372\u20135.622 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. New near-distance recording and fuller outdoor decay; distinct shot event for each variant; original sharp transient retained, no synthetic layers.",
+    "duration": 1.25,
+    "bytes": 80044,
     "archive": "Prepared SFX Library.7z",
     "title": "The Free Firearm Sound Library",
     "creator": "Ben Jaszczak, Brian Nelson, Kevin Heras, Matthew Nanney",
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://opengameart.org/content/the-free-firearm-sound-library",
-    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z"
+    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z",
+    "sha256": "0e929bf81e08d95e4590be6ddc282dc94c2ed528d569be705658066ec291f4e2"
   },
   {
     "file": "shotgun-1.wav",
-    "use": "shotgun single shot",
-    "original": "Prepared SFX Library/Mossberg/N_30P.wav",
-    "modifications": "Excerpt 1.640\u20132.690 sec; quiet preroll removed with 8 ms retained before shot; 2 ms onset/20 ms tail fades; reverberant tail retained; downmixed mono, resampled 32 kHz, normalized peak -1.1 dBFS, PCM16 WAV",
-    "duration": 1.0012,
-    "bytes": 64120,
+    "use": "shotgun live firearm report",
+    "original": "Prepared SFX Library/Nova/O_21P.wav",
+    "modifications": "Excerpt 0.424\u20132.074 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. New near-distance recording and fuller outdoor decay; distinct shot event for each variant; original sharp transient retained, no synthetic layers.",
+    "duration": 1.65,
+    "bytes": 105644,
     "archive": "Prepared SFX Library.7z",
     "title": "The Free Firearm Sound Library",
     "creator": "Ben Jaszczak, Brian Nelson, Kevin Heras, Matthew Nanney",
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://opengameart.org/content/the-free-firearm-sound-library",
-    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z"
+    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z",
+    "sha256": "ce9ecf8ba5ddaea09a3b228fd70bbeb546d053184fa0ca928cba5f93a47360b0"
   },
   {
     "file": "shotgun-2.wav",
-    "use": "shotgun single shot",
-    "original": "Prepared SFX Library/Mossberg/N_30P.wav",
-    "modifications": "Excerpt 4.940\u20135.990 sec; quiet preroll removed with 8 ms retained before shot; 2 ms onset/20 ms tail fades; reverberant tail retained; downmixed mono, resampled 32 kHz, normalized peak -1.1 dBFS, PCM16 WAV",
-    "duration": 1.0367,
-    "bytes": 66394,
+    "use": "shotgun live firearm report",
+    "original": "Prepared SFX Library/Nova/O_21P.wav",
+    "modifications": "Excerpt 3.454\u20135.104 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. New near-distance recording and fuller outdoor decay; distinct shot event for each variant; original sharp transient retained, no synthetic layers.",
+    "duration": 1.65,
+    "bytes": 105644,
     "archive": "Prepared SFX Library.7z",
     "title": "The Free Firearm Sound Library",
     "creator": "Ben Jaszczak, Brian Nelson, Kevin Heras, Matthew Nanney",
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://opengameart.org/content/the-free-firearm-sound-library",
-    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z"
+    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z",
+    "sha256": "f4bbf75a01e84e36313ee8ff94c28ca49505a9aecf97ebf4ae155d3ea00cd1f0"
   },
   {
     "file": "marksman-1.wav",
-    "use": "marksman single shot",
-    "original": "Prepared SFX Library/Tikka/W_29P.wav",
-    "modifications": "Excerpt 0.540\u20131.640 sec; quiet preroll removed with 8 ms retained before shot; 2 ms onset/20 ms tail fades; reverberant tail retained; downmixed mono, resampled 32 kHz, normalized peak -1.1 dBFS, PCM16 WAV",
-    "duration": 1.0707,
-    "bytes": 68566,
+    "use": "marksman live firearm report",
+    "original": "Prepared SFX Library/Savage 10 .300 Blackout/T_27P.wav",
+    "modifications": "Excerpt 0.944\u20132.694 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. New near-distance recording and fuller outdoor decay; distinct shot event for each variant; original sharp transient retained, no synthetic layers.",
+    "duration": 1.75,
+    "bytes": 112044,
     "archive": "Prepared SFX Library.7z",
     "title": "The Free Firearm Sound Library",
     "creator": "Ben Jaszczak, Brian Nelson, Kevin Heras, Matthew Nanney",
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://opengameart.org/content/the-free-firearm-sound-library",
-    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z"
+    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z",
+    "sha256": "7ae5a1e8b9eef4e77438529132b0b06d55d876e2a748d57f2d9a0a9d95017324"
   },
   {
     "file": "marksman-2.wav",
-    "use": "marksman single shot",
-    "original": "Prepared SFX Library/Tikka/W_29P.wav",
-    "modifications": "Excerpt 5.640\u20136.740 sec; quiet preroll removed with 8 ms retained before shot; 2 ms onset/20 ms tail fades; reverberant tail retained; downmixed mono, resampled 32 kHz, normalized peak -1.1 dBFS, PCM16 WAV",
-    "duration": 1.0831,
-    "bytes": 69364,
+    "use": "marksman live firearm report",
+    "original": "Prepared SFX Library/Savage 10 .300 Blackout/T_27P.wav",
+    "modifications": "Excerpt 4.954\u20136.704 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. New near-distance recording and fuller outdoor decay; distinct shot event for each variant; original sharp transient retained, no synthetic layers.",
+    "duration": 1.75,
+    "bytes": 112044,
     "archive": "Prepared SFX Library.7z",
     "title": "The Free Firearm Sound Library",
     "creator": "Ben Jaszczak, Brian Nelson, Kevin Heras, Matthew Nanney",
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://opengameart.org/content/the-free-firearm-sound-library",
-    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z"
+    "downloadUrl": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z",
+    "sha256": "b487638e8dcc353a7efb47b104de1d87b2cf84029208bd7db812b34c2504bd77"
   },
   {
     "file": "step-grass-1.wav",
@@ -132,7 +140,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://kenney.nl/assets/impact-sounds",
-    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip"
+    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+    "sha256": "07fcc837d90b340de86d446aa736e34e829eb27ce481d2480958d13cb5fe116c"
   },
   {
     "file": "step-grass-2.wav",
@@ -147,7 +156,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://kenney.nl/assets/impact-sounds",
-    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip"
+    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+    "sha256": "62a56b34d9ff86d98a8251c95aa68c06338ae4bd15252bfb8c32e6f76be2ebd4"
   },
   {
     "file": "step-stone-1.wav",
@@ -162,7 +172,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://kenney.nl/assets/impact-sounds",
-    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip"
+    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+    "sha256": "afb8fd65f07fe95f590c133cbdc974e3cb640994bd9546d8b96d61d043a3016f"
   },
   {
     "file": "step-stone-2.wav",
@@ -177,7 +188,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://kenney.nl/assets/impact-sounds",
-    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip"
+    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+    "sha256": "3ef63bc76403a60df9d2c02a9f3198505952edd5721da805bd5ac1fcf0b04271"
   },
   {
     "file": "step-wood-1.wav",
@@ -192,7 +204,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://kenney.nl/assets/impact-sounds",
-    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip"
+    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+    "sha256": "382e66b0c2d68dd5fdb11d076705c03baa140a69807c2308e2adffb1f49a5ef4"
   },
   {
     "file": "step-wood-2.wav",
@@ -207,7 +220,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://kenney.nl/assets/impact-sounds",
-    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip"
+    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+    "sha256": "03caeda2d905dae743ab6e0bf98d7b67ad92f465b7e5810652b79257605f89d7"
   },
   {
     "file": "step-snow-1.wav",
@@ -222,7 +236,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://kenney.nl/assets/impact-sounds",
-    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip"
+    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+    "sha256": "b00df27658069448aaaf022504f82d2f7f978e3faf9fb33eed88bffd4f92be17"
   },
   {
     "file": "step-snow-2.wav",
@@ -237,7 +252,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://kenney.nl/assets/impact-sounds",
-    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip"
+    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+    "sha256": "24d651e99eb3b4be5393b1ca9b689ace42c71208ba41ff8f2193b2120e7a05e8"
   },
   {
     "file": "pickup-1.wav",
@@ -252,7 +268,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://kenney.nl/assets/interface-sounds",
-    "downloadUrl": "https://kenney.nl/media/pages/assets/interface-sounds/fa43c1dd4d-1677589452/kenney_interface-sounds.zip"
+    "downloadUrl": "https://kenney.nl/media/pages/assets/interface-sounds/fa43c1dd4d-1677589452/kenney_interface-sounds.zip",
+    "sha256": "a33ab482fe9fbda3c47f73bd5b589307d1522ad70fda207c690943ffa76236be"
   },
   {
     "file": "death-1.wav",
@@ -267,7 +284,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://opengameart.org/content/hurt-death-sound-effect-for-character",
-    "downloadUrl": "https://opengameart.org/sites/default/files/death%20sound%20effect.zip"
+    "downloadUrl": "https://opengameart.org/sites/default/files/death%20sound%20effect.zip",
+    "sha256": "7d98d22f53a9df78b6af1547cc6d7b9dbdabe03d635820df5c30a856a6c1aab7"
   },
   {
     "file": "fall-1.wav",
@@ -282,7 +300,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://kenney.nl/assets/impact-sounds",
-    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip"
+    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+    "sha256": "69e03d7df86aa82e31f0ba2c1bbaba7edd0b3a6116e3a6c133c041beb7e0e578"
   },
   {
     "file": "pickup-2.wav",
@@ -297,7 +316,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://kenney.nl/assets/interface-sounds",
-    "downloadUrl": "https://kenney.nl/media/pages/assets/interface-sounds/fa43c1dd4d-1677589452/kenney_interface-sounds.zip"
+    "downloadUrl": "https://kenney.nl/media/pages/assets/interface-sounds/fa43c1dd4d-1677589452/kenney_interface-sounds.zip",
+    "sha256": "205610020cfdd02ad1127c4abc8681402838c057c5444d51ff5044310db406e3"
   },
   {
     "file": "death-2.wav",
@@ -312,7 +332,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://opengameart.org/content/hurt-death-sound-effect-for-character",
-    "downloadUrl": "https://opengameart.org/sites/default/files/death%20sound%20effect.zip"
+    "downloadUrl": "https://opengameart.org/sites/default/files/death%20sound%20effect.zip",
+    "sha256": "aa3384538c2a992cb3046607150c76379860f64513dde6f8eaca5915348e5bd9"
   },
   {
     "file": "fall-2.wav",
@@ -327,7 +348,8 @@
     "license": "CC0 1.0",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "sourcePage": "https://kenney.nl/assets/impact-sounds",
-    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip"
+    "downloadUrl": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+    "sha256": "e00db7d579d3bace1b661b873b689146fcf50e68cba3a223c18a3a25538080bb"
   },
   {
     "file": "jet-loop.wav",
@@ -342,7 +364,8 @@
     "license": "CC BY 3.0",
     "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
     "sourcePage": "https://opengameart.org/content/jet-engine-takeoff",
-    "downloadUrl": "https://opengameart.org/sites/default/files/engine_takeoff.wav"
+    "downloadUrl": "https://opengameart.org/sites/default/files/engine_takeoff.wav",
+    "sha256": "c690f51c981cac28a69ef62cf22fea5a3a1a24aa08d77206db7081fc9913a48a"
   },
   {
     "file": "jet-start.wav",
@@ -357,7 +380,8 @@
     "license": "CC BY 3.0",
     "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
     "sourcePage": "https://opengameart.org/content/jet-engine-takeoff",
-    "downloadUrl": "https://opengameart.org/sites/default/files/engine_takeoff.wav"
+    "downloadUrl": "https://opengameart.org/sites/default/files/engine_takeoff.wav",
+    "sha256": "ebd857c0420b2e1ad9e0508de4ef262531eccb258e6bb61a021d8f614ff5e55a"
   },
   {
     "file": "jet-stop.wav",
@@ -372,6 +396,343 @@
     "license": "CC BY 3.0",
     "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
     "sourcePage": "https://opengameart.org/content/jet-engine-takeoff",
-    "downloadUrl": "https://opengameart.org/sites/default/files/engine_takeoff.wav"
+    "downloadUrl": "https://opengameart.org/sites/default/files/engine_takeoff.wav",
+    "sha256": "939a0fe1463d538edadf1722105506af4c91e2ccd072c1bcb306c1f86a5e2c1b"
+  },
+  {
+    "file": "rifle-reload-open.wav",
+    "use": "rifle reload open",
+    "original": "assaultriflereload1_0.wav",
+    "modifications": "Excerpt 0.090\u20130.420 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded airsoft handling foley; excerpts adapted to fictional weapon reload phases, not claimed as recording of that firearm model.",
+    "duration": 0.33,
+    "bytes": 21164,
+    "archive": "(individual WAV downloads)",
+    "title": "Gun reload sounds",
+    "creator": "SpringySpringo",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/gun-reload-sounds",
+    "downloadUrl": "https://opengameart.org/sites/default/files/assaultriflereload1_0.wav",
+    "sha256": "75d23be79f0ac46ab19a1ca984f26f33556b4deab517a27a7aef4a66fdffb586"
+  },
+  {
+    "file": "rifle-reload-seat.wav",
+    "use": "rifle reload seat",
+    "original": "assaultriflereload1_0.wav",
+    "modifications": "Excerpt 1.000\u20131.160 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded airsoft handling foley; excerpts adapted to fictional weapon reload phases, not claimed as recording of that firearm model.",
+    "duration": 0.16,
+    "bytes": 10284,
+    "archive": "(individual WAV downloads)",
+    "title": "Gun reload sounds",
+    "creator": "SpringySpringo",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/gun-reload-sounds",
+    "downloadUrl": "https://opengameart.org/sites/default/files/assaultriflereload1_0.wav",
+    "sha256": "f48a979a51ff27344e7745136c30eb5ed86525372eec6378ca6e143145f1dc2f"
+  },
+  {
+    "file": "rifle-reload-close.wav",
+    "use": "rifle reload close",
+    "original": "assaultriflereload1_0.wav",
+    "modifications": "Excerpt 1.170\u20131.430 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded airsoft handling foley; excerpts adapted to fictional weapon reload phases, not claimed as recording of that firearm model.",
+    "duration": 0.26,
+    "bytes": 16684,
+    "archive": "(individual WAV downloads)",
+    "title": "Gun reload sounds",
+    "creator": "SpringySpringo",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/gun-reload-sounds",
+    "downloadUrl": "https://opengameart.org/sites/default/files/assaultriflereload1_0.wav",
+    "sha256": "a3e9663f139d844b2a5857c1fce2f13a1e902fc96d6788d2cb9ea7e3e9f15b22"
+  },
+  {
+    "file": "smg-reload-open.wav",
+    "use": "smg reload open",
+    "original": "gunreload1.wav",
+    "modifications": "Excerpt 0.000\u20130.300 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded airsoft handling foley; excerpts adapted to fictional weapon reload phases, not claimed as recording of that firearm model.",
+    "duration": 0.3,
+    "bytes": 19244,
+    "archive": "(individual WAV downloads)",
+    "title": "Gun reload sounds",
+    "creator": "SpringySpringo",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/gun-reload-sounds",
+    "downloadUrl": "https://opengameart.org/sites/default/files/gunreload1.wav",
+    "sha256": "8c266aba293d226fd28e9013b72de3038d7f31b29346532393499ec9241cf343"
+  },
+  {
+    "file": "smg-reload-seat.wav",
+    "use": "smg reload seat",
+    "original": "gunreload1.wav",
+    "modifications": "Excerpt 0.640\u20131.080 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded airsoft handling foley; excerpts adapted to fictional weapon reload phases, not claimed as recording of that firearm model.",
+    "duration": 0.44,
+    "bytes": 28204,
+    "archive": "(individual WAV downloads)",
+    "title": "Gun reload sounds",
+    "creator": "SpringySpringo",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/gun-reload-sounds",
+    "downloadUrl": "https://opengameart.org/sites/default/files/gunreload1.wav",
+    "sha256": "a25f36dec2ffda2b87706b607e2bb1486938554c3cb09329c811b049c47d30ad"
+  },
+  {
+    "file": "smg-reload-close.wav",
+    "use": "smg reload close",
+    "original": "gunreload1.wav",
+    "modifications": "Excerpt 1.250\u20131.460 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded airsoft handling foley; excerpts adapted to fictional weapon reload phases, not claimed as recording of that firearm model.",
+    "duration": 0.21,
+    "bytes": 13484,
+    "archive": "(individual WAV downloads)",
+    "title": "Gun reload sounds",
+    "creator": "SpringySpringo",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/gun-reload-sounds",
+    "downloadUrl": "https://opengameart.org/sites/default/files/gunreload1.wav",
+    "sha256": "58c919be1f34e434f73b0aa7b5ee3d2be934dcb589671bb49d79b6570061e13b"
+  },
+  {
+    "file": "marksman-reload-open.wav",
+    "use": "marksman reload open",
+    "original": "assaultriflereload1_0.wav",
+    "modifications": "Excerpt 0.110\u20130.400 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded airsoft handling foley; excerpts adapted to fictional weapon reload phases, not claimed as recording of that firearm model.",
+    "duration": 0.29,
+    "bytes": 18604,
+    "archive": "(individual WAV downloads)",
+    "title": "Gun reload sounds",
+    "creator": "SpringySpringo",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/gun-reload-sounds",
+    "downloadUrl": "https://opengameart.org/sites/default/files/assaultriflereload1_0.wav",
+    "sha256": "e203d3b4e02074bd605d4701964b2df3828cbb71c2ae4a0b22dad6833c25c7ca"
+  },
+  {
+    "file": "marksman-reload-close.wav",
+    "use": "marksman reload close",
+    "original": "shotguncock.wav",
+    "modifications": "Excerpt 0.170\u20130.400 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded airsoft handling foley; excerpts adapted to fictional weapon reload phases, not claimed as recording of that firearm model.",
+    "duration": 0.23,
+    "bytes": 14764,
+    "archive": "(individual WAV downloads)",
+    "title": "Gun reload sounds",
+    "creator": "SpringySpringo",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/gun-reload-sounds",
+    "downloadUrl": "https://opengameart.org/sites/default/files/shotguncock.wav",
+    "sha256": "a2bc08ca6bc7081831aef28710bb39652eb43dd7bdd163e97fd0f579f5d5d94f"
+  },
+  {
+    "file": "launcher-reload-open.wav",
+    "use": "launcher reload open",
+    "original": "shotguncock.wav",
+    "modifications": "Excerpt 0.015\u20130.170 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded airsoft handling foley; excerpts adapted to fictional weapon reload phases, not claimed as recording of that firearm model.",
+    "duration": 0.155,
+    "bytes": 9964,
+    "archive": "(individual WAV downloads)",
+    "title": "Gun reload sounds",
+    "creator": "SpringySpringo",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/gun-reload-sounds",
+    "downloadUrl": "https://opengameart.org/sites/default/files/shotguncock.wav",
+    "sha256": "b42a188162abfb4e67dcac74616200149e925832f5d344d3314ad50af80d09c4"
+  },
+  {
+    "file": "launcher-reload-close.wav",
+    "use": "launcher reload close",
+    "original": "shotguncock.wav",
+    "modifications": "Excerpt 0.170\u20130.400 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded airsoft handling foley; excerpts adapted to fictional weapon reload phases, not claimed as recording of that firearm model.",
+    "duration": 0.23,
+    "bytes": 14764,
+    "archive": "(individual WAV downloads)",
+    "title": "Gun reload sounds",
+    "creator": "SpringySpringo",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/gun-reload-sounds",
+    "downloadUrl": "https://opengameart.org/sites/default/files/shotguncock.wav",
+    "sha256": "a2bc08ca6bc7081831aef28710bb39652eb43dd7bdd163e97fd0f579f5d5d94f"
+  },
+  {
+    "file": "marksman-reload-seat.wav",
+    "use": "marksman reload seat",
+    "original": "clipload1.wav",
+    "modifications": "Excerpt 0.050\u20130.230 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded loading foley adapted to fictional weapon; not a model-specific live firearm recording.",
+    "duration": 0.18,
+    "bytes": 11564,
+    "archive": "(individual WAV downloads)",
+    "title": "Gun Reload Sound Effects",
+    "creator": "Brian MacIntosh (BMacZero)",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/gun-reload-sound-effects",
+    "downloadUrl": "https://opengameart.org/sites/default/files/clipload1.wav",
+    "sha256": "3f66b0070963f4cadbbe00c21263ae2e05532a896590edc19e1eb624a9ec655a"
+  },
+  {
+    "file": "launcher-reload-shell.wav",
+    "use": "launcher reload shell",
+    "original": "singlebullet1.wav",
+    "modifications": "Excerpt 0.080\u20130.270 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded loading foley adapted to fictional weapon; not a model-specific live firearm recording.",
+    "duration": 0.19,
+    "bytes": 12204,
+    "archive": "(individual WAV downloads)",
+    "title": "Gun Reload Sound Effects",
+    "creator": "Brian MacIntosh (BMacZero)",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/gun-reload-sound-effects",
+    "downloadUrl": "https://opengameart.org/sites/default/files/singlebullet1.wav",
+    "sha256": "659860fdd193aefdd337f7bd236e1f93903deac253c96cbdacd17b94b49a766c"
+  },
+  {
+    "file": "shotgun-reload-open.wav",
+    "use": "shotgun reload open",
+    "original": "ShotgunSounds/Shell in Chamber.mp3",
+    "modifications": "Excerpt 0.480\u20130.760 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded shell-loading / mechanical action foley. Marksman action adapts a shotgun rack as a fictional bolt cycle.",
+    "duration": 0.28,
+    "bytes": 17964,
+    "archive": "shotgunsounds.zip",
+    "title": "Shotgun Reload Sound effects",
+    "creator": "zer0_sol",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/shotgun-reload-sound-effects",
+    "downloadUrl": "https://opengameart.org/sites/default/files/shotgunsounds.zip",
+    "sha256": "500828fc9453cf4324d9f4eb764150164a15549eda67efaa32cc81f62a1eef1b"
+  },
+  {
+    "file": "shotgun-reload-shell.wav",
+    "use": "shotgun reload shell",
+    "original": "ShotgunSounds/Subsequent Shells.mp3",
+    "modifications": "Excerpt 0.650\u20130.980 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded shell-loading / mechanical action foley. Marksman action adapts a shotgun rack as a fictional bolt cycle.",
+    "duration": 0.33,
+    "bytes": 21164,
+    "archive": "shotgunsounds.zip",
+    "title": "Shotgun Reload Sound effects",
+    "creator": "zer0_sol",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/shotgun-reload-sound-effects",
+    "downloadUrl": "https://opengameart.org/sites/default/files/shotgunsounds.zip",
+    "sha256": "420f99638fa4a596426cf77929c5d7feeaa306f969852ae5182acf6fa7f10906"
+  },
+  {
+    "file": "shotgun-reload-close.wav",
+    "use": "shotgun reload close",
+    "original": "ShotgunSounds/Rack.mp3",
+    "modifications": "Excerpt 0.780\u20131.030 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded shell-loading / mechanical action foley. Marksman action adapts a shotgun rack as a fictional bolt cycle.",
+    "duration": 0.25,
+    "bytes": 16044,
+    "archive": "shotgunsounds.zip",
+    "title": "Shotgun Reload Sound effects",
+    "creator": "zer0_sol",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/shotgun-reload-sound-effects",
+    "downloadUrl": "https://opengameart.org/sites/default/files/shotgunsounds.zip",
+    "sha256": "fc47ff5585fb00f53b9fd764d1dea7a10506181ffd4855933ff968555e2d650a"
+  },
+  {
+    "file": "shotgun-action.wav",
+    "use": "shotgun action",
+    "original": "ShotgunSounds/Rack.mp3",
+    "modifications": "Excerpt 0.590\u20131.030 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded shell-loading / mechanical action foley. Marksman action adapts a shotgun rack as a fictional bolt cycle.",
+    "duration": 0.44,
+    "bytes": 28204,
+    "archive": "shotgunsounds.zip",
+    "title": "Shotgun Reload Sound effects",
+    "creator": "zer0_sol",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/shotgun-reload-sound-effects",
+    "downloadUrl": "https://opengameart.org/sites/default/files/shotgunsounds.zip",
+    "sha256": "659b0ac1f20fbb6a62130b78ede2572920893ef6ef28fa78d4308c86064f1416"
+  },
+  {
+    "file": "marksman-action.wav",
+    "use": "marksman action",
+    "original": "ShotgunSounds/Rack.mp3",
+    "modifications": "Excerpt 0.640\u20131.010 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Recorded shell-loading / mechanical action foley. Marksman action adapts a shotgun rack as a fictional bolt cycle.",
+    "duration": 0.37,
+    "bytes": 23724,
+    "archive": "shotgunsounds.zip",
+    "title": "Shotgun Reload Sound effects",
+    "creator": "zer0_sol",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://opengameart.org/content/shotgun-reload-sound-effects",
+    "downloadUrl": "https://opengameart.org/sites/default/files/shotgunsounds.zip",
+    "sha256": "0de22dabc2e33049edc77fe1f72b14352770273eab0580f85eda887f59eb0f1c"
+  },
+  {
+    "file": "launcher-1.wav",
+    "use": "blast launcher firing",
+    "original": "1808.wav",
+    "modifications": "Excerpt 0.000\u20130.240 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Real outdoor agricultural gas cannon at approx. 10 m; adapted as fictional launcher report. Not a grenade/launcher field recording; no synthesized layer.",
+    "duration": 0.24,
+    "bytes": 15404,
+    "archive": "1808.wav",
+    "title": "Explosion #2",
+    "creator": "Joseph SARDIN \u2014 BigSoundBank.com",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://bigsoundbank.com/explosion-2-s1808.html",
+    "downloadUrl": "https://bigsoundbank.com/download.php (POST id=1808, format=wav; supplied download form)",
+    "sha256": "03a536f9bd221866b93bb9333f5dbe6127a59cf7d6bcf572acf152abf50fc567"
+  },
+  {
+    "file": "launcher-2.wav",
+    "use": "blast launcher firing",
+    "original": "1808.wav",
+    "modifications": "Excerpt 0.000\u20130.285 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Real outdoor agricultural gas cannon at approx. 10 m; adapted as fictional launcher report. Not a grenade/launcher field recording; no synthesized layer.",
+    "duration": 0.285,
+    "bytes": 18284,
+    "archive": "1808.wav",
+    "title": "Explosion #2",
+    "creator": "Joseph SARDIN \u2014 BigSoundBank.com",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://bigsoundbank.com/explosion-2-s1808.html",
+    "downloadUrl": "https://bigsoundbank.com/download.php (POST id=1808, format=wav; supplied download form)",
+    "sha256": "6131847a3f9270fa4a6936bfa3df0b0975d59c3da436c1d74528b35a08e5082e"
+  },
+  {
+    "file": "explosion-1.wav",
+    "use": "near explosive detonation",
+    "original": "1808.wav",
+    "modifications": "Excerpt 0.000\u20130.325 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Actual outdoor agricultural gas-cannon blast; adapted explosive cue, not actual grenade recording; no synthesized layers.",
+    "duration": 0.3255,
+    "bytes": 20874,
+    "archive": "1808.wav",
+    "title": "Explosion #2",
+    "creator": "Joseph SARDIN \u2014 BigSoundBank.com",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://bigsoundbank.com/explosion-2-s1808.html",
+    "downloadUrl": "https://bigsoundbank.com/download.php (POST id=1808, format=wav; supplied download form)",
+    "sha256": "447bd7059eb13c7f048634d4cbcca7359712950b3fa38c230b8676e2d1b143a6"
+  },
+  {
+    "file": "explosion-2.wav",
+    "use": "explosive detonation variation",
+    "original": "1023.wav",
+    "modifications": "Excerpt 0.020\u20131.920 sec; DC removal; 0.5 ms onset / 20 ms tail fade; mono 32 kHz, peak -1.1 dBFS, PCM16 WAV. Actual distant outdoor agricultural gas-cannon blast with natural reverberation; adapted explosive cue, not actual grenade recording; no synthesized layers.",
+    "duration": 1.9,
+    "bytes": 121644,
+    "archive": "1023.wav",
+    "title": "Explosion far Away #1",
+    "creator": "Joseph SARDIN \u2014 BigSoundBank.com",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sourcePage": "https://bigsoundbank.com/explosion-far-away-s1023.html",
+    "downloadUrl": "https://bigsoundbank.com/download.php (POST id=1023, format=wav; supplied download form)",
+    "sha256": "d58916df72006bd2529051bbfa6fd920801443d02ad5595c38d3b4b8f8aa65b5"
   }
 ]

@@ -13,6 +13,18 @@ export const SAMPLE_FILES = [
     "death",
     "fall",
   ].flatMap((kind) => [`${kind}-1`, `${kind}-2`]),
+  ...["rifle", "smg", "marksman"].flatMap((weapon) =>
+    ["open", "seat", "close"].map((stage) => `${weapon}-reload-${stage}`),
+  ),
+  ...["shotgun", "launcher"].flatMap((weapon) =>
+    ["open", "shell", "close"].map((stage) => `${weapon}-reload-${stage}`),
+  ),
+  "shotgun-action",
+  "marksman-action",
+  "launcher-1",
+  "launcher-2",
+  "explosion-1",
+  "explosion-2",
   "jet-start",
   "jet-loop",
   "jet-stop",
@@ -32,6 +44,26 @@ export function sampleCue(
   const alternate = Math.abs(variant % 2) + 1;
   if (kind === "shot" && weapon >= 0 && weapon <= 3)
     return `${["rifle", "smg", "shotgun", "marksman"][weapon]}-${alternate}`;
+  if (kind === "shot" && weapon === 6) return `launcher-${alternate}`;
+  if (kind === "explosion") return `explosion-${alternate}`;
+  const prefix = ["rifle", "smg", "shotgun", "marksman", "", "", "launcher"][
+    weapon
+  ];
+  if (
+    prefix &&
+    ["reload-open", "reload-seat", "reload-shell", "reload-close"].includes(
+      kind,
+    )
+  ) {
+    const stage =
+      (weapon === 2 || weapon === 6) && kind === "reload-seat"
+        ? "reload-shell"
+        : kind;
+    const cue = `${prefix}-${stage}`;
+    return SAMPLE_FILES.includes(cue) ? cue : null;
+  }
+  if (kind === "action" && (weapon === 2 || weapon === 3))
+    return `${prefix}-action`;
   if (kind === "step") return `step-${surface}-${alternate}`;
   if (["pickup", "death", "fall"].includes(kind)) return `${kind}-${alternate}`;
   if (["jet-start", "jet-loop", "jet-stop"].includes(kind)) return kind;
@@ -54,7 +86,7 @@ export class SampleBank {
         await Promise.allSettled(
           files.slice(offset, offset + 5).map(async (name) => {
             try {
-              const response = await this.fetchFile(`/sfx/${name}.wav?v=218`, {
+              const response = await this.fetchFile(`/sfx/${name}.wav?v=219`, {
                 signal: AbortSignal.timeout(12000),
               });
               if (!response.ok) throw Error("Sound asset unavailable");

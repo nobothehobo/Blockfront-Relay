@@ -17,3 +17,10 @@ Scott Buckley’s “Neon” (menu) and “Machina” (gameplay) are licensed un
 ## Field Radio (2.18)
 
 Recorded gunfire, material-specific footsteps (local and nearby players), pickups, local/nearby death grunts and body falls use a bounded 25-buffer sample bank. Decode/fetch failures preserve synthesized fallback effects and are visible in Settings. Jetpacks use dklon’s attributed takeoff sample, with ignition, a crossfaded thrust loop and shutdown. Continuous loops reuse four bounded engine voices. The sound graph preserves master/effects volume, spatial panning and cover muffling for gunshots. Both music playlists now rotate two distinct 150-second Scott Buckley cues. Safari music requests use `/api/audio/` to preserve native byte-range handling through the actual host. Credits are linked from both main and pause menus. Physical device listening remains necessary.
+
+
+## Night Operations (2.19)
+
+Weapon samples now include staged magazine removal/insertion/charging for rifle, SMG and marksman; shotgun opening/shell insertion/pump; and adapted launcher handling. The existing accepted-state ReloadCues drives these samples without delayed timers; cancelled/switched/dead/hidden reloads do not schedule future cues. Marksman bolt and shotgun pump sounds use existing post-shot action cues. Fuller shot reports retain recorded tails; launcher and explosions use adapted gas-cannon recordings rather than synthesized blasts. Handling includes recorded airsoft foley, identified in source credits. Settings sound previews select each weapon family or explosion.
+
+Six soundtrack cues now rotate, including Nihilore’s Moonlit Skyline in menus and Motion Blur in matches (CC BY 4.0, original track names preserved). These are 120-second edited synthwave excerpts, not full songs. Source/license/edit links appear in the game and shipped credit files. Samples use v=219 cache keys; music keeps the range-enabled API path. Physical listening remains unverified.

@@ -31,7 +31,19 @@ test("every recorded cue maps to a valid shipped PCM file and individual source/
       assert.ok(
         SAMPLE_FILES.includes(sampleCue("shot", weapon, "stone", variant)!),
       );
-  assert.equal(sampleCue("shot", 6, "stone", 0), null);
+  assert.equal(sampleCue("shot", 6, "stone", 0), "launcher-1");
+  for (const weapon of [0, 1, 2, 3, 6]) {
+    for (const kind of [
+      "reload-open",
+      weapon === 2 || weapon === 6 ? "reload-shell" : "reload-seat",
+      "reload-close",
+    ]) {
+      assert.ok(SAMPLE_FILES.includes(sampleCue(kind, weapon, "stone", 0)!));
+    }
+  }
+  assert.equal(sampleCue("explosion", 0, "stone", 1), "explosion-2");
+  assert.equal(sampleCue("action", 2, "stone", 0), "shotgun-action");
+  assert.equal(sampleCue("action", 3, "stone", 0), "marksman-action");
   assert.equal(footSurface(14), "snow");
   assert.equal(footSurface(4), "wood");
 });
@@ -51,14 +63,14 @@ test("sound downloads reuse decoded buffers, contain failures, and retry only mi
   const pending = bank.load(context);
   assert.equal(bank.load(context), pending);
   await pending;
-  assert.equal(bank.status.ready, 24);
+  assert.equal(bank.status.ready, SAMPLE_FILES.length - 1);
   assert.equal(bank.status.failed, 1);
   await bank.load(context);
-  assert.equal(calls, 25);
+  assert.equal(calls, SAMPLE_FILES.length);
   fail = false;
   await bank.load(context, true);
-  assert.equal(calls, 26);
-  assert.equal(bank.status.ready, 25);
+  assert.equal(calls, SAMPLE_FILES.length + 1);
+  assert.equal(bank.status.ready, SAMPLE_FILES.length);
   assert.equal(bank.status.failed, 0);
 });
 
@@ -120,6 +132,16 @@ test("live sound graph uses recorded gun/footstep/death buffers and one reused s
   assert.ok(sources[0].buffer.name.startsWith("rifle-"));
   assert.ok(sources[1].buffer.name.startsWith("step-snow-"));
   assert.ok(sources[2].buffer.name.startsWith("death-"));
+  for (const weapon of [0, 1, 2, 3, 6]) {
+    const cue = weapon === 2 || weapon === 6 ? "reload-shell" : "reload-seat";
+    sound.play(cue, 0.8, weapon);
+    assert.ok(sources.at(-1).buffer.name.includes(cue));
+    assert.ok(Number.isFinite(sources.at(-1).playbackRate.value));
+  }
+  sound.play("shot", 0.8, 6);
+  assert.ok(sources.at(-1).buffer.name.startsWith("launcher-"));
+  sound.play("explosion", 0.8);
+  assert.ok(sources.at(-1).buffer.name.startsWith("explosion-"));
   const voices = [{ id: "local", gain: 1, pan: 0, load: 0.8 }];
   for (let i = 0; i < 30; i++) sound.updateJets(voices);
   assert.equal(sources.filter((s) => s.loop).length, 1);

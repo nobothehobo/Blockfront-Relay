@@ -63,3 +63,6 @@ Remaining validation:
 There is no claim of measured 60 FPS on physical mobile hardware. Greedy chunks, distance culling and capped pixel ratios are implemented; real-device performance remains to be measured. Gamepad and custom desktop bindings are future work.
 
 The public test URL uses the hosted HTTP/SQL adapter. Controlled local tests of that adapter and the dedicated WebSocket server do not constitute verification of a live match across separate physical devices and internet connections.
+
+
+2.19: all 190 automated checks pass, TypeScript/hosted build pass. All 46 shipped PCM effects match their provenance and the built Worker serves exact bytes. Six music routes have valid Range and HEAD responses. Added reload/launcher/explosion graph routing, three-track playlist wraparound and Nihilore hashes/visible credit checks. Browser control is unavailable; subjective listening and physical iOS verification remain outstanding. See [release notes](UPDATE-219.md).

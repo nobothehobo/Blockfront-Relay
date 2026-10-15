@@ -1,0 +1,34 @@
+[
+  {
+    "title": "Motion Blur",
+    "artist": "Nihilore",
+    "file": "client/public/music/motion-blur.mp3",
+    "genre": "Synthwave / Chillwave / Outrun (official catalog)",
+    "sourcePage": "https://www.nihilore.com/synthwave",
+    "download": "https://www.nihilore.com/s/Motion-Blur.mp3",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "artistLicensePage": "https://www.nihilore.com/license",
+    "verifiedAt": "2026-10-15",
+    "modifications": "120-second excerpt starting 10 seconds into the source; 0.3-second fade in and 2-second fade out; attenuated by 2 dB for headroom; re-encoded stereo 64 kbps MP3 at 44.1 kHz. Original track title preserved.",
+    "originalSha256": "a79f4ffcf3be961d4dbf41d85c76433063d149f2264aad98d440255ff6ba5896",
+    "sha256": "bbfaf511594e22251daf9d3792b5469d69f358547cbd4444e252121013af684b",
+    "bytes": 960795
+  },
+  {
+    "title": "Moonlit Skyline",
+    "artist": "Nihilore",
+    "file": "client/public/music/moonlit-skyline.mp3",
+    "genre": "Synthwave / Chillwave / Outrun (official catalog)",
+    "sourcePage": "https://www.nihilore.com/synthwave",
+    "download": "https://www.nihilore.com/s/Moonlit-Skyline.mp3",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "artistLicensePage": "https://www.nihilore.com/license",
+    "verifiedAt": "2026-10-15",
+    "modifications": "120-second excerpt starting 10 seconds into the source; 0.3-second fade in and 2-second fade out; attenuated by 2 dB for headroom; re-encoded stereo 64 kbps MP3 at 44.1 kHz. Original track title preserved.",
+    "originalSha256": "9ad2078d1ed82b5382373b58048398feb47e210c050efaff742d86be821f6220",
+    "sha256": "2713711fcfb8ac8edf08c2d52c37a236e4877a9482e005c99228e6fd10f596c4",
+    "bytes": 960799
+  }
+]

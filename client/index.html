@@ -85,7 +85,7 @@
         </aside>
       </div>
       <footer class="menu-footer">
-        <span class="menu-version">2.18 · FIELD RADIO</span>
+        <span class="menu-version">2.19 · NIGHT OPERATIONS</span>
         <div class="menu-footer-actions">
           <button id="music-toggle" aria-pressed="true">MUSIC: ON</button
           ><span id="music-track" aria-live="polite"></span
@@ -169,6 +169,9 @@
 'Machina' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
 'Electric Dreams' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
 'Twilight Echo' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
+“Moonlit Skyline” and “Motion Blur” by Nihilore — CC BY 4.0 (edited excerpts/fades/compression)
+https://www.nihilore.com/synthwave
+https://www.nihilore.com/license
 https://creativecommons.org/licenses/by/4.0/
 Jet Engine Takeoff by dklon — CC BY 3.0 (edited/looped)
 https://opengameart.org/content/jet-engine-takeoff
@@ -211,6 +214,31 @@ https://creativecommons.org/licenses/by/3.0/</pre>
         Music uses edited 150-second game cues, compressed to 64 kbps stereo,
         with fades and playlist rotation.
       </p>
+      <h3>Synthwave · Nihilore</h3>
+      <p>
+        “Moonlit Skyline” (menu) and “Motion Blur” (in-game) by Nihilore —
+        <a
+          href="https://www.nihilore.com/synthwave"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Original tracks & downloads</a
+        >
+        ·
+        <a
+          href="https://www.nihilore.com/license"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Creator’s usage terms</a
+        >
+        ·
+        <a
+          href="https://creativecommons.org/licenses/by/4.0/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >CC BY 4.0</a
+        >. Edited 120-second excerpts with fades, compressed to 64 kbps stereo
+        for playlist playback. Nihilore retains ownership.
+      </p>
       <h3>Recorded sound effects</h3>
       <p>
         Gunfire: Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney —
@@ -221,6 +249,47 @@ https://creativecommons.org/licenses/by/3.0/</pre>
           >The Free Firearm Sound Library</a
         >
         (CC0).
+      </p>
+      <p>
+        Magazine and action foley: SpringySpringo —
+        <a
+          href="https://opengameart.org/content/gun-reload-sounds"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Gun reload sounds</a
+        >
+        (recorded airsoft handling); Brian MacIntosh (BMacZero) —
+        <a
+          href="https://opengameart.org/content/gun-reload-sound-effects"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Gun Reload Sound Effects</a
+        >; zer0_sol —
+        <a
+          href="https://opengameart.org/content/shotgun-reload-sound-effects"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Shotgun Reload Sound effects</a
+        >. All CC0. Edited excerpts, shortened to match reload stages; some
+        launcher and bolt handling adapted from these recordings.
+      </p>
+      <p>
+        Launcher and explosions: Joseph SARDIN / BigSoundBank.com —
+        <a
+          href="https://bigsoundbank.com/explosion-far-away-s1023.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Explosion far Away</a
+        >
+        /
+        <a
+          href="https://bigsoundbank.com/explosion-2-s1808.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Explosion #2</a
+        >
+        (CC0). Edited gas-cannon recordings adapted for fictional blasts; not
+        recordings of grenades.
       </p>
       <p>
         Footsteps, pickups and fall impacts: Kenney —
@@ -348,6 +417,23 @@ https://creativecommons.org/licenses/by/3.0/</pre>
       </div>
       <div id="settings-fields"></div>
       <div class="audio-check">
+        <label
+          >Sound preview
+          <select id="audio-preview">
+            <option value="pickup:0">Pickup</option>
+            <option value="shot:0">Rifle fire</option>
+            <option value="reload-seat:0">Rifle magazine</option>
+            <option value="shot:1">SMG fire</option>
+            <option value="reload-seat:1">SMG magazine</option>
+            <option value="shot:2">Shotgun fire</option>
+            <option value="reload-shell:2">Shotgun shell</option>
+            <option value="shot:3">Marksman fire</option>
+            <option value="action:3">Marksman bolt</option>
+            <option value="shot:6">Launcher fire</option>
+            <option value="reload-shell:6">Launcher reload</option>
+            <option value="explosion:0">Explosion</option>
+          </select></label
+        >
         <button id="audio-test">Test sound</button
         ><button id="audio-retry">Retry sounds</button>
       </div>

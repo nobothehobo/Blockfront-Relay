@@ -5,6 +5,17 @@ export const citySeed = (seed: number) => (seed >>> 0) % 12 === 11;
 export const CITY_LIGHTS = [48, 112, 208, 272].flatMap((x) =>
   [148, 172].map((z) => ({ x, y: 17, z })),
 );
+// One intact colored marquee voxel per facade; lighting follows voxel destruction.
+export const CITY_NEON_LIGHTS = [40, 88, 136, 184, 232, 280].flatMap((cx) =>
+  [48, 96, 128, 192, 224, 272].map((cz) => ({
+    x: cx - 2,
+    y: 20,
+    z: cz < 160 ? cz + 10 : cz - 10,
+    block: cz < 160 ? 22 : 23,
+    color: cz < 160 ? 0x24dfff : 0xff36b8,
+    facing: cz < 160 ? 1 : -1,
+  })),
+);
 // An original destructible street grid, not a reconstruction of a reference map.
 export function generateCity(blocks: Uint8Array, seed: number) {
   const set = (x: number, y: number, z: number, value: number) => {

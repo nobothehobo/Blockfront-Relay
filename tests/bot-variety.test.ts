@@ -156,3 +156,55 @@ test("objective squad distributes its strategic approach lanes on generated terr
     .filter((v) => v !== undefined);
   assert.ok(new Set(lanes).size >= 2, `approaches ${lanes}`);
 });
+
+test("solo enemies react later and miss more, without changing friendly or online bots", () => {
+  const sample = (practice: boolean, friendly = false) => {
+    const { room, human, bot } = setup();
+    room.options.practice = practice;
+    // Keep an enemy target available when testing an allied NPC.
+    if (friendly) {
+      human.team = bot.team;
+      const enemy = room.add("target", "Target", { send: () => {} }, true);
+      Object.assign(enemy, {
+        x: human.x,
+        y: human.y,
+        z: human.z,
+        team: 1 - bot.team,
+      });
+    }
+    let firstShot = Infinity,
+      hits = 0,
+      shots = 0;
+    for (let step = 0; step < 400; step++) {
+      room.time = step * 0.2;
+      const command = thinkBot(bot, room);
+      bot.yaw = command.yaw;
+      bot.input = command;
+      if (!command.fire) continue;
+      firstShot = Math.min(firstShot, room.time);
+      shots++;
+      if (
+        Number.isFinite(
+          rayBox(
+            eye(bot),
+            direction(command.yaw, command.pitch),
+            { x: human.x - 0.33, y: human.y, z: human.z - 0.33 },
+            { x: human.x + 0.33, y: human.y + 1.75, z: human.z + 0.33 },
+          ),
+        )
+      )
+        hits++;
+    }
+    return { firstShot, hits, shots };
+  };
+  const online = sample(false),
+    solo = sample(true);
+  assert.ok(solo.firstShot > online.firstShot);
+  assert.ok(solo.shots > 30, "solo enemies still engage");
+  assert.ok(solo.hits / solo.shots < online.hits / online.shots);
+  assert.deepEqual(
+    sample(true, true),
+    sample(false, true),
+    "allied aim is unchanged",
+  );
+});

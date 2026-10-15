@@ -101,7 +101,7 @@ test("hosted outdoor rooms preserve prior-release sessions and share the day/nig
   const stored = JSON.parse((row.get(room) as any).data);
   stored.format = 7;
   delete stored.terrainVersion;
-  stored.room.time = 180;
+  stored.room.time = 360;
   stored.clock = Date.now() - 100;
   Object.values(stored.sessions).forEach((s: any) => {
     s.seen = Date.now() - 100;

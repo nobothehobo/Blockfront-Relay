@@ -25,7 +25,11 @@ type Arena = {
   phase: string;
   world: World;
   players: Map<string, Player>;
-  options: { mode: string; arsenal?: "sandbox" | "specialists" };
+  options: {
+    mode: string;
+    arsenal?: "sandbox" | "specialists";
+    practice?: boolean;
+  };
   controlPoints?: Sector[];
   supplyStations?: SupplyStation[];
   flags: {
@@ -199,7 +203,15 @@ export function thinkBot(p: Player, arena: Arena): Input {
     }
   }
   const distance = target ? horizontal(target, p) : Infinity;
-  const ready = !!target && arena.time - brain.acquired > profile.reaction;
+  // Ease only enemies of the solo player, including when they engage friendly NPCs.
+  const soloEnemy =
+    arena.options.practice &&
+    !p.zombie &&
+    [...arena.players.values()].some((v) => !v.bot && v.team !== p.team);
+  const reaction = profile.reaction + (soloEnemy ? 0.22 : 0);
+  const tracking = profile.tracking + (soloEnemy ? 0.14 : 0);
+  const aimError = profile.error * (soloEnemy ? 1.35 : 1);
+  const ready = !!target && arena.time - brain.acquired > reaction;
   const primary = classPrimary(
     p.classId,
     arena.options.arsenal === "specialists",
@@ -454,7 +466,7 @@ export function thinkBot(p: Player, arena: Arena): Input {
     ) {
       brain.aimPoint = { ...eye(target) };
       brain.aimTarget = target.id;
-      brain.nextAim = arena.time + profile.tracking;
+      brain.nextAim = arena.time + tracking;
     }
     const tracked = p.zombie ? eye(target) : brain.aimPoint;
     aimYaw = Math.atan2(-(tracked.x - p.x), -(tracked.z - p.z));
@@ -471,13 +483,10 @@ export function thinkBot(p: Player, arena: Arena): Input {
       const bias = (profile.hash >>> 3) % 2 ? 1 : -1;
       aimYaw +=
         (bias * 0.55 + Math.sin(arena.time * 2.1 + profile.hash) * 0.65) *
-        profile.error *
+        aimError *
         stress;
       pitch +=
-        Math.cos(arena.time * 1.4 + profile.hash) *
-        profile.error *
-        0.55 *
-        stress;
+        Math.cos(arena.time * 1.4 + profile.hash) * aimError * 0.55 * stress;
     }
   }
   const tool =

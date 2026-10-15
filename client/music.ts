@@ -1,7 +1,19 @@
 export type MusicMode = "menu" | "game";
 export const MUSIC_PLAYLISTS = {
-  menu: ["edm-detection-mode", "cut-and-run", "exit-the-premises"],
-  game: ["exit-the-premises", "cut-and-run", "edm-detection-mode"],
+  menu: [
+    "moonlit-skyline",
+    "threads-of-rain",
+    "climbers-in-the-dark",
+    "bush-week",
+    "motion-blur",
+  ],
+  game: [
+    "motion-blur",
+    "climbers-in-the-dark",
+    "bush-week",
+    "threads-of-rain",
+    "moonlit-skyline",
+  ],
 } as const;
 export function musicGain(
   master: number,
@@ -47,7 +59,7 @@ export class Music {
   constructor(
     makeAudio = () => new Audio(),
     private readonly source = (track: string) =>
-      `/api/audio/${track}.mp3?v=223`,
+      `/api/audio/${track}.mp3?v=224`,
     private readonly delivery = "network",
   ) {
     this.voices = (["menu", "game"] as const).map((mode) => {

@@ -1,25 +1,28 @@
-# Electronic action soundtrack
+Darker synthwave soundtrack — Nihilore
 
-Music by Kevin MacLeod (incompetech.com).
-Source and licensing: https://incompetech.com/music/royalty-free/licenses/
-
-"Exit the Premises" Kevin MacLeod (incompetech.com)
-Licensed under Creative Commons: By Attribution 4.0
+Artist and source catalog: https://www.nihilore.com/synthwave
+Artist license terms: https://www.nihilore.com/license
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
 https://creativecommons.org/licenses/by/4.0/
-Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1500029
-Changes: 120-second excerpt from 0 seconds; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.2-second fade in and 2-second fade out; stereo 96 kbps MP3, 44.1 kHz. Runtime music may be faded and lowered during combat.
 
-"EDM Detection Mode" Kevin MacLeod (incompetech.com)
-Licensed under Creative Commons: By Attribution 4.0
-https://creativecommons.org/licenses/by/4.0/
-Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1500026
-Changes: 120-second excerpt from 120 seconds; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.2-second fade in and 2-second fade out; stereo 96 kbps MP3, 44.1 kHz. Runtime music may be faded and lowered during combat.
+"Motion Blur" by Nihilore — licensed under Creative Commons Attribution 4.0. https://www.nihilore.com/ | https://creativecommons.org/licenses/by/4.0/
+Source: https://www.nihilore.com/s/Motion-Blur.mp3
+Changes: 120-second excerpt beginning 10 seconds into the original; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.3-second fade in and 2-second fade out; stereo 96 kbps MP3 at 44.1 kHz. Runtime may fade and lower volume during combat.
 
-"Cut and Run" Kevin MacLeod (incompetech.com)
-Licensed under Creative Commons: By Attribution 4.0
-https://creativecommons.org/licenses/by/4.0/
-Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100851
-Changes: 120-second excerpt from 0 seconds; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.2-second fade in and 2-second fade out; stereo 96 kbps MP3, 44.1 kHz. Runtime music may be faded and lowered during combat.
+"Moonlit Skyline" by Nihilore — licensed under Creative Commons Attribution 4.0. https://www.nihilore.com/ | https://creativecommons.org/licenses/by/4.0/
+Source: https://www.nihilore.com/s/Moonlit-Skyline.mp3
+Changes: 120-second excerpt beginning 10 seconds into the original; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.3-second fade in and 2-second fade out; stereo 96 kbps MP3 at 44.1 kHz. Runtime may fade and lower volume during combat.
 
-These recordings remain CC BY 4.0 and are excluded from the game source code MIT license. No endorsement is implied.
-Source and shipped SHA-256 hashes are recorded in assets/music/action-manifest.json.
+"Climbers In The Dark" by Nihilore — licensed under Creative Commons Attribution 4.0. https://www.nihilore.com/ | https://creativecommons.org/licenses/by/4.0/
+Source: https://www.nihilore.com/s/Climbers-In-The-Dark-01.mp3
+Changes: 90-second excerpt beginning 10 seconds into the original; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.3-second fade in and 2-second fade out; stereo 96 kbps MP3 at 44.1 kHz. Runtime may fade and lower volume during combat.
+
+"Bush Week" by Nihilore — licensed under Creative Commons Attribution 4.0. https://www.nihilore.com/ | https://creativecommons.org/licenses/by/4.0/
+Source: https://www.nihilore.com/s/Bush-Week.mp3
+Changes: 90-second excerpt beginning 10 seconds into the original; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.3-second fade in and 2-second fade out; stereo 96 kbps MP3 at 44.1 kHz. Runtime may fade and lower volume during combat.
+
+"Threads of Rain" by Nihilore — licensed under Creative Commons Attribution 4.0. https://www.nihilore.com/ | https://creativecommons.org/licenses/by/4.0/
+Source: https://www.nihilore.com/s/Threads-of-Rain.mp3
+Changes: 90-second excerpt beginning 10 seconds into the original; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.3-second fade in and 2-second fade out; stereo 96 kbps MP3 at 44.1 kHz. Runtime may fade and lower volume during combat.
+
+These recordings remain CC BY 4.0 and are excluded from the game's MIT source-code license. No endorsement is implied. Original track names are preserved. Source and shipped hashes are recorded in assets/music/synthwave-manifest.json.

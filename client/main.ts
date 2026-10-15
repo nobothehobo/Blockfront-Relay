@@ -917,9 +917,11 @@ function updateAudioUi() {
   if ($("music-toggle").textContent !== label)
     $("music-toggle").textContent = label;
   const trackNames: Record<string, string> = {
-    "edm-detection-mode": "EDM Detection Mode · Kevin MacLeod",
-    "cut-and-run": "Cut and Run · Kevin MacLeod",
-    "exit-the-premises": "Exit the Premises · Kevin MacLeod",
+    "motion-blur": "Motion Blur · Nihilore",
+    "moonlit-skyline": "Moonlit Skyline · Nihilore",
+    "climbers-in-the-dark": "Climbers In The Dark · Nihilore",
+    "bush-week": "Bush Week · Nihilore",
+    "threads-of-rain": "Threads of Rain · Nihilore",
   };
   const track = trackNames[music.diagnostics.track];
   if ($("music-track").textContent !== track)
@@ -2430,7 +2432,7 @@ $("toggle-stats").onclick = () => {
 $("copy-diagnostics").onclick = async () => {
   try {
     await navigator.clipboard.writeText(
-      `Blockfront Relay 2.23.0\n${$("connection-details").textContent}\nAudio: ${JSON.stringify(sound.diagnostics)}\nMusic: ${JSON.stringify(music.diagnostics)}`,
+      `Blockfront Relay 2.24.0\n${$("connection-details").textContent}\nAudio: ${JSON.stringify(sound.diagnostics)}\nMusic: ${JSON.stringify(music.diagnostics)}`,
     );
     $("diagnostic-status").textContent =
       "Report copied—paste it when reporting stutter or lag.";

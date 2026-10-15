@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.23 — Afterglow.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.24 — Nightdrive.**
+
+**2.24:** darker Nihilore synthwave returns: Motion Blur and Moonlit Skyline, joined by Climbers In The Dark, Bush Week and Threads of Rain. Five-track menu/game rotation, original titles and complete CC BY 4.0 credits. See [release notes](docs/UPDATE-224.md).
 
 **2.23:** a twelve-minute outdoor day/night loop; stronger streetlamp and colored neon-sign illumination; fairer solo enemy aim and reactions. Electronic action tracks EDM Detection Mode, Cut and Run and Exit the Premises replace the funk-heavy rotation, with complete CC BY 4.0 credits. See [release notes](docs/UPDATE-223.md).
 

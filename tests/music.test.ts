@@ -185,9 +185,17 @@ test("approved action playlists advance and wrap around", async () => {
   h.music.update("game", true, false, false);
 });
 
-test("approved action cues retain source hashes and visible title/artist/license credits", async () => {
+test("active synthwave cues retain source hashes and visible title/artist/license credits", async () => {
   const rows = JSON.parse(
-    await readFile("assets/music/action-manifest.json", "utf8"),
+    await readFile("assets/music/synthwave-manifest.json", "utf8"),
+  );
+  assert.deepEqual(
+    new Set(Object.values(MUSIC_PLAYLISTS).flat()),
+    new Set(
+      rows.map((row: { file: string }) =>
+        row.file.split("/").at(-1)!.replace(".mp3", ""),
+      ),
+    ),
   );
   const html = await readFile("client/index.html", "utf8");
   const credits = await readFile("client/public/music/ATTRIBUTION.txt", "utf8");

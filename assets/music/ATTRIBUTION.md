@@ -1,4 +1,47 @@
-# Current soundtrack — electronic action
+# Current soundtrack — darker synthwave
+
+The active rotation is **Motion Blur**, **Moonlit Skyline**, **Climbers In The Dark**, **Bush Week**, and **Threads of Rain**, all by **Nihilore**. The two returning tracks were requested by the user; the other three appear in both the artist's [synthwave](https://www.nihilore.com/synthwave) and [dark mood](https://www.nihilore.com/dark) catalogs. This is a stylistic selection, not a claim of an exact match to another game's soundtrack.
+
+The artist's [license page](https://www.nihilore.com/license) offers the music under **CC BY 4.0**, permitting redistribution and adaptation with credit, a license link, and identification of edits. The artist also requests original track names remain unchanged; they are preserved in metadata and displayed credits. The separate paid resale license is not used. Verified October 15, 2026. All source recordings were downloaded via official catalog links; exact resolved URLs, source/output hashes, durations and edits are in `synthwave-manifest.json`.
+
+Both playlists rotate all five tracks. Menus begin with Moonlit Skyline; matches begin with Motion Blur. These recordings retain CC BY 4.0 and are excluded from the MIT source-code license. No endorsement is implied.
+
+## Credits and modifications
+
+Darker synthwave soundtrack — Nihilore
+
+Artist and source catalog: https://www.nihilore.com/synthwave
+Artist license terms: https://www.nihilore.com/license
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+"Motion Blur" by Nihilore — licensed under Creative Commons Attribution 4.0. https://www.nihilore.com/ | https://creativecommons.org/licenses/by/4.0/
+Source: https://www.nihilore.com/s/Motion-Blur.mp3
+Changes: 120-second excerpt beginning 10 seconds into the original; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.3-second fade in and 2-second fade out; stereo 96 kbps MP3 at 44.1 kHz. Runtime may fade and lower volume during combat.
+
+"Moonlit Skyline" by Nihilore — licensed under Creative Commons Attribution 4.0. https://www.nihilore.com/ | https://creativecommons.org/licenses/by/4.0/
+Source: https://www.nihilore.com/s/Moonlit-Skyline.mp3
+Changes: 120-second excerpt beginning 10 seconds into the original; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.3-second fade in and 2-second fade out; stereo 96 kbps MP3 at 44.1 kHz. Runtime may fade and lower volume during combat.
+
+"Climbers In The Dark" by Nihilore — licensed under Creative Commons Attribution 4.0. https://www.nihilore.com/ | https://creativecommons.org/licenses/by/4.0/
+Source: https://www.nihilore.com/s/Climbers-In-The-Dark-01.mp3
+Changes: 90-second excerpt beginning 10 seconds into the original; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.3-second fade in and 2-second fade out; stereo 96 kbps MP3 at 44.1 kHz. Runtime may fade and lower volume during combat.
+
+"Bush Week" by Nihilore — licensed under Creative Commons Attribution 4.0. https://www.nihilore.com/ | https://creativecommons.org/licenses/by/4.0/
+Source: https://www.nihilore.com/s/Bush-Week.mp3
+Changes: 90-second excerpt beginning 10 seconds into the original; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.3-second fade in and 2-second fade out; stereo 96 kbps MP3 at 44.1 kHz. Runtime may fade and lower volume during combat.
+
+"Threads of Rain" by Nihilore — licensed under Creative Commons Attribution 4.0. https://www.nihilore.com/ | https://creativecommons.org/licenses/by/4.0/
+Source: https://www.nihilore.com/s/Threads-of-Rain.mp3
+Changes: 90-second excerpt beginning 10 seconds into the original; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.3-second fade in and 2-second fade out; stereo 96 kbps MP3 at 44.1 kHz. Runtime may fade and lower volume during combat.
+
+These recordings remain CC BY 4.0 and are excluded from the game's MIT source-code license. No endorsement is implied. Original track names are preserved. Source and shipped hashes are recorded in assets/music/synthwave-manifest.json.
+
+## Historical soundtrack — previous releases only
+
+The following material describes older releases. Only the five tracks above are active.
+
+## Previous electronic action soundtrack
 
 The active playlists contain **EDM Detection Mode**, **Cut and Run**, and **Exit the Premises** by **Kevin MacLeod**, downloaded directly from the official Incompetech catalog. The [official license generator](https://incompetech.com/music/royalty-free/licenses/) offers these under **Creative Commons Attribution 4.0**, free with the generated credit. Checked October 15, 2026. Sharing and adaptation require attribution, a license link, and identification of changes. Recordings are excluded from the game source-code MIT license.
 

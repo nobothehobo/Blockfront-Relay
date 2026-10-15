@@ -85,9 +85,10 @@
         </aside>
       </div>
       <footer class="menu-footer">
-        <span class="menu-version">2.17 · FRONTLINE EDITION</span>
+        <span class="menu-version">2.18 · FIELD RADIO</span>
         <div class="menu-footer-actions">
           <button id="music-toggle" aria-pressed="true">MUSIC: ON</button
+          ><span id="music-track" aria-live="polite"></span
           ><button id="credits-open">MUSIC & CREDITS</button
           ><button id="connection-open">ABOUT & CONNECTION</button>
         </div>
@@ -166,10 +167,117 @@
         <pre id="music-credit-text">
 'Neon' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
 'Machina' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
-https://creativecommons.org/licenses/by/4.0/</pre>
+'Electric Dreams' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
+'Twilight Echo' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
+https://creativecommons.org/licenses/by/4.0/
+Jet Engine Takeoff by dklon — CC BY 3.0 (edited/looped)
+https://opengameart.org/content/jet-engine-takeoff
+https://creativecommons.org/licenses/by/3.0/</pre>
         <button id="copy-music-credits">Copy music credits</button>
         <p id="music-credit-status" role="status"></p>
       </details>
+      <h3>Additional soundtrack · Scott Buckley</h3>
+      <p>
+        'Electric Dreams' by Scott Buckley - released under CC-BY 4.0.
+        <a
+          href="https://www.scottbuckley.com.au/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >www.scottbuckley.com.au</a
+        ><br /><a
+          href="https://www.scottbuckley.com.au/library/electric-dreams/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Track & original download</a
+        >
+        · Main menu
+      </p>
+      <p>
+        'Twilight Echo' by Scott Buckley - released under CC-BY 4.0.
+        <a
+          href="https://www.scottbuckley.com.au/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >www.scottbuckley.com.au</a
+        ><br /><a
+          href="https://www.scottbuckley.com.au/library/twilight-echo/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Track & original download</a
+        >
+        · In-game
+      </p>
+      <p>
+        Music uses edited 150-second game cues, compressed to 64 kbps stereo,
+        with fades and playlist rotation.
+      </p>
+      <h3>Recorded sound effects</h3>
+      <p>
+        Gunfire: Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney —
+        <a
+          href="https://opengameart.org/content/the-free-firearm-sound-library"
+          target="_blank"
+          rel="noopener noreferrer"
+          >The Free Firearm Sound Library</a
+        >
+        (CC0).
+      </p>
+      <p>
+        Footsteps, pickups and fall impacts: Kenney —
+        <a
+          href="https://kenney.nl/assets/impact-sounds"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Impact Sounds</a
+        >
+        /
+        <a
+          href="https://kenney.nl/assets/interface-sounds"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Interface Sounds</a
+        >
+        (CC0).
+      </p>
+      <p>
+        Death grunts: Badre-Eddine —
+        <a
+          href="https://opengameart.org/content/hurt-death-sound-effect-for-character"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Hurt / Death sound effect for character</a
+        >
+        (CC0).
+      </p>
+      <p>
+        Jet Engine Takeoff by dklon —
+        <a
+          href="https://creativecommons.org/licenses/by/3.0/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >CC BY 3.0</a
+        >.
+        <a
+          href="https://opengameart.org/content/jet-engine-takeoff"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Original source</a
+        >. Edited, downmixed and resampled for jetpack ignition, a crossfaded
+        thrust loop and shutdown.
+      </p>
+      <p>
+        <a
+          href="https://creativecommons.org/publicdomain/zero/1.0/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >CC0 1.0</a
+        >
+        applies to the other effects. All effects are edited excerpts, downmixed
+        and resampled to mono 32 kHz PCM WAV.
+        <a href="/sfx/ATTRIBUTION.txt" target="_blank" rel="noopener noreferrer"
+          >Complete sound credits</a
+        >.
+      </p>
       <h3>Blockfront Relay</h3>
       <p>
         Original game code, voxel worlds, characters, equipment and synthesized
@@ -239,6 +347,11 @@ https://creativecommons.org/licenses/by/4.0/</pre>
         <button data-close="settings">Close</button>
       </div>
       <div id="settings-fields"></div>
+      <div class="audio-check">
+        <button id="audio-test">Test sound</button
+        ><button id="audio-retry">Retry sounds</button>
+      </div>
+      <p id="audio-status" role="status">Tap Test sound to enable audio.</p>
       <p>
         Preferences save on this device. The mobile preset uses light contact
         shadows; balanced and high add nearby sun shadows. High effects

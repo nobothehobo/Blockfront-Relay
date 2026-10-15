@@ -24,8 +24,9 @@ async function scan(dir) {
           ".webmanifest": "application/manifest+json",
           ".png": "image/png",
           ".mp3": "audio/mpeg",
+          ".wav": "audio/wav",
         }[path.extname(file)] ?? "text/plain";
-      const binary = [".png", ".mp3"].includes(path.extname(file));
+      const binary = [".png", ".mp3", ".wav"].includes(path.extname(file));
       assets[key] = {
         mime,
         body: await readFile(file, binary ? "base64" : "utf8"),

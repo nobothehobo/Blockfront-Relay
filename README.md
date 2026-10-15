@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.17 — Frontline Edition.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.18 — Field Radio.**
+
+**2.18:** 25 licensed recorded effects replace fallback gunfire, footsteps, pickups and death cues once loaded; jetpacks use an attributed jet-engine sample. Nearby players have material-aware spatial footsteps. The soundtrack now rotates four Scott Buckley tracks through menu/game playlists, with a Safari music-delivery fix, Start music / loading / retry feedback and Settings → Test sound / Retry sounds. Menu panels share the field-terminal style; close-body clipping and delayed NPC labels are corrected. See [changes and verification limits](docs/UPDATE-218.md) and [sound credits](assets/sfx/ATTRIBUTION.md). Refresh/rejoin for this update.
 
 **2.17:** a new original block-letter title logo, classic field-terminal main menu, live class-model preview, and quiet licensed synth music: “Neon” in menus and “Machina” during matches by Scott Buckley (CC BY 4.0). Music starts after a tap/key gesture, fades between states, ducks during combat and pauses in hidden tabs. Music has a separate volume and mute; credits and artist/license links are available from the main and pause menus. See [release notes](docs/UPDATE-217.md) and [music attribution](assets/music/ATTRIBUTION.md).
 
@@ -209,4 +211,4 @@ See [testing](docs/TESTING.md) for what has actually been verified and what need
 
 ## License and originality
 
-MIT for game code; the two soundtrack recordings retain their separate CC BY 4.0 licenses. Original map, UI, models, implementation and procedural sound effects. Three.js and the other packages retain their own licenses. No proprietary source, textures, maps, branding, models or sounds are incorporated. General voxel FPS mechanics are the inspiration.
+MIT for game code; the soundtrack recordings retain their separate CC BY 4.0 licenses. Original map, UI, models, implementation and procedural sound effects. Three.js and the other packages retain their own licenses. No proprietary source, textures, maps, branding, models or sounds are incorporated. General voxel FPS mechanics are the inspiration.

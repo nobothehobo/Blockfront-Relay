@@ -270,7 +270,7 @@ body.front-menu #vignette {
   font-size: 10px;
   line-height: 1.3;
 }
-body.front-menu .modal {
+.modal {
   background: #202a22fa;
   border: 2px solid #878d68;
   border-radius: 0;
@@ -278,21 +278,21 @@ body.front-menu .modal {
   box-shadow: 7px 7px 0 #10170dd9;
   color: #f0e7cf;
 }
-body.front-menu .modal p {
+.modal p {
   color: #c5cfb7;
 }
-body.front-menu .modal button {
+.modal button {
   background: #424e3d;
   border-radius: 0;
   color: #f0e7cf;
 }
-body.front-menu .modal input,
-body.front-menu .modal select {
+.modal input,
+.modal select {
   background: #151f18;
   border-radius: 0;
   border-color: #80856485;
 }
-body.front-menu .modal .primary {
+.modal .primary {
   background: #b4a367;
   color: #151e12;
 }
@@ -440,4 +440,53 @@ body.front-menu select:focus-visible {
   .menu-actions > button {
     transition: none;
   }
+}
+
+/* Match setup, classes, settings and pause share the field-terminal palette. */
+.modal {
+  font-family: "Arial Narrow", Arial, sans-serif;
+}
+.modal button:hover {
+  background: #626c4d;
+  border-color: #d6c581;
+}
+.modal .modal-head {
+  border-bottom: 1px solid #81896675;
+  padding-bottom: 12px;
+}
+.modal h2 {
+  color: #eee3be;
+  letter-spacing: 0.015em;
+}
+.modal input:focus-visible,
+.modal select:focus-visible,
+.modal button:focus-visible {
+  outline-color: #edce78;
+}
+#class-cards button {
+  background: #303c2c;
+  border-color: #7e89645c;
+}
+#class-cards button.selected {
+  background: #5b6543;
+  border-color: #e1c67a;
+  box-shadow: inset 0 0 0 1px #e1c67a;
+}
+#class-cards small {
+  color: #cbd1bc;
+}
+.audio-check {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+#audio-status {
+  font-size: 12px;
+}
+#music-track {
+  color: #c5c7ad;
+  font:
+    10px/1.2 Arial,
+    sans-serif;
 }

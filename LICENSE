@@ -24,3 +24,8 @@ Third-party music exception: client/public/music/neon.mp3 and
 client/public/music/machina.mp3 are recordings by Scott Buckley,
 licensed under Creative Commons Attribution 4.0 International, not MIT.
 See assets/music/ATTRIBUTION.md and https://creativecommons.org/licenses/by/4.0/.
+
+All client/public/music/*.mp3 recordings are by Scott Buckley under CC BY 4.0.
+Sound effect files retain their stated licenses: CC0 for firearms, footsteps,
+pickups, human grunts and fall impacts; CC BY 3.0 for dklon jet-engine derivatives.
+See assets/sfx/ATTRIBUTION.md for every source and file mapping.

@@ -9,9 +9,14 @@ Track/source: https://www.scottbuckley.com.au/library/machina/
 License: https://creativecommons.org/licenses/by/4.0/
 Artist usage policy: https://www.scottbuckley.com.au/library/using-this-music/
 
-Changes: compressed to 80 kbps stereo MP3 (44.1 kHz) for the game;
-looped, faded and volume-adjusted during playback. Full arrangements retained.
+Changes: edited to 150-second excerpts (starting at 10 seconds), 0.3-second onset / 2-second exit fades, compressed to 64 kbps stereo MP3 (44.1 kHz);
+looped, faded and volume-adjusted during playback. Playlist rotation during gameplay.
 The recordings retain their CC BY 4.0 licenses, separate from the game's MIT license.
 Scott Buckley retains ownership. No endorsement is implied.
 
 For gameplay videos, include the artist credit lines in the video description.
+
+'Electric Dreams' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
+Source: https://www.scottbuckley.com.au/library/electric-dreams/
+'Twilight Echo' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
+Source: https://www.scottbuckley.com.au/library/twilight-echo/

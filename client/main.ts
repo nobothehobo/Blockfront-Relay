@@ -20,6 +20,8 @@ import "./style.css";
 import "./front-menu.css";
 import { MenuScene } from "./menu-scene.js";
 import { Music } from "./music.js";
+import { footSurface } from "./sampled-audio.js";
+import { insideCharacter } from "./nearby-presentation.js";
 import {
   World,
   Player,
@@ -740,9 +742,7 @@ function applySettings() {
   sound.master = settings.master;
   sound.effects = settings.volume;
   music.configure(settings.master, settings.music, settings.musicEnabled);
-  $("music-toggle").textContent = settings.musicEnabled
-    ? "MUSIC: ON"
-    : "MUSIC: OFF";
+  updateAudioUi();
   $("music-toggle").setAttribute("aria-pressed", String(settings.musicEnabled));
   terrain.textureStrength.value = settings.textures ? 1 : 0;
   renderer.setPixelRatio(
@@ -896,7 +896,41 @@ function settingsUi() {
 applySettings();
 settingsUi();
 window.addEventListener("resize", applySettings);
-const unlockMusic = () => {
+let startingMusic = false;
+function updateAudioUi() {
+  const status = music.diagnostics.status;
+  const label =
+    status === "off"
+      ? "MUSIC: OFF"
+      : status === "muted"
+        ? "MUSIC: MUTED"
+        : status === "playing"
+          ? "MUSIC: ON"
+          : status === "loading"
+            ? "MUSIC: LOADING"
+            : status === "retry"
+              ? "MUSIC: RETRY"
+              : "START MUSIC";
+  if ($("music-toggle").textContent !== label)
+    $("music-toggle").textContent = label;
+  const track = music.diagnostics.track.replaceAll("-", " ");
+  if ($("music-track").textContent !== track)
+    $("music-track").textContent = track;
+  const effects = sound.diagnostics.samples;
+  const text =
+    sound.diagnostics.state === "locked"
+      ? "Tap Test sound to enable audio."
+      : effects.loading
+        ? "Loading recorded effects…"
+        : effects.failed
+          ? "Some sounds could not load. Tap Retry sounds."
+          : `Recorded effects ready: ${effects.ready}/${effects.total}.`;
+  if ($("audio-status").textContent !== text)
+    $("audio-status").textContent = text;
+}
+const unlockMusic = (event?: Event) => {
+  if ((event?.target as HTMLElement | null)?.closest?.("#music-toggle"))
+    startingMusic = music.diagnostics.status !== "playing";
   sound.unlock();
   if (sound.ctx) music.unlock(sound.ctx);
 };
@@ -904,7 +938,7 @@ document.addEventListener("pointerdown", unlockMusic, { capture: true });
 document.addEventListener(
   "keydown",
   (event) => {
-    if (!event.repeat) unlockMusic();
+    if (!event.repeat) unlockMusic(event);
   },
   { capture: true },
 );
@@ -912,10 +946,19 @@ document.addEventListener("visibilitychange", () =>
   music.update(connected ? "game" : "menu", document.hidden, false, paused),
 );
 $("music-toggle").onclick = () => {
-  settings.musicEnabled = !settings.musicEnabled;
+  settings.musicEnabled = startingMusic ? true : !settings.musicEnabled;
+  startingMusic = false;
   applySettings();
   settingsUi();
   unlockMusic();
+};
+$("audio-test").onclick = () => {
+  unlockMusic();
+  sound.play("pickup", 0.7);
+};
+$("audio-retry").onclick = () => {
+  unlockMusic();
+  void sound.reloadSamples();
 };
 let ws: WebSocket | null = null,
   rooms: any[] = [];
@@ -1197,6 +1240,8 @@ function handleState(next: any) {
     eliminated.label.style.display = "none";
     eliminatedAt = performance.now();
     deathAngle = eliminationCamera(world, p, p.yaw, 0).angle;
+    sound.play("death", 0.8);
+    sound.play("fall", 0.55);
     resetInput();
   } else if (p.dead <= 0 && eliminated) clearElimination();
   const reset = !local || firstState || predictionEpoch !== p.epoch;
@@ -1254,12 +1299,17 @@ function handleState(next: any) {
       r = makePlayer(rp);
       remote.set(rp.id, r);
     }
+    if (r.target.dead <= 0 && rp.dead > 0) {
+      playSpatial("death", rp, 0, 0.55, 20);
+      playSpatial("fall", rp, 0, 0.4, 20);
+    }
     // Never interpolate through a respawn or a round's spawn relocation.
     if (r.target.epoch !== rp.epoch) {
       r.samples.length = 0;
       r.group.userData.rig.phase = 0;
       r.group.userData.rig.leftLeg.rotation.x = 0;
       r.group.userData.rig.rightLeg.rotation.x = 0;
+      r.group.userData.stepDistance = 0;
     }
     r.target = rp;
     r.samples.push({ ...rp, at: next.time * 1000 });
@@ -2331,7 +2381,7 @@ $("toggle-stats").onclick = () => {
 $("copy-diagnostics").onclick = async () => {
   try {
     await navigator.clipboard.writeText(
-      `Blockfront Relay 2.17.0\n${$("connection-details").textContent}`,
+      `Blockfront Relay 2.18.0\n${$("connection-details").textContent}\nAudio: ${JSON.stringify(sound.diagnostics)}\nMusic: ${JSON.stringify(music.diagnostics)}`,
     );
     $("diagnostic-status").textContent =
       "Report copied—paste it when reporting stutter or lag.";
@@ -2791,7 +2841,20 @@ function frame(now: number) {
       Math.hypot(local.vx, local.vz) > 1 &&
       now - stepAt > 370
     ) {
-      sound.play("step", 0.3);
+      sound.play(
+        "step",
+        0.4,
+        0,
+        0,
+        false,
+        footSurface(
+          world.get(
+            Math.floor(local.x),
+            Math.floor(local.y - 0.05),
+            Math.floor(local.z),
+          ),
+        ),
+      );
       stepAt = now;
     }
     const hit = ray(world, ep, direction(yaw, pitch), 6);
@@ -2902,7 +2965,13 @@ function frame(now: number) {
         pose.lean,
         blend,
       );
+      r.group.userData.insideCamera = insideCharacter(
+        camera.position,
+        r.group.position,
+        !!r.group.userData.insideCamera,
+      );
       r.group.visible =
+        !r.group.userData.insideCamera &&
         r.target.dead <= 0 &&
         r.group.position.distanceTo(camera.position) < settings.distance;
       if (!r.target.zombie)
@@ -2918,35 +2987,34 @@ function frame(now: number) {
       }
       for (const flame of r.group.userData.flames ?? [])
         flame.visible = r.target.jetpack && a.fuel > b.fuel && r.target.vy > 0;
-      const pp = r.group.position
-        .clone()
-        .add(new THREE.Vector3(0, 2.2, 0))
-        .project(camera);
-      const distance = r.group.position.distanceTo(camera.position),
-        occluded =
-          distance >= 35 ||
-          ray(
-            world,
-            camera.position,
-            r.group.position
-              .clone()
-              .add(new THREE.Vector3(0, 1.5, 0))
-              .sub(camera.position)
-              .normalize(),
-            distance - 1,
+      if (
+        !paused &&
+        r.group.visible &&
+        r.target.ground &&
+        speed > 1 &&
+        r.group.position.distanceTo(camera.position) < 18
+      ) {
+        r.group.userData.stepDistance =
+          (r.group.userData.stepDistance ?? 0) + distanceMoved;
+        if (r.group.userData.stepDistance > 1.9) {
+          r.group.userData.stepDistance %= 1.9;
+          const surface = footSurface(
+            world.get(
+              Math.floor(r.group.position.x),
+              Math.floor(r.group.position.y - 0.05),
+              Math.floor(r.group.position.z),
+            ),
           );
-      r.label.style.display =
-        r.group.visible && pp.z < 1 && pp.z > -1 && distance < 35 && !occluded
-          ? "block"
-          : "none";
-      r.label.style.left = `${(pp.x * 0.5 + 0.5) * innerWidth}px`;
-      r.label.style.top = `${(-pp.y * 0.5 + 0.5) * innerHeight}px`;
-      r.label.style.transform = "translate(-50%,-100%)";
-      r.label.textContent =
-        r.target.name +
-        (r.target.bot
-          ? ` [NPC${r.target.team === local.team && r.target.npcRole ? ` · ${r.target.npcRole}` : ""}]`
-          : "");
+          const voice = spatialVoice(
+            camera.position,
+            r.group.position,
+            yaw,
+            18,
+            false,
+          );
+          sound.play("step", 0.3 * voice.gain, 0, voice.pan, false, surface);
+        }
+      }
     }
     for (let n = 0; n < 2; n++) {
       const f = state.flags[n];
@@ -2984,6 +3052,41 @@ function frame(now: number) {
     camera.position.x += Math.sin(now * 0.049) * shake;
     camera.position.y += Math.cos(now * 0.053) * shake;
   }
+  // Project labels only after the current frame's movement/FOV/shake matrices.
+  camera.updateMatrixWorld(true);
+  updateAudioUi();
+  if (connected && local)
+    for (const r of remote.values()) {
+      const pp = r.group.position
+        .clone()
+        .add(new THREE.Vector3(0, 2.2, 0))
+        .project(camera);
+      const distance = r.group.position.distanceTo(camera.position),
+        occluded =
+          distance >= 35 ||
+          ray(
+            world,
+            camera.position,
+            r.group.position
+              .clone()
+              .add(new THREE.Vector3(0, 1.5, 0))
+              .sub(camera.position)
+              .normalize(),
+            distance - 1,
+          );
+      r.label.style.display =
+        r.group.visible && pp.z < 1 && pp.z > -1 && distance < 35 && !occluded
+          ? "block"
+          : "none";
+      r.label.style.left = `${(pp.x * 0.5 + 0.5) * innerWidth}px`;
+      r.label.style.top = `${(-pp.y * 0.5 + 0.5) * innerHeight}px`;
+      r.label.style.transform = "translate(-50%,-100%)";
+      r.label.textContent =
+        r.target.name +
+        (r.target.bot
+          ? ` [NPC${r.target.team === local.team && r.target.npcRole ? ` · ${r.target.npcRole}` : ""}]`
+          : "");
+    }
   // Capture only after all camera offsets, including explosion shake, are set.
   if (localShotVisual) emitLocalShotFX();
   combatFX.update(now, dt);
@@ -3170,7 +3273,7 @@ setInterval(() => {
     };
   },
   get audio() {
-    return sound.diagnostics;
+    return { ...sound.diagnostics, music: music.diagnostics };
   },
   get construction() {
     return {

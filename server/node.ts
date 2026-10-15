@@ -62,6 +62,8 @@ const app = http.createServer(async (req, res) => {
     req.url ?? "/",
     `http://${req.headers.host ?? "localhost"}`,
   );
+  if (/^\/api\/audio\/[a-z-]+\.mp3$/.test(url.pathname))
+    url.pathname = "/music/" + url.pathname.slice("/api/audio/".length);
   const json = (status: number, o: unknown) => {
     res.writeHead(status, { "Content-Type": "application/json" });
     res.end(JSON.stringify(o));
@@ -166,6 +168,7 @@ const app = http.createServer(async (req, res) => {
       ".webmanifest": "application/manifest+json",
       ".png": "image/png",
       ".mp3": "audio/mpeg",
+      ".wav": "audio/wav",
     };
     const headers: Record<string, string> = {
       "Content-Type":

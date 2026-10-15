@@ -35,6 +35,7 @@ function harness() {
   });
   const context = {
     currentTime: 0,
+    state: "running",
     destination: {},
     createGain() {
       const index = gains.push(0) - 1;
@@ -156,4 +157,22 @@ test("invalid media ranges cannot produce negative or out-of-bounds slices", () 
     "items=0-1",
   ])
     assert.equal(assetRange(range, 100), "invalid");
+});
+
+test("menu and game playlists advance to their other credited tracks", async () => {
+  const h = harness();
+  h.music.unlock(h.context);
+  await Promise.resolve();
+  const menu = h.audio[0] as unknown as HTMLAudioElement;
+  menu.onended?.call(menu, new Event("ended"));
+  await Promise.resolve();
+  assert.ok(menu.src.includes("/api/audio/electric-dreams.mp3"));
+  assert.equal(h.music.diagnostics.track, "electric-dreams");
+  h.music.update("game", false, false, false);
+  await Promise.resolve();
+  const game = h.audio[1] as unknown as HTMLAudioElement;
+  game.onended?.call(game, new Event("ended"));
+  await Promise.resolve();
+  assert.ok(game.src.includes("/api/audio/twilight-echo.mp3"));
+  h.music.update("game", true, false, false);
 });

@@ -1,4 +1,8 @@
 export type MusicMode = "menu" | "game";
+export const MUSIC_PLAYLISTS = {
+  menu: ["neon", "electric-dreams"],
+  game: ["machina", "twilight-echo"],
+} as const;
 export function musicGain(
   master: number,
   volume: number,
@@ -23,6 +27,8 @@ type Voice = {
   target: number;
   pending: boolean;
   primed?: boolean;
+  index: number;
+  error?: string;
   stopTimer?: ReturnType<typeof setTimeout>;
 };
 
@@ -39,17 +45,27 @@ export class Music {
   private readonly voices: Voice[];
 
   constructor(makeAudio = () => new Audio()) {
-    this.voices = (
-      [
-        ["menu", "/music/neon.mp3"],
-        ["game", "/music/machina.mp3"],
-      ] as const
-    ).map(([mode, url]) => {
+    this.voices = (["menu", "game"] as const).map((mode) => {
       const audio = makeAudio();
       audio.preload = "none";
-      audio.loop = true;
-      audio.src = url;
-      return { mode, audio, gain: null, target: 0, pending: false };
+      audio.loop = false;
+      audio.src = `/api/audio/${MUSIC_PLAYLISTS[mode][0]}.mp3?v=218`;
+      const voice: Voice = {
+        mode,
+        audio,
+        gain: null,
+        target: 0,
+        pending: false,
+        index: 0,
+      };
+      audio.onended = () => {
+        voice.index = (voice.index + 1) % MUSIC_PLAYLISTS[mode].length;
+        audio.src = `/api/audio/${MUSIC_PLAYLISTS[mode][voice.index]}.mp3?v=218`;
+        voice.pending = false;
+        voice.error = undefined;
+        if (voice.target > 0) this.play(voice);
+      };
+      return voice;
     });
   }
 
@@ -108,6 +124,7 @@ export class Music {
   private play(voice: Voice) {
     if (!voice.audio.paused || voice.pending) return;
     voice.pending = true;
+    voice.error = undefined;
     void voice.audio
       .play()
       .then(() => {
@@ -115,9 +132,11 @@ export class Music {
         voice.primed = true;
         if (voice.target === 0) voice.audio.pause();
       })
-      .catch(() => {
+      .catch((error) => {
         // Autoplay denial or unavailable music must never prevent a match.
         voice.pending = false;
+        voice.error =
+          error instanceof Error ? error.name : "Playback unavailable";
       });
   }
 
@@ -159,5 +178,27 @@ export class Music {
         }, 1200);
       }
     }
+  }
+  get diagnostics() {
+    const voice = this.voices.find((v) => v.mode === this.mode)!;
+    const status = !this.enabled
+      ? "off"
+      : !this.master || !this.volume
+        ? "muted"
+        : !this.context || this.context.state !== "running"
+          ? "locked"
+          : voice.error
+            ? "retry"
+            : voice.pending
+              ? "loading"
+              : voice.audio.paused
+                ? "ready"
+                : "playing";
+    return {
+      status,
+      track: MUSIC_PLAYLISTS[this.mode][voice.index],
+      mode: this.mode,
+      error: voice.error ?? null,
+    };
   }
 }

@@ -1,8 +1,10 @@
 // Original procedural audio: no samples or assets from another game.
 import { JetVoice } from "./audio-mix.js";
+import { SampleBank, sampleCue, type StepSurface } from "./sampled-audio.js";
 type Engine = {
   noise: AudioBufferSourceNode;
-  tone: OscillatorNode;
+  tone: OscillatorNode | null;
+  sampled: boolean;
   filter: BiquadFilterNode;
   gain: GainNode;
   pan: StereoPannerNode;
@@ -16,6 +18,8 @@ export class Sound {
   private shots = new Set<AudioScheduledSourceNode>();
   private engines = new Map<string, Engine>();
   private starts = 0;
+  private readonly samples = new SampleBank();
+  private sampleVariant = 0;
   unlock() {
     if (!this.ctx) {
       const Context = window.AudioContext || (window as any).webkitAudioContext;
@@ -33,6 +37,7 @@ export class Sound {
     }
     void this.ctx!.resume().catch(() => {});
     this.syncVolume();
+    void this.samples.load(this.ctx!);
   }
   private syncVolume() {
     if (this.ctx && this.bus)
@@ -139,7 +144,14 @@ export class Sound {
     o.start(t);
     o.stop(t + duration);
   }
-  play(kind: string, volume = 1, weapon = 0, pan = 0, muffled = false) {
+  play(
+    kind: string,
+    volume = 1,
+    weapon = 0,
+    pan = 0,
+    muffled = false,
+    surface: StepSurface = "stone",
+  ) {
     if (
       !this.ctx ||
       this.ctx.state !== "running" ||
@@ -149,6 +161,7 @@ export class Sound {
       return;
     this.syncVolume();
     const v = Math.max(0, Math.min(1, volume));
+    if (this.playSample(kind, v, weapon, pan, muffled, surface)) return;
     if (kind === "shot") {
       const profiles = [
         { crack: 2600, body: 125, tail: 0.2, gain: 0.24 },
@@ -269,6 +282,10 @@ export class Sound {
       this.tone(v * 0.075, 0.5, 210, 65, "triangle");
       return;
     }
+    if (kind === "death" || kind === "fall") {
+      this.burst(v * 0.15, 0.2, 400, 0, false, pan);
+      return;
+    }
     const pitches: Record<string, number> = {
       hit: 750,
       kill: 1050,
@@ -292,6 +309,62 @@ export class Sound {
         0.09,
       );
   }
+  private playSample(
+    kind: string,
+    volume: number,
+    weapon: number,
+    pan: number,
+    muffled: boolean,
+    surface: StepSurface = "stone",
+  ) {
+    const name = sampleCue(kind, weapon, surface, this.sampleVariant++);
+    const buffer = name ? this.samples.buffers.get(name) : null;
+    if (!buffer || !this.ctx || !this.bus) return false;
+    if (this.shots.size >= 32) return true;
+    const c = this.ctx,
+      source = c.createBufferSource(),
+      gain = c.createGain(),
+      panner = c.createStereoPanner();
+    source.buffer = buffer;
+    source.playbackRate.value =
+      kind === "step" ? 0.97 + (this.sampleVariant % 3) * 0.03 : 1;
+    const level =
+      kind === "shot"
+        ? [0.45, 0.33, 0.6, 0.52][weapon]
+        : kind === "step"
+          ? 0.35
+          : kind === "death"
+            ? 0.5
+            : kind === "fall"
+              ? 0.22
+              : 0.26;
+    gain.gain.value = volume * level;
+    panner.pan.value = Math.max(-1, Math.min(1, pan));
+    let filter: BiquadFilterNode | null = null;
+    if (muffled) {
+      filter = c.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = 750;
+      source.connect(filter);
+      filter.connect(gain);
+    } else source.connect(gain);
+    gain.connect(panner);
+    panner.connect(this.bus);
+    this.shots.add(source);
+    source.onended = () => {
+      this.shots.delete(source);
+      source.disconnect();
+      filter?.disconnect();
+      gain.disconnect();
+      panner.disconnect();
+    };
+    source.start();
+    return true;
+  }
+  reloadSamples() {
+    if (this.ctx) return this.samples.load(this.ctx, true);
+    return Promise.resolve();
+  }
   updateJets(voices: JetVoice[]) {
     this.syncVolume();
     if (
@@ -309,58 +382,75 @@ export class Sound {
     for (const id of this.engines.keys()) if (!active.has(id)) this.stopJet(id);
     for (const v of voices.slice(0, 4)) {
       let e = this.engines.get(v.id);
+      const jetBuffer = this.samples.buffers.get("jet-loop");
+      if (e && jetBuffer && !e.sampled) {
+        this.stopJet(v.id, false);
+        e = undefined;
+      }
       if (!e) {
         const noise = c.createBufferSource(),
-          tone = c.createOscillator(),
+          tone = jetBuffer ? null : c.createOscillator(),
           filter = c.createBiquadFilter(),
           gain = c.createGain(),
           pan = c.createStereoPanner();
-        noise.buffer = this.noise(2);
+        noise.buffer = jetBuffer ?? this.noise(2);
         noise.loop = true;
         filter.type = "lowpass";
         filter.frequency.value = 850;
-        tone.type = "triangle";
-        tone.frequency.value = 78;
+        if (tone) {
+          tone.type = "triangle";
+          tone.frequency.value = 78;
+        }
         gain.gain.value = 0;
         noise.connect(filter);
-        tone.connect(filter);
+        tone?.connect(filter);
         filter.connect(gain);
         gain.connect(pan);
         pan.connect(this.bus!);
-        e = { noise, tone, filter, gain, pan };
+        e = { noise, tone, filter, gain, pan, sampled: !!jetBuffer };
         this.engines.set(v.id, e);
         this.starts++;
         noise.onended = () => {
           noise.disconnect();
-          tone.disconnect();
+          tone?.disconnect();
           filter.disconnect();
           gain.disconnect();
           pan.disconnect();
         };
         noise.start();
-        tone.start();
-        this.burst(0.055 * v.gain, 0.1, 1800, 0, false, v.pan);
-        this.tone(0.035 * v.gain, 0.14, 50, 95, "sine", 0, v.pan);
+        tone?.start();
+        if (!this.playSample("jet-start", 0.4 * v.gain, 0, v.pan, false)) {
+          this.burst(0.055 * v.gain, 0.1, 1800, 0, false, v.pan);
+          this.tone(0.035 * v.gain, 0.14, 50, 95, "sine", 0, v.pan);
+        }
       }
       e.gain.gain.setTargetAtTime(
-        0.15 * Math.max(0, Math.min(1, v.gain)),
+        (e.sampled ? 0.22 : 0.15) * Math.max(0, Math.min(1, v.gain)),
         t,
         0.045,
       );
       e.pan.pan.setTargetAtTime(Math.max(-1, Math.min(1, v.pan)), t, 0.06);
       e.filter.frequency.setTargetAtTime(
-        650 + Math.max(0, Math.min(1, v.load)) * 450,
+        e.sampled
+          ? 1500 + Math.max(0, Math.min(1, v.load)) * 2500
+          : 650 + Math.max(0, Math.min(1, v.load)) * 450,
         t,
         0.08,
       );
-      e.tone.frequency.setTargetAtTime(
+      if (e.sampled)
+        e.noise.playbackRate.setTargetAtTime(
+          0.92 + Math.max(0, Math.min(1, v.load)) * 0.16,
+          t,
+          0.08,
+        );
+      e.tone?.frequency.setTargetAtTime(
         70 + Math.max(0, Math.min(1, v.load)) * 25,
         t,
         0.08,
       );
     }
   }
-  private stopJet(id: string) {
+  private stopJet(id: string, emit = true) {
     const e = this.engines.get(id);
     if (!e || !this.ctx) return;
     const t = this.ctx.currentTime;
@@ -368,13 +458,14 @@ export class Sound {
     e.gain.gain.setTargetAtTime(0, t, 0.015);
     const end = this.ctx.state === "running" ? t + 0.08 : t;
     e.noise.stop(end);
-    e.tone.stop(end);
+    e.tone?.stop(end);
     this.engines.delete(id);
-    if (this.ctx.state === "running" && this.master && this.effects)
-      this.burst(0.025, 0.07, 350, 0, false, e.pan.pan.value);
+    if (emit && this.ctx.state === "running" && this.master && this.effects)
+      if (!this.playSample("jet-stop", 0.3, 0, e.pan.pan.value, false))
+        this.burst(0.025, 0.07, 350, 0, false, e.pan.pan.value);
   }
   stopJets() {
-    for (const id of this.engines.keys()) this.stopJet(id);
+    for (const id of this.engines.keys()) this.stopJet(id, false);
   }
   get diagnostics() {
     return {
@@ -383,6 +474,7 @@ export class Sound {
       starts: this.starts,
       voices: this.shots.size,
       cachedBuffers: this.noiseBuffers.size,
+      samples: this.samples.status,
     };
   }
 }

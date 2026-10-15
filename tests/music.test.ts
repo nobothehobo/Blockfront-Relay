@@ -161,7 +161,7 @@ test("invalid media ranges cannot produce negative or out-of-bounds slices", () 
     assert.equal(assetRange(range, 100), "invalid");
 });
 
-test("menu and game chiptune playlists advance and wrap around", async () => {
+test("approved action playlists advance and wrap around", async () => {
   const h = harness();
   h.music.unlock(h.context);
   await Promise.resolve();
@@ -170,12 +170,14 @@ test("menu and game chiptune playlists advance and wrap around", async () => {
     const element = h.audio[
       mode === "menu" ? 0 : 1
     ] as unknown as HTMLAudioElement;
-    for (let n = 1; n <= 4; n++) {
+    for (let n = 1; n <= MUSIC_PLAYLISTS[mode].length * 2; n++) {
       element.onended?.call(element, new Event("ended"));
       await Promise.resolve();
       assert.ok(
         element.src.includes(
-          "/api/audio/" + MUSIC_PLAYLISTS[mode][n % 2] + ".mp3",
+          "/api/audio/" +
+            MUSIC_PLAYLISTS[mode][n % MUSIC_PLAYLISTS[mode].length] +
+            ".mp3",
         ),
       );
     }
@@ -183,9 +185,9 @@ test("menu and game chiptune playlists advance and wrap around", async () => {
   h.music.update("game", true, false, false);
 });
 
-test("active chiptune cues retain source hashes and visible title/artist/license credits", async () => {
+test("approved action cues retain source hashes and visible title/artist/license credits", async () => {
   const rows = JSON.parse(
-    await readFile("assets/music/chiptune-manifest.json", "utf8"),
+    await readFile("assets/music/action-manifest.json", "utf8"),
   );
   const html = await readFile("client/index.html", "utf8");
   const credits = await readFile("client/public/music/ATTRIBUTION.txt", "utf8");

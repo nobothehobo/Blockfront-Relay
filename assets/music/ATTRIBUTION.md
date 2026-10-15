@@ -1,13 +1,93 @@
-# Current soundtrack — 8-bit action
+# Current soundtrack — electronic action
+
+The active playlists contain **EDM Detection Mode**, **Cut and Run**, and **Exit the Premises** by **Kevin MacLeod**, downloaded directly from the official Incompetech catalog. The [official license generator](https://incompetech.com/music/royalty-free/licenses/) offers these under **Creative Commons Attribution 4.0**, free with the generated credit. Checked October 15, 2026. Sharing and adaptation require attribution, a license link, and identification of changes. Recordings are excluded from the game source-code MIT license.
+
+Rocket Power is removed following the user's concern about its fit. District Four and Cipher also leave the active rotation to make room for a tighter electronic selection. Menus start with EDM Detection Mode's two-minute theme change; gameplay starts with Exit the Premises. Both playlists rotate all three tracks.
+
+The target is heavy electronic backbeats and bass with some game-like synths, informed by Naive Machine's [Ace of Spades soundtrack](https://thenaivemachine.bandcamp.com/album/ace-of-spades-game-soundtrack). No original soundtrack recordings are bundled. The musical match is a subjective judgment; these alternatives are not represented as identical or endorsed.
+
+## Required credits and edits
+
+Music by Kevin MacLeod (incompetech.com).
+Source and licensing: https://incompetech.com/music/royalty-free/licenses/
+
+"Exit the Premises" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0
+https://creativecommons.org/licenses/by/4.0/
+Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1500029
+Changes: 120-second excerpt from 0 seconds; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.2-second fade in and 2-second fade out; stereo 96 kbps MP3, 44.1 kHz. Runtime music may be faded and lowered during combat.
+
+"EDM Detection Mode" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0
+https://creativecommons.org/licenses/by/4.0/
+Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1500026
+Changes: 120-second excerpt from 120 seconds; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.2-second fade in and 2-second fade out; stereo 96 kbps MP3, 44.1 kHz. Runtime music may be faded and lowered during combat.
+
+"Cut and Run" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0
+https://creativecommons.org/licenses/by/4.0/
+Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100851
+Changes: 120-second excerpt from 0 seconds; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.2-second fade in and 2-second fade out; stereo 96 kbps MP3, 44.1 kHz. Runtime music may be faded and lowered during combat.
+
+These recordings remain CC BY 4.0 and are excluded from the game source code MIT license. No endorsement is implied.
+Source and shipped SHA-256 hashes are recorded in assets/music/action-manifest.json.
+
+## Historical soundtrack credits — previous releases only
+
+The material below describes earlier releases. Their tracks are no longer active.
+
+## Previous bass-driven soundtrack
+
+The active soundtrack uses **Rocket Power** and **Exit the Premises** by **Kevin MacLeod**, replacing the Eric Skiff chiptune playlist below. These are licensed alternatives selected for a bass-and-drums/electronic action direction, not recordings from the original Ace of Spades soundtrack. Musical similarity is a subjective selection, not a licensing assertion.
+
+Both official track pages provide **CC BY 4.0** credits. The artist's [FAQ](https://incompetech.com/music/royalty-free/faq.html) discusses visible game credits and permits editing. These recordings remain CC BY 4.0, are excluded from the game's MIT source-code license, and imply no endorsement. Sources were checked October 15, 2026.
+
+Additional active cues are **District Four** (ISRC USUAN1600039; bass/guitar/organ and large percussion) and **Cipher** (ISRC USUAN1100844; bright, grooving electronica), also Kevin MacLeod recordings under CC BY 4.0. Current official pages: https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1600039 and https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1100844. The official catalog at https://incompetech.com/music/royalty-free/pieces.json identifies Cipher's source filename as Cipher2.mp3.
+
+District Four and Cipher are each 90-second excerpts from the start of their originals, normalized using FFmpeg loudnorm (I=-18 LUFS, TP=-1.5 dBTP, LRA=9), given a 0.2-second fade in and 2-second fade out, and encoded as stereo 64 kbps MP3 at 44.1 kHz. These edits/encoding are Blockfront Relay adaptations; the original music is Kevin MacLeod's.
+
+## Current required artist credits
+
+Rocket Power Kevin MacLeod (incompetech.com)
+
+Licensed under Creative Commons: By Attribution 4.0
+
+https://creativecommons.org/licenses/by/4.0/
+
+Exit the Premises Kevin MacLeod (incompetech.com)
+
+Licensed under Creative Commons: By Attribution 4.0
+
+https://creativecommons.org/licenses/by/4.0/
+
+District Four Kevin MacLeod (incompetech.com)
+
+Licensed under Creative Commons: By Attribution 4.0
+
+https://creativecommons.org/licenses/by/4.0/
+
+Cipher Kevin MacLeod (incompetech.com)
+
+Licensed under Creative Commons: By Attribution 4.0
+
+https://creativecommons.org/licenses/by/4.0/
+
+Official sources for the first two tracks: https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1600038 and https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1500029.
+
+Changes for Rocket Power and Exit the Premises: each shipped recording is a 120-second excerpt, normalized and faded for the game, re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Runtime may fade, repeat or reduce volume. Kevin MacLeod created the original music; excerpting, normalization, fades and encoding are Blockfront Relay adaptations. Exact excerpt offsets and normalization/fade parameters were not retained in prior export metadata and are not asserted here.
+
+`action-manifest.json` records downloads, ISRCs, source/output SHA-256 hashes, byte sizes and modifications. Original MP3s were re-downloaded directly from incompetech.com to verify identity and hashes. Active credits ship at `/music/ATTRIBUTION.txt` and in main-menu/pause-menu credits. Video makers can copy the artist credits, source/license links and editing notice into their descriptions.
+
+## Historical soundtrack — 8-bit action (2.21–2.21.1)
 
 The active soundtrack replaces the dark synthwave playlists with four recordings by **Eric Skiff**. The artist's official [Resistor Anthems catalog](https://ericskiff.com/music/) labels them free 8-bit/chiptune music for games, videos and products and grants use under [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/), with credit and a link back. The source and license were checked October 15, 2026. This permits redistribution and editing in the browser game; the recordings remain CC BY 4.0 and are excluded from the game's MIT source-code license. No endorsement is implied.
 
-| Original title | Use | Shipped file | Cue length |
-| --- | --- | --- | --- |
-| A Night Of Dizzy Spells | menu | `music/a-night-of-dizzy-spells.mp3` | 112 seconds |
-| Underclocked (underunderclocked mix) | menu | `music/underclocked.mp3` | 120 seconds |
-| Chibi Ninja | gameplay | `music/chibi-ninja.mp3` | 120 seconds |
-| Jumpshot | gameplay | `music/jumpshot.mp3` | 120 seconds |
+| Original title                       | Use      | Shipped file                        | Cue length  |
+| ------------------------------------ | -------- | ----------------------------------- | ----------- |
+| A Night Of Dizzy Spells              | menu     | `music/a-night-of-dizzy-spells.mp3` | 112 seconds |
+| Underclocked (underunderclocked mix) | menu     | `music/underclocked.mp3`            | 120 seconds |
+| Chibi Ninja                          | gameplay | `music/chibi-ninja.mp3`             | 120 seconds |
+| Jumpshot                             | gameplay | `music/jumpshot.mp3`                | 120 seconds |
 
 ## Current required credit lines
 
@@ -23,7 +103,7 @@ Source: <https://ericskiff.com/music/>. License: <https://creativecommons.org/li
 
 ### Editing and provenance
 
-All cues begin at 0 seconds of the original. Each was loudness-normalized using FFmpeg loudnorm (I=-18 LUFS, TP=-1.5 dBTP, LRA=9), given a 0.2-second onset and 2-second exit fade, and re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Original song titles, artist and album metadata are retained; Jumpshot's original album tag is *Resistor Anthems II*. The credit lines above use the artist's requested site-wide catalog credit format. Runtime playback can fade, lower the level and rotate between tracks.
+All cues begin at 0 seconds of the original. Each was loudness-normalized using FFmpeg loudnorm (I=-18 LUFS, TP=-1.5 dBTP, LRA=9), given a 0.2-second onset and 2-second exit fade, and re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Original song titles, artist and album metadata are retained; Jumpshot's original album tag is _Resistor Anthems II_. The credit lines above use the artist's requested site-wide catalog credit format. Runtime playback can fade, lower the level and rotate between tracks.
 
 `chiptune-manifest.json` records exact official download URLs, original-master SHA-256 hashes, shipped-file hashes, byte sizes, credit lines and per-track modification notes. Source MP3s were downloaded directly from the official page, not a third-party "royalty-free" reupload. Shipped files total **3,778,604 bytes**. They contain non-silent decodable audio; subjective listening on target Safari devices is not part of source/license verification.
 
@@ -41,10 +121,10 @@ The following recordings are by Scott Buckley and retain their **Creative Common
 
 'Machina' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
 
-| Track | Use | Track page | Original download |
-| --- | --- | --- | --- |
-| Neon | Main menu | https://www.scottbuckley.com.au/library/neon/ | https://www.scottbuckley.com.au/library/wp-content/uploads/2019/09/sb_neon.mp3 |
-| Machina | In-game | https://www.scottbuckley.com.au/library/machina/ | https://www.scottbuckley.com.au/library/wp-content/uploads/2019/12/sb_machina.mp3 |
+| Track   | Use       | Track page                                       | Original download                                                                 |
+| ------- | --------- | ------------------------------------------------ | --------------------------------------------------------------------------------- |
+| Neon    | Main menu | https://www.scottbuckley.com.au/library/neon/    | https://www.scottbuckley.com.au/library/wp-content/uploads/2019/09/sb_neon.mp3    |
+| Machina | In-game   | https://www.scottbuckley.com.au/library/machina/ | https://www.scottbuckley.com.au/library/wp-content/uploads/2019/12/sb_machina.mp3 |
 
 The source recordings were downloaded from those official MP3 URLs. For 2.18, four tracks use edited 150-second cues from 10 seconds into each recording, with a 0.3-second onset and 2-second exit fade, encoded as 64 kbps stereo MP3 at 44.1 kHz. These excerpts support a compact two-song menu playlist and two-song gameplay playlist. Playback loops, fades, lowers volume during combat and parks inactive songs. These technical changes are identified in the game's Music & credits screen. Embedded file metadata retains track title, artist and license notice.
 
@@ -60,10 +140,10 @@ The user referenced “Nightfall” by Panda Beats via https://youtu.be/sNwB_tYP
 
 'Twilight Echo' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
 
-| Track | Use | Track page | Original download |
-| --- | --- | --- | --- |
+| Track           | Use       | Track page                                               | Original download                                                                        |
+| --------------- | --------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Electric Dreams | Main menu | https://www.scottbuckley.com.au/library/electric-dreams/ | https://www.scottbuckley.com.au/library/wp-content/uploads/2020/09/sb_electricdreams.mp3 |
-| Twilight Echo | In-game | https://www.scottbuckley.com.au/library/twilight-echo/ | https://www.scottbuckley.com.au/library/wp-content/uploads/2020/04/sb_twilightecho.mp3 |
+| Twilight Echo   | In-game   | https://www.scottbuckley.com.au/library/twilight-echo/   | https://www.scottbuckley.com.au/library/wp-content/uploads/2020/04/sb_twilightecho.mp3   |
 
 Track pages and license terms were verified on October 14, 2026. These recordings retain CC BY 4.0. The browser requests `/api/audio/<track>.mp3` so range/HEAD responses are generated by the Worker rather than bypassed by the hosting static-asset layer.
 
@@ -77,9 +157,9 @@ Artist and source catalog: https://www.nihilore.com/synthwave
 Artist license terms: https://www.nihilore.com/license
 License: https://creativecommons.org/licenses/by/4.0/
 
-| Track | Shipped file | Original download |
-| --- | --- | --- |
-| Motion Blur | motion-blur.mp3 | https://www.nihilore.com/s/Motion-Blur.mp3 |
+| Track           | Shipped file        | Original download                              |
+| --------------- | ------------------- | ---------------------------------------------- |
+| Motion Blur     | motion-blur.mp3     | https://www.nihilore.com/s/Motion-Blur.mp3     |
 | Moonlit Skyline | moonlit-skyline.mp3 | https://www.nihilore.com/s/Moonlit-Skyline.mp3 |
 
 The artist categorizes both recordings in the official "Synthwave / Chillwave / Outrun" catalog and explicitly offers Creative Commons music for video games. The CC BY 4.0 license permits redistribution and adaptation, including commercial games, with attribution, a license link and identification of changes. The artist additionally requests that original track names not be changed or censored; the original names are preserved here and in the game. This use is under the free CC BY license, not the separate paid non-exclusive resale agreement. No endorsement is implied.

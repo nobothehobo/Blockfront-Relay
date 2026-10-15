@@ -1,7 +1,7 @@
 export type MusicMode = "menu" | "game";
 export const MUSIC_PLAYLISTS = {
-  menu: ["a-night-of-dizzy-spells", "underclocked"],
-  game: ["chibi-ninja", "jumpshot"],
+  menu: ["edm-detection-mode", "cut-and-run", "exit-the-premises"],
+  game: ["exit-the-premises", "cut-and-run", "edm-detection-mode"],
 } as const;
 export function musicGain(
   master: number,
@@ -44,12 +44,17 @@ export class Music {
   private paused = false;
   private readonly voices: Voice[];
 
-  constructor(makeAudio = () => new Audio()) {
+  constructor(
+    makeAudio = () => new Audio(),
+    private readonly source = (track: string) =>
+      `/api/audio/${track}.mp3?v=223`,
+    private readonly delivery = "network",
+  ) {
     this.voices = (["menu", "game"] as const).map((mode) => {
       const audio = makeAudio();
       audio.preload = "none";
       audio.loop = false;
-      audio.src = `/api/audio/${MUSIC_PLAYLISTS[mode][0]}.mp3?v=221`;
+      audio.src = this.source(MUSIC_PLAYLISTS[mode][0]);
       const voice: Voice = {
         mode,
         audio,
@@ -60,7 +65,7 @@ export class Music {
       };
       audio.onended = () => {
         voice.index = (voice.index + 1) % MUSIC_PLAYLISTS[mode].length;
-        audio.src = `/api/audio/${MUSIC_PLAYLISTS[mode][voice.index]}.mp3?v=221`;
+        audio.src = this.source(MUSIC_PLAYLISTS[mode][voice.index]);
         voice.pending = false;
         voice.error = undefined;
         if (voice.target > 0) this.play(voice);
@@ -196,6 +201,7 @@ export class Music {
                 : "playing";
     return {
       status,
+      delivery: this.delivery,
       track: MUSIC_PLAYLISTS[this.mode][voice.index],
       mode: this.mode,
       error: voice.error ?? null,

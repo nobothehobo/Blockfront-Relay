@@ -13,6 +13,9 @@ async function scan(dir) {
     const file = path.join(dir, entry.name);
     if (entry.isDirectory()) await scan(file);
     else {
+      // Music is already inline in the hashed client bundle. Keep static MP3s
+      // in dist for downloads, but don't duplicate them inside the Worker.
+      if (path.extname(file) === ".mp3") continue;
       const key =
         "/" + path.relative("dist/client", file).replaceAll("\\", "/");
       const mime =

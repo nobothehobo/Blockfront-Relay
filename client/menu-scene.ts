@@ -7,6 +7,7 @@ import { classInfo } from "../shared/classes.js";
 export function poseMenuSoldier(actor: THREE.Group) {
   const rig = actor.userData.rig;
   const gun = actor.userData.gun as THREE.Mesh;
+  gun.scale.setScalar(1.3);
   const hand = new THREE.Vector3(0, -0.63, 0.02);
   const grip = new THREE.Vector3(0, -0.12, -0.07);
   const forwardGrip = new THREE.Vector3(0, -0.055, -0.31);
@@ -20,7 +21,9 @@ export function poseMenuSoldier(actor: THREE.Group) {
     new THREE.Euler(0.1, 1.7, 0),
   );
   gun.quaternion.copy(rig.rightArm.quaternion).invert().multiply(orientation);
-  gun.position.copy(hand).sub(grip.clone().applyQuaternion(gun.quaternion));
+  gun.position
+    .copy(hand)
+    .sub(grip.clone().multiply(gun.scale).applyQuaternion(gun.quaternion));
   actor.updateMatrixWorld(true);
   const support = actor.worldToLocal(gun.localToWorld(forwardGrip));
   const leftShoulder = rig.leftArm.position.clone().add(rig.torso.position);
@@ -86,7 +89,6 @@ export class MenuScene {
         classId,
         weapon: classInfo(classId).primary,
       });
-      this.actor.rotation.y = Math.PI + 0.28;
       this.actor.traverse((object) => {
         if (object instanceof THREE.Mesh)
           object.castShadow = object.receiveShadow = false;
@@ -105,8 +107,14 @@ export class MenuScene {
       -7,
     );
     this.group.scale.setScalar(halfHeight * 0.57);
+    if (this.actor) {
+      // Face the actual viewer from the display's off-axis screen position.
+      // A fixed yaw becomes a side/back view on wide phone landscapes.
+      this.actor.rotation.y =
+        Math.PI - Math.atan2(this.group.position.x, 7) + 0.12;
+    }
     if (this.actor && !this.reducedMotion) {
-      this.actor.rotation.y = Math.PI + 0.28 + Math.sin(now * 0.00025) * 0.075;
+      this.actor.rotation.y += Math.sin(now * 0.00025) * 0.035;
       this.actor.userData.rig.torso.rotation.x = Math.sin(now * 0.0012) * 0.008;
       this.actor.userData.rig.head.rotation.y = Math.sin(now * 0.00045) * 0.04;
     }

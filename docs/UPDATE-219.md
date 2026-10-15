@@ -9,3 +9,6 @@ Two Nihilore synthwave tracks, Moonlit Skyline (menu) and Motion Blur (gameplay)
 Validation: 190 automated tests pass, along with TypeScript and the hosted build. Tests check each sample’s PCM format/provenance, actual sample-buffer routing for guns/reloads/launcher/explosions, load/retry containment, playlist wraparound and new music hashes/credits. The production Worker returns all 46 WAVs byte-for-byte and valid Range/HEAD responses for all six music cues. HTML has 127 unique IDs and no missing literal UI references. Embedded Worker gzip size is 9,744,739 bytes; main JS gzip 176.50 kB.
 
 Browser control is unavailable in this managed session; no browser listening, screenshots or physical iOS playback verification is claimed. Final subjective sound balance still needs device listening.
+
+
+Title-screen pose correction: the preview weapon now aligns its actual trigger grip with the right glove, while the left arm aims toward the fore-end. Its position and orientation are computed relative to the arm, replacing the shoulder-height match-animation offset. Numerical checks across all five class previews confirm exact trigger-hand alignment, support-hand error below 0.03 world units (inside glove bounds), and clearance ahead of the chest. TypeScript and hosted build pass. Gameplay character equipment is unchanged; visual browser QA remains unavailable.

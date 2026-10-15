@@ -2,6 +2,34 @@ import * as THREE from "three";
 import { createCharacter } from "./character.js";
 import { classInfo } from "../shared/classes.js";
 
+// Match the trigger hand to the actual grip, then point the support arm at the
+// fore-end. Equipment defaults are for the match animation, not this still pose.
+export function poseMenuSoldier(actor: THREE.Group) {
+  const rig = actor.userData.rig;
+  const gun = actor.userData.gun as THREE.Mesh;
+  const hand = new THREE.Vector3(0, -0.63, 0.02);
+  const grip = new THREE.Vector3(0, -0.12, -0.07);
+  const forwardGrip = new THREE.Vector3(0, -0.055, -0.31);
+  const shoulder = rig.rightArm.position.clone().add(rig.torso.position);
+  const target = new THREE.Vector3(0.22, 1, -0.57);
+  rig.rightArm.quaternion.setFromUnitVectors(
+    hand.clone().normalize(),
+    target.sub(shoulder).normalize(),
+  );
+  const orientation = new THREE.Quaternion().setFromEuler(
+    new THREE.Euler(0.1, 1.7, 0),
+  );
+  gun.quaternion.copy(rig.rightArm.quaternion).invert().multiply(orientation);
+  gun.position.copy(hand).sub(grip.clone().applyQuaternion(gun.quaternion));
+  actor.updateMatrixWorld(true);
+  const support = actor.worldToLocal(gun.localToWorld(forwardGrip));
+  const leftShoulder = rig.leftArm.position.clone().add(rig.torso.position);
+  rig.leftArm.quaternion.setFromUnitVectors(
+    hand.clone().normalize(),
+    support.sub(leftShoulder).normalize(),
+  );
+}
+
 // A display-only field soldier uses the real class model, outside match state.
 export class MenuScene {
   readonly group = new THREE.Group();
@@ -64,8 +92,7 @@ export class MenuScene {
           object.castShadow = object.receiveShadow = false;
       });
       const rig = this.actor.userData.rig;
-      rig.leftArm.rotation.x = 0.48;
-      rig.rightArm.rotation.x = 0.34;
+      poseMenuSoldier(this.actor);
       rig.leftLeg.rotation.z = 0.035;
       rig.rightLeg.rotation.z = -0.035;
       this.group.add(this.actor);

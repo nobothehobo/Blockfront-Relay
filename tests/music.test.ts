@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { Music, musicGain } from "../client/music.js";
+import { Music, musicGain, MUSIC_PLAYLISTS } from "../client/music.js";
 import { assetRange } from "../shared/asset-range.js";
 
 function harness() {
@@ -161,36 +161,31 @@ test("invalid media ranges cannot produce negative or out-of-bounds slices", () 
     assert.equal(assetRange(range, 100), "invalid");
 });
 
-test("menu and game playlists advance to their other credited tracks", async () => {
+test("menu and game chiptune playlists advance and wrap around", async () => {
   const h = harness();
   h.music.unlock(h.context);
   await Promise.resolve();
-  const menu = h.audio[0] as unknown as HTMLAudioElement;
-  menu.onended?.call(menu, new Event("ended"));
-  await Promise.resolve();
-  assert.ok(menu.src.includes("/api/audio/electric-dreams.mp3"));
-  assert.equal(h.music.diagnostics.track, "electric-dreams");
-  h.music.update("game", false, false, false);
-  await Promise.resolve();
-  const game = h.audio[1] as unknown as HTMLAudioElement;
-  game.onended?.call(game, new Event("ended"));
-  await Promise.resolve();
-  assert.ok(game.src.includes("/api/audio/twilight-echo.mp3"));
-  menu.onended?.call(menu, new Event("ended"));
-  assert.ok(menu.src.includes("/api/audio/moonlit-skyline.mp3"));
-  game.onended?.call(game, new Event("ended"));
-  await Promise.resolve();
-  assert.ok(game.src.includes("/api/audio/motion-blur.mp3"));
-  menu.onended?.call(menu, new Event("ended"));
-  game.onended?.call(game, new Event("ended"));
-  assert.ok(menu.src.includes("/api/audio/neon.mp3"));
-  assert.ok(game.src.includes("/api/audio/machina.mp3"));
+  for (const mode of ["menu", "game"] as const) {
+    h.music.update(mode, false, false, false);
+    const element = h.audio[
+      mode === "menu" ? 0 : 1
+    ] as unknown as HTMLAudioElement;
+    for (let n = 1; n <= 4; n++) {
+      element.onended?.call(element, new Event("ended"));
+      await Promise.resolve();
+      assert.ok(
+        element.src.includes(
+          "/api/audio/" + MUSIC_PLAYLISTS[mode][n % 2] + ".mp3",
+        ),
+      );
+    }
+  }
   h.music.update("game", true, false, false);
 });
 
-test("added synthwave cues retain source hashes and visible title/artist/license credits", async () => {
+test("active chiptune cues retain source hashes and visible title/artist/license credits", async () => {
   const rows = JSON.parse(
-    await readFile("assets/music/synthwave-manifest.json", "utf8"),
+    await readFile("assets/music/chiptune-manifest.json", "utf8"),
   );
   const html = await readFile("client/index.html", "utf8");
   const credits = await readFile("client/public/music/ATTRIBUTION.txt", "utf8");

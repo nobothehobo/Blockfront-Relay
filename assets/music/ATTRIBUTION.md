@@ -1,4 +1,37 @@
-# Soundtrack attribution
+# Current soundtrack — 8-bit action
+
+The active soundtrack replaces the dark synthwave playlists with four recordings by **Eric Skiff**. The artist's official [Resistor Anthems catalog](https://ericskiff.com/music/) labels them free 8-bit/chiptune music for games, videos and products and grants use under [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/), with credit and a link back. The source and license were checked October 15, 2026. This permits redistribution and editing in the browser game; the recordings remain CC BY 4.0 and are excluded from the game's MIT source-code license. No endorsement is implied.
+
+| Original title | Use | Shipped file | Cue length |
+| --- | --- | --- | --- |
+| A Night Of Dizzy Spells | menu | `music/a-night-of-dizzy-spells.mp3` | 112 seconds |
+| Underclocked (underunderclocked mix) | menu | `music/underclocked.mp3` | 120 seconds |
+| Chibi Ninja | gameplay | `music/chibi-ninja.mp3` | 120 seconds |
+| Jumpshot | gameplay | `music/jumpshot.mp3` | 120 seconds |
+
+## Current required credit lines
+
+Music: Eric Skiff - A Night Of Dizzy Spells - Resistor Anthems - Available at http://EricSkiff.com/music
+
+Music: Eric Skiff - Underclocked (underunderclocked mix) - Resistor Anthems - Available at http://EricSkiff.com/music
+
+Music: Eric Skiff - Chibi Ninja - Resistor Anthems - Available at http://EricSkiff.com/music
+
+Music: Eric Skiff - Jumpshot - Resistor Anthems - Available at http://EricSkiff.com/music
+
+Source: <https://ericskiff.com/music/>. License: <https://creativecommons.org/licenses/by/4.0/>.
+
+### Editing and provenance
+
+All cues begin at 0 seconds of the original. Each was loudness-normalized using FFmpeg loudnorm (I=-18 LUFS, TP=-1.5 dBTP, LRA=9), given a 0.2-second onset and 2-second exit fade, and re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Original song titles, artist and album metadata are retained; Jumpshot's original album tag is *Resistor Anthems II*. The credit lines above use the artist's requested site-wide catalog credit format. Runtime playback can fade, lower the level and rotate between tracks.
+
+`chiptune-manifest.json` records exact official download URLs, original-master SHA-256 hashes, shipped-file hashes, byte sizes, credit lines and per-track modification notes. Source MP3s were downloaded directly from the official page, not a third-party "royalty-free" reupload. Shipped files total **3,778,604 bytes**. They contain non-silent decodable audio; subjective listening on target Safari devices is not part of source/license verification.
+
+Current credits ship at `/music/ATTRIBUTION.txt` and should be shown in the game's main-menu and pause-menu credits. Video-description credits should include the applicable track credit(s), source and license links, and note that the game uses edited/faded cues. The artist invites a project notification, but this is not stated as a license condition; no message has been sent on the user's behalf.
+
+## Legacy soundtrack credits — previous versions only
+
+The following is retained as provenance for previous releases. Scott Buckley and Nihilore tracks are no longer part of the active playlist. Their previous recordings can be removed from the current build after integration, while preserving these historical credits and the original licenses in repository history.
 
 The following recordings are by Scott Buckley and retain their **Creative Commons Attribution 4.0 International** license. They are not covered by the game's MIT license. Artist: <https://www.scottbuckley.com.au/>. License: <https://creativecommons.org/licenses/by/4.0/>. License terms and required credit format were checked on October 14, 2026 at <https://www.scottbuckley.com.au/library/using-this-music/> and the individual track pages.
 

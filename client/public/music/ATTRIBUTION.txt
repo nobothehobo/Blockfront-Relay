@@ -1,41 +1,33 @@
-Blockfront Relay soundtrack
+Blockfront Relay — current 8-bit action soundtrack
 
-'Neon' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
-Track/source: https://www.scottbuckley.com.au/library/neon/
+Music by Eric Skiff, from the artist's Resistor Anthems catalog.
+Source and artist permission: https://ericskiff.com/music/
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+License link: https://creativecommons.org/licenses/by/4.0/
 
-'Machina' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
-Track/source: https://www.scottbuckley.com.au/library/machina/
+The official source explicitly permits free use in games, videos and products with attribution and a link back. CC BY 4.0 permits sharing and adaptation, including commercial use, under its terms. These recordings remain CC BY 4.0 and are not included in the game's MIT source-code license. Eric Skiff retains ownership. No endorsement is implied.
 
-License: https://creativecommons.org/licenses/by/4.0/
-Artist usage policy: https://www.scottbuckley.com.au/library/using-this-music/
+Music: Eric Skiff - A Night Of Dizzy Spells - Resistor Anthems - Available at http://EricSkiff.com/music
+File: /music/a-night-of-dizzy-spells.mp3
+Original download: https://ericskiff.com/music/Resistor%20Anthems/01%20A%20Night%20Of%20Dizzy%20Spells.mp3
+Changes: 112-second excerpt from the start of the original; loudness-normalized with FFmpeg loudnorm (I=-18 LUFS, TP=-1.5 dBTP, LRA=9); 0.2-second fade in and 2-second fade out; re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Original title and original album metadata retained. Runtime music volume may be reduced or faded.
 
-Changes: edited to 150-second excerpts (starting at 10 seconds), 0.3-second onset / 2-second exit fades, compressed to 64 kbps stereo MP3 (44.1 kHz);
-looped, faded and volume-adjusted during playback. Playlist rotation during gameplay.
-The recordings retain their CC BY 4.0 licenses, separate from the game's MIT license.
-Scott Buckley retains ownership. No endorsement is implied.
+Music: Eric Skiff - Underclocked (underunderclocked mix) - Resistor Anthems - Available at http://EricSkiff.com/music
+File: /music/underclocked.mp3
+Original download: https://ericskiff.com/music/Resistor%20Anthems/02%20Underclocked%20%28underunderclocked%20mix%29.mp3
+Changes: 120-second excerpt from the start of the original; loudness-normalized with FFmpeg loudnorm (I=-18 LUFS, TP=-1.5 dBTP, LRA=9); 0.2-second fade in and 2-second fade out; re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Original title and original album metadata retained. Runtime music volume may be reduced or faded.
 
-For gameplay videos, include the artist credit lines in the video description.
+Music: Eric Skiff - Chibi Ninja - Resistor Anthems - Available at http://EricSkiff.com/music
+File: /music/chibi-ninja.mp3
+Original download: https://ericskiff.com/music/Resistor%20Anthems/03%20Chibi%20Ninja.mp3
+Changes: 120-second excerpt from the start of the original; loudness-normalized with FFmpeg loudnorm (I=-18 LUFS, TP=-1.5 dBTP, LRA=9); 0.2-second fade in and 2-second fade out; re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Original title and original album metadata retained. Runtime music volume may be reduced or faded.
 
-'Electric Dreams' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
-Source: https://www.scottbuckley.com.au/library/electric-dreams/
-'Twilight Echo' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
-Source: https://www.scottbuckley.com.au/library/twilight-echo/
+Music: Eric Skiff - Jumpshot - Resistor Anthems - Available at http://EricSkiff.com/music
+File: /music/jumpshot.mp3
+Original download: https://ericskiff.com/music/Resistor%20Anthems/14%20Jumpshot.mp3
+Changes: 120-second excerpt from the start of the original; loudness-normalized with FFmpeg loudnorm (I=-18 LUFS, TP=-1.5 dBTP, LRA=9); 0.2-second fade in and 2-second fade out; re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Original title and original album metadata retained. Runtime music volume may be reduced or faded.
 
-## Additional synthwave tracks in 2.19
+Album metadata: Jumpshot's original file identifies its album as Resistor Anthems II; the other three identify Resistor Anthems. The original title and album metadata are preserved in shipped files. The credit lines above follow the artist's requested site-wide credit format.
 
-"Motion Blur" by Nihilore — licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
-
-"Moonlit Skyline" by Nihilore — licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
-
-Artist and source catalog: https://www.nihilore.com/synthwave
-Artist license terms: https://www.nihilore.com/license
-License: https://creativecommons.org/licenses/by/4.0/
-
-| Track | Shipped file | Original download |
-| --- | --- | --- |
-| Motion Blur | motion-blur.mp3 | https://www.nihilore.com/s/Motion-Blur.mp3 |
-| Moonlit Skyline | moonlit-skyline.mp3 | https://www.nihilore.com/s/Moonlit-Skyline.mp3 |
-
-The artist categorizes both recordings in the official "Synthwave / Chillwave / Outrun" catalog and explicitly offers Creative Commons music for video games. The CC BY 4.0 license permits redistribution and adaptation, including commercial games, with attribution, a license link and identification of changes. The artist additionally requests that original track names not be changed or censored; the original names are preserved here and in the game. This use is under the free CC BY license, not the separate paid non-exclusive resale agreement. No endorsement is implied.
-
-Changes: each recording is excerpted as a 120-second game cue beginning 10 seconds into the original, with a 0.3-second fade in and a 2-second fade out, attenuated by 2 dB for headroom, and re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Runtime playback may fade or lower the music during combat. Embedded metadata retains the original title, artist, license and edit/source notice. Source and shipped-file SHA-256 hashes, filenames, download URLs and verification date are recorded in `assets/music/synthwave-manifest.json`. Official catalog and license were checked October 15, 2026. These licensed recordings are excluded from the game's MIT source-code license.
+For gameplay videos, include the applicable artist credit line(s), source link, license link and notice of these game edits in the video description. Do not claim ownership or endorsement.
+Source and output hashes are recorded in assets/music/chiptune-manifest.json.

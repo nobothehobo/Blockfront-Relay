@@ -1,7 +1,7 @@
 export type MusicMode = "menu" | "game";
 export const MUSIC_PLAYLISTS = {
-  menu: ["neon", "electric-dreams", "moonlit-skyline"],
-  game: ["machina", "twilight-echo", "motion-blur"],
+  menu: ["a-night-of-dizzy-spells", "underclocked"],
+  game: ["chibi-ninja", "jumpshot"],
 } as const;
 export function musicGain(
   master: number,
@@ -49,7 +49,7 @@ export class Music {
       const audio = makeAudio();
       audio.preload = "none";
       audio.loop = false;
-      audio.src = `/api/audio/${MUSIC_PLAYLISTS[mode][0]}.mp3?v=219`;
+      audio.src = `/api/audio/${MUSIC_PLAYLISTS[mode][0]}.mp3?v=221`;
       const voice: Voice = {
         mode,
         audio,
@@ -60,7 +60,7 @@ export class Music {
       };
       audio.onended = () => {
         voice.index = (voice.index + 1) % MUSIC_PLAYLISTS[mode].length;
-        audio.src = `/api/audio/${MUSIC_PLAYLISTS[mode][voice.index]}.mp3?v=219`;
+        audio.src = `/api/audio/${MUSIC_PLAYLISTS[mode][voice.index]}.mp3?v=221`;
         voice.pending = false;
         voice.error = undefined;
         if (voice.target > 0) this.play(voice);

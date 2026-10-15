@@ -915,12 +915,10 @@ function updateAudioUi() {
   if ($("music-toggle").textContent !== label)
     $("music-toggle").textContent = label;
   const trackNames: Record<string, string> = {
-    neon: "Neon · Scott Buckley",
-    "electric-dreams": "Electric Dreams · Scott Buckley",
-    machina: "Machina · Scott Buckley",
-    "twilight-echo": "Twilight Echo · Scott Buckley",
-    "moonlit-skyline": "Moonlit Skyline · Nihilore",
-    "motion-blur": "Motion Blur · Nihilore",
+    "a-night-of-dizzy-spells": "A Night Of Dizzy Spells · Eric Skiff",
+    underclocked: "Underclocked (underunderclocked mix) · Eric Skiff",
+    "chibi-ninja": "Chibi Ninja · Eric Skiff",
+    jumpshot: "Jumpshot · Eric Skiff",
   };
   const track = trackNames[music.diagnostics.track];
   if ($("music-track").textContent !== track)
@@ -936,6 +934,16 @@ function updateAudioUi() {
           : `Recorded effects ready: ${effects.ready}/${effects.total}. Played: ${sound.diagnostics.recordedStarts} recordings / ${sound.diagnostics.fallbackStarts} fallback. Last: ${sound.diagnostics.lastCue}.`;
   if ($("audio-status").textContent !== text)
     $("audio-status").textContent = text;
+  const badge =
+    sound.diagnostics.state !== "running"
+      ? "EFFECTS: TAP TO ENABLE"
+      : effects.loading
+        ? `RECORDINGS: ${effects.ready}/${effects.total}`
+        : effects.failed
+          ? `EFFECTS: ${effects.failed} FAILED · OPEN SETTINGS`
+          : `RECORDED EFFECTS: ${effects.ready}/${effects.total}`;
+  if ($("effects-state").textContent !== badge)
+    $("effects-state").textContent = badge;
 }
 const unlockMusic = (event?: Event) => {
   if ((event?.target as HTMLElement | null)?.closest?.("#music-toggle"))
@@ -975,9 +983,22 @@ $("audio-test").onclick = async () => {
       error instanceof Error ? error.message : "Sound preview failed.";
   }
 };
-$("audio-retry").onclick = () => {
+$("effects-state").onclick = () => {
   unlockMusic();
-  void sound.reloadSamples();
+  show("settings");
+};
+$("audio-retry").onclick = async () => {
+  unlockMusic();
+  $("audio-preview-status").textContent =
+    "Repairing playback session and retrying recordings…";
+  try {
+    await sound.repairSession();
+    $("audio-preview-status").textContent =
+      "Playback session requested and recordings retried. Choose a sound and tap Test sound.";
+  } catch (error) {
+    $("audio-preview-status").textContent =
+      error instanceof Error ? error.message : "Audio repair failed.";
+  }
 };
 let ws: WebSocket | null = null,
   rooms: any[] = [];
@@ -1128,7 +1149,7 @@ function disconnect(reason = "Disconnected. Join a room to reconnect.") {
   paused = false;
   resetInput();
 }
-function startPractice(options: RoomOptions) {
+async function startPractice(options: RoomOptions) {
   if (joining) return;
   if (connected) disconnect();
   const worker = new Worker(new URL("./practice-worker.ts", import.meta.url), {
@@ -1136,6 +1157,13 @@ function startPractice(options: RoomOptions) {
   });
   joining = true;
   sound.unlock();
+  $("solo-status").textContent =
+    "Preparing recorded weapon and jetpack effects…";
+  await sound.prepare();
+  if (!joining || (practiceWorker && practiceWorker !== worker)) {
+    worker.terminate();
+    return;
+  }
   localStorage.setItem("br-name", nameInput.value);
   seq = 0;
   input.seq = 0;
@@ -1176,6 +1204,9 @@ async function join(room: string) {
   if (joining) return;
   joining = true;
   sound.unlock();
+  $("status").textContent = "Preparing recorded weapon and jetpack effects…";
+  await sound.prepare();
+  if (!joining) return;
   localStorage.setItem("br-name", nameInput.value);
   $("status").textContent = "Joining…";
   seq = 0;
@@ -2400,7 +2431,7 @@ $("toggle-stats").onclick = () => {
 $("copy-diagnostics").onclick = async () => {
   try {
     await navigator.clipboard.writeText(
-      `Blockfront Relay 2.20.0\n${$("connection-details").textContent}\nAudio: ${JSON.stringify(sound.diagnostics)}\nMusic: ${JSON.stringify(music.diagnostics)}`,
+      `Blockfront Relay 2.21.0\n${$("connection-details").textContent}\nAudio: ${JSON.stringify(sound.diagnostics)}\nMusic: ${JSON.stringify(music.diagnostics)}`,
     );
     $("diagnostic-status").textContent =
       "Report copied—paste it when reporting stutter or lag.";

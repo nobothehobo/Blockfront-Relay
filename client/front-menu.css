@@ -484,6 +484,11 @@ body.front-menu select:focus-visible {
 #audio-status {
   font-size: 12px;
 }
+#effects-state {
+  font-size: 10px;
+  padding: 5px 8px;
+  margin-top: 8px;
+}
 #music-track {
   color: #c5c7ad;
   font:

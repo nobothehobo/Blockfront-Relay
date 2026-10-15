@@ -94,7 +94,7 @@ export class SampleBank {
               let bytes: ArrayBuffer;
               try {
                 const response = await this.fetchFile(
-                  `/api/sfx/${name}.wav?v=220`,
+                  `/api/sfx/${name}.wav?v=221`,
                   {
                     signal: controller.signal,
                   },

@@ -1,6 +1,7 @@
 // Licensed recorded effects with procedural fallback; see assets/sfx/ATTRIBUTION.md.
 import { JetVoice } from "./audio-mix.js";
 import { SampleBank, sampleCue, type StepSurface } from "./sampled-audio.js";
+import { requestPlaybackSession } from "./audio-session.js";
 type Engine = {
   noise: AudioBufferSourceNode;
   tone: OscillatorNode | null;
@@ -25,7 +26,10 @@ export class Sound {
   private fallbackStarts = 0;
   private lastCue = "none";
   private echo: DelayNode | null = null;
+  private session = "not-requested";
+  private resumeError = "";
   unlock() {
+    this.session = requestPlaybackSession(navigator as any);
     if (!this.ctx) {
       const Context = window.AudioContext || (window as any).webkitAudioContext;
       if (!Context) return;
@@ -46,7 +50,14 @@ export class Sound {
       this.echo.connect(echoGain);
       echoGain.connect(this.bus);
     }
-    void this.ctx!.resume().catch(() => {});
+    void this.ctx!.resume()
+      .then(() => {
+        this.resumeError = "";
+      })
+      .catch((error) => {
+        this.resumeError =
+          error instanceof Error ? error.message : "Audio resume failed";
+      });
     this.syncVolume();
     void this.samples.load(this.ctx!);
   }
@@ -354,7 +365,7 @@ export class Sound {
       kind === "step" ? 0.97 + (this.sampleVariant % 3) * 0.03 : 1;
     const level =
       kind === "shot"
-        ? [0.45, 0.33, 0.6, 0.52, 0, 0, 0.5][weapon]
+        ? [0.72, 0.52, 0.86, 0.8, 0, 0, 0.75][weapon]
         : kind === "explosion"
           ? 0.7
           : kind.startsWith("reload-") || kind === "action"
@@ -410,6 +421,25 @@ export class Sound {
       throw Error("Audio is suspended. Tap Test sound again.");
     this.play(kind, 0.85, weapon);
     return `Played recording: ${cue}.`;
+  }
+  async prepare() {
+    if (!this.ctx || !this.master || !this.effects) return;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        this.samples.load(this.ctx),
+        new Promise<void>((resolve) => {
+          timeout = setTimeout(resolve, 5000);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  async repairSession() {
+    this.session = requestPlaybackSession(navigator as any, true);
+    if (this.ctx) await this.ctx.resume();
+    await this.reloadSamples();
   }
   reloadSamples() {
     if (this.ctx) return this.samples.load(this.ctx, true);
@@ -475,7 +505,7 @@ export class Sound {
         }
       }
       e.gain.gain.setTargetAtTime(
-        (e.sampled ? 0.22 : 0.15) * Math.max(0, Math.min(1, v.gain)),
+        (e.sampled ? 0.36 : 0.15) * Math.max(0, Math.min(1, v.gain)),
         t,
         0.045,
       );
@@ -520,6 +550,8 @@ export class Sound {
   get diagnostics() {
     return {
       state: this.ctx?.state ?? "locked",
+      session: this.session,
+      resumeError: this.resumeError,
       engines: this.engines.size,
       starts: this.starts,
       voices: this.shots.size,

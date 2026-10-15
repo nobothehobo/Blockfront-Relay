@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.20 — Signal Check.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.21 — Arcade Frequency.**
+
+**2.21:** four brighter licensed Eric Skiff 8-bit tracks replace the dark soundtrack; stationary real burner recordings replace Doppler jet effects. Safari playback-session handling, short pre-match recording preparation, clearer audio state, repair control and a stronger gun/jet mix. See [changes and verification limits](docs/UPDATE-221.md).
 
 **2.20:** render-time camera motion between fixed simulation ticks; explicit PCM effects loading, failure/retry diagnostics, recording-only sound preview, and local audio priority during busy NPC fights. Shot/explosion echoes and expanded preview options. See [changes and device-verification limits](docs/UPDATE-220.md).
 

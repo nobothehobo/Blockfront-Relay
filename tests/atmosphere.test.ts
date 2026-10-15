@@ -10,15 +10,15 @@ import { meshChunk } from "../client/mesh.js";
 import { NeonView } from "../client/neon-view.js";
 import { WaterSurface } from "../client/battlefield-view.js";
 
-test("six-minute room-time cycle repeats smoothly through noon, dusk, night and dawn", () => {
-  assert.equal(DAY_SECONDS, 360);
+test("twelve-minute room-time cycle repeats smoothly through noon, dusk, night and dawn", () => {
+  assert.equal(DAY_SECONDS, 720);
   assert.equal(atmosphere(7231, 0).day, 1);
-  assert.equal(atmosphere(7231, 180).day, 0);
-  assert.ok(atmosphere(7231, 90).twilight > 0.99);
-  assert.ok(atmosphere(7231, 270).twilight > 0.99);
-  for (const t of [0, 45, 90, 180, 270, 359]) {
+  assert.equal(atmosphere(7231, 360).day, 0);
+  assert.ok(atmosphere(7231, 180).twilight > 0.99);
+  assert.ok(atmosphere(7231, 540).twilight > 0.99);
+  for (const t of [0, 90, 180, 360, 540, 719]) {
     const a = atmosphere(7231, t),
-      b = atmosphere(7231, t + 360);
+      b = atmosphere(7231, t + 720);
     assert.ok(Math.abs(a.phase - b.phase) < 1e-10);
     const adjacent = atmosphere(7231, t + 0.01);
     assert.ok(Math.abs(a.day - adjacent.day) < 0.002);
@@ -154,4 +154,37 @@ test("street lights are capped, shadowless, switch off on mobile and follow dest
   world.seed = 7231;
   view.update(world, position, true, 503);
   assert.ok(view.lights.every((l) => !l.visible));
+});
+
+test("colored neon lights illuminate facades and stop following destroyed signs", async () => {
+  const { CITY_NEON_LIGHTS } = await import("../shared/city.js");
+  const world = new World(CITY_SEED),
+    view = new NeonView(new THREE.Scene());
+  for (const p of CITY_NEON_LIGHTS)
+    assert.equal(world.get(p.x, p.y, p.z), p.block);
+  const p = CITY_NEON_LIGHTS[0];
+  const position = new THREE.Vector3(p.x, 15, p.z);
+  view.update(world, position, true, 0);
+  assert.equal(view.signLights.length, 2);
+  assert.ok(
+    view.signLights.some(
+      (l) => l.intensity > 0 && l.color.getHex() === p.color,
+    ),
+  );
+  assert.ok(view.signLights.every((l) => !l.castShadow && l.distance >= 22));
+  world.set(p.x, p.y, p.z, 0);
+  view.update(world, position, true, 251);
+  assert.ok(
+    !view.signLights.some(
+      (l) =>
+        l.intensity > 0 &&
+        l.position.x === p.x + 0.5 &&
+        l.position.z === p.z + 0.5 + p.facing * 0.8,
+    ),
+  );
+  view.update(world, position, false, 252);
+  assert.ok(view.signLights.every((l) => !l.visible));
+  world.seed = 7231;
+  view.update(world, position, true, 503);
+  assert.ok(view.signLights.every((l) => !l.visible));
 });

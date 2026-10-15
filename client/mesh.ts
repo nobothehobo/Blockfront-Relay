@@ -211,7 +211,7 @@ export class Terrain {
       );
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <emissivemap_fragment>",
-        "#include <emissivemap_fragment>\ntotalEmissiveRadiance += voxelEmission * vColor.rgb * 1.8;",
+        "#include <emissivemap_fragment>\ntotalEmissiveRadiance += voxelEmission * vColor.rgb * 2.5;",
       );
     };
     this.rebuild();

@@ -13,7 +13,7 @@ const room = new Room("afterdark", {
   mode: "ctf",
   seed: CITY_SEED,
   jet: "all",
-  duration: 600,
+  duration: 1800,
 });
 const server = http.createServer(async (req, res) => {
   if (req.url === "/api/health" || req.url === "/api/rooms") {
@@ -90,6 +90,7 @@ const browser = await chromium.launch({
 });
 const errors: string[] = [];
 async function join(page: Page, preset: string) {
+  page.setDefaultTimeout(30000);
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(m.text());
@@ -210,7 +211,7 @@ try {
     "PASS city: two peers, mobile/tablet, compiled emissive shader, bounded lights, synchronized destruction and late join",
   );
   // The normal terrain family cycles from one shared room clock. Forward-only
-  // clock jumps make the six-minute progression test fast without changing code.
+  // clock jumps make the twelve-minute progression test fast without changing code.
   room.world = new World(7231);
   room.options.seed = 7231;
   room.broadcast({
@@ -225,9 +226,9 @@ try {
     Object.assign(p, { x: 40, y: 13.01, z: 160, protected: 9999 });
   }
   for (const [time, expectedDay, label] of [
-    [180, 0, "night"],
-    [270, null, "dawn"],
-    [360, 1, "day"],
+    [360, 0, "night"],
+    [540, null, "dawn"],
+    [720, 1, "day"],
   ] as const) {
     room.time = time;
     for (const page of [a, b]) {
@@ -239,7 +240,7 @@ try {
           (() => {
             const delta = Math.abs(
               (window as any).BR.lighting.atmosphere.phase -
-                ((time / 360 + 0.25) % 1),
+                ((time / 720 + 0.25) % 1),
             );
             return delta < 0.04 || delta > 0.96;
           })(),

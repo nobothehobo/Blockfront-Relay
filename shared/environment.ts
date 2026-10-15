@@ -1,6 +1,6 @@
 import { mapLayout } from "./game.js";
 
-export const DAY_SECONDS = 360;
+export const DAY_SECONDS = 720;
 const smooth = (a: number, b: number, v: number) => {
   const t = Math.max(0, Math.min(1, (v - a) / (b - a)));
   return t * t * (3 - 2 * t);

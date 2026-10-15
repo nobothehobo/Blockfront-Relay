@@ -1,33 +1,25 @@
-Blockfront Relay — current 8-bit action soundtrack
+# Electronic action soundtrack
 
-Music by Eric Skiff, from the artist's Resistor Anthems catalog.
-Source and artist permission: https://ericskiff.com/music/
-License: Creative Commons Attribution 4.0 International (CC BY 4.0)
-License link: https://creativecommons.org/licenses/by/4.0/
+Music by Kevin MacLeod (incompetech.com).
+Source and licensing: https://incompetech.com/music/royalty-free/licenses/
 
-The official source explicitly permits free use in games, videos and products with attribution and a link back. CC BY 4.0 permits sharing and adaptation, including commercial use, under its terms. These recordings remain CC BY 4.0 and are not included in the game's MIT source-code license. Eric Skiff retains ownership. No endorsement is implied.
+"Exit the Premises" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0
+https://creativecommons.org/licenses/by/4.0/
+Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1500029
+Changes: 120-second excerpt from 0 seconds; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.2-second fade in and 2-second fade out; stereo 96 kbps MP3, 44.1 kHz. Runtime music may be faded and lowered during combat.
 
-Music: Eric Skiff - A Night Of Dizzy Spells - Resistor Anthems - Available at http://EricSkiff.com/music
-File: /music/a-night-of-dizzy-spells.mp3
-Original download: https://ericskiff.com/music/Resistor%20Anthems/01%20A%20Night%20Of%20Dizzy%20Spells.mp3
-Changes: 112-second excerpt from the start of the original; loudness-normalized with FFmpeg loudnorm (I=-18 LUFS, TP=-1.5 dBTP, LRA=9); 0.2-second fade in and 2-second fade out; re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Original title and original album metadata retained. Runtime music volume may be reduced or faded.
+"EDM Detection Mode" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0
+https://creativecommons.org/licenses/by/4.0/
+Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1500026
+Changes: 120-second excerpt from 120 seconds; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.2-second fade in and 2-second fade out; stereo 96 kbps MP3, 44.1 kHz. Runtime music may be faded and lowered during combat.
 
-Music: Eric Skiff - Underclocked (underunderclocked mix) - Resistor Anthems - Available at http://EricSkiff.com/music
-File: /music/underclocked.mp3
-Original download: https://ericskiff.com/music/Resistor%20Anthems/02%20Underclocked%20%28underunderclocked%20mix%29.mp3
-Changes: 120-second excerpt from the start of the original; loudness-normalized with FFmpeg loudnorm (I=-18 LUFS, TP=-1.5 dBTP, LRA=9); 0.2-second fade in and 2-second fade out; re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Original title and original album metadata retained. Runtime music volume may be reduced or faded.
+"Cut and Run" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0
+https://creativecommons.org/licenses/by/4.0/
+Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100851
+Changes: 120-second excerpt from 0 seconds; FFmpeg loudnorm I=-18 LUFS, TP=-1.5 dBTP, LRA=9; 0.2-second fade in and 2-second fade out; stereo 96 kbps MP3, 44.1 kHz. Runtime music may be faded and lowered during combat.
 
-Music: Eric Skiff - Chibi Ninja - Resistor Anthems - Available at http://EricSkiff.com/music
-File: /music/chibi-ninja.mp3
-Original download: https://ericskiff.com/music/Resistor%20Anthems/03%20Chibi%20Ninja.mp3
-Changes: 120-second excerpt from the start of the original; loudness-normalized with FFmpeg loudnorm (I=-18 LUFS, TP=-1.5 dBTP, LRA=9); 0.2-second fade in and 2-second fade out; re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Original title and original album metadata retained. Runtime music volume may be reduced or faded.
-
-Music: Eric Skiff - Jumpshot - Resistor Anthems - Available at http://EricSkiff.com/music
-File: /music/jumpshot.mp3
-Original download: https://ericskiff.com/music/Resistor%20Anthems/14%20Jumpshot.mp3
-Changes: 120-second excerpt from the start of the original; loudness-normalized with FFmpeg loudnorm (I=-18 LUFS, TP=-1.5 dBTP, LRA=9); 0.2-second fade in and 2-second fade out; re-encoded as stereo 64 kbps MP3 at 44.1 kHz. Original title and original album metadata retained. Runtime music volume may be reduced or faded.
-
-Album metadata: Jumpshot's original file identifies its album as Resistor Anthems II; the other three identify Resistor Anthems. The original title and album metadata are preserved in shipped files. The credit lines above follow the artist's requested site-wide credit format.
-
-For gameplay videos, include the applicable artist credit line(s), source link, license link and notice of these game edits in the video description. Do not claim ownership or endorsement.
-Source and output hashes are recorded in assets/music/chiptune-manifest.json.
+These recordings remain CC BY 4.0 and are excluded from the game source code MIT license. No endorsement is implied.
+Source and shipped SHA-256 hashes are recorded in assets/music/action-manifest.json.

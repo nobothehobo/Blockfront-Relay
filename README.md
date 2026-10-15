@@ -1,6 +1,10 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.21.1 — Packaged Effects.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.23 — Afterglow.**
+
+**2.23:** a twelve-minute outdoor day/night loop; stronger streetlamp and colored neon-sign illumination; fairer solo enemy aim and reactions. Electronic action tracks EDM Detection Mode, Cut and Run and Exit the Premises replace the funk-heavy rotation, with complete CC BY 4.0 credits. See [release notes](docs/UPDATE-223.md).
+
+**2.22:** Rocket Power, Exit the Premises, District Four and Cipher by Kevin MacLeod replace the chiptune set, with complete credits and local Blob-backed music delivery. Real turbine audio powers jetpacks and nonvocal thuds replace death grunts; gun recordings remain unchanged. Music and effects travel with the content-hashed game bundle rather than relying on separate audio requests reaching the same server version. See [release notes](docs/UPDATE-222.md).
 
 **2.21.1:** all 46 effects are embedded with the game code, so new clients do not depend on separate SFX requests reaching the same server build. See [delivery evidence and verification](docs/UPDATE-2211.md). Music is unchanged pending selection of a closer bass/beat-driven soundtrack.
 

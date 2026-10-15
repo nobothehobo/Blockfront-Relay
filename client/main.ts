@@ -20,6 +20,7 @@ import "./style.css";
 import "./front-menu.css";
 import { MenuScene } from "./menu-scene.js";
 import { Music } from "./music.js";
+import { packagedMusicSource } from "./packaged-music.js";
 import { footSurface } from "./sampled-audio.js";
 import { insideCharacter } from "./nearby-presentation.js";
 import { renderBody } from "./render-motion.js";
@@ -86,7 +87,7 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const show = (id: string, on = true) => $(id).classList.toggle("hidden", !on);
 const sound = new Sound(packagedEffectsFetch, "packaged-with-game");
-const music = new Music();
+const music = new Music(undefined, packagedMusicSource, "packaged-with-game");
 const touch =
   matchMedia("(pointer:coarse)").matches || navigator.maxTouchPoints > 0;
 document.body.classList.toggle("touch", touch);
@@ -916,10 +917,9 @@ function updateAudioUi() {
   if ($("music-toggle").textContent !== label)
     $("music-toggle").textContent = label;
   const trackNames: Record<string, string> = {
-    "a-night-of-dizzy-spells": "A Night Of Dizzy Spells · Eric Skiff",
-    underclocked: "Underclocked (underunderclocked mix) · Eric Skiff",
-    "chibi-ninja": "Chibi Ninja · Eric Skiff",
-    jumpshot: "Jumpshot · Eric Skiff",
+    "edm-detection-mode": "EDM Detection Mode · Kevin MacLeod",
+    "cut-and-run": "Cut and Run · Kevin MacLeod",
+    "exit-the-premises": "Exit the Premises · Kevin MacLeod",
   };
   const track = trackNames[music.diagnostics.track];
   if ($("music-track").textContent !== track)
@@ -1292,7 +1292,6 @@ function handleState(next: any) {
     eliminatedAt = performance.now();
     deathAngle = eliminationCamera(world, p, p.yaw, 0).angle;
     sound.play("death", 0.8);
-    sound.play("fall", 0.55);
     resetInput();
   } else if (p.dead <= 0 && eliminated) clearElimination();
   const reset = !local || firstState || predictionEpoch !== p.epoch;
@@ -1352,7 +1351,6 @@ function handleState(next: any) {
     }
     if (r.target.dead <= 0 && rp.dead > 0) {
       playSpatial("death", rp, 0, 0.55, 20);
-      playSpatial("fall", rp, 0, 0.4, 20);
     }
     // Never interpolate through a respawn or a round's spawn relocation.
     if (r.target.epoch !== rp.epoch) {
@@ -2432,7 +2430,7 @@ $("toggle-stats").onclick = () => {
 $("copy-diagnostics").onclick = async () => {
   try {
     await navigator.clipboard.writeText(
-      `Blockfront Relay 2.21.1\n${$("connection-details").textContent}\nAudio: ${JSON.stringify(sound.diagnostics)}\nMusic: ${JSON.stringify(music.diagnostics)}`,
+      `Blockfront Relay 2.23.0\n${$("connection-details").textContent}\nAudio: ${JSON.stringify(sound.diagnostics)}\nMusic: ${JSON.stringify(music.diagnostics)}`,
     );
     $("diagnostic-status").textContent =
       "Report copied—paste it when reporting stutter or lag.";

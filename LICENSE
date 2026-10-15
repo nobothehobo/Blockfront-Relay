@@ -20,11 +20,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Third-party music exception: client/public/music/*.mp3 are recordings by Eric Skiff,
+Third-party music exception: client/public/music/*.mp3 are recordings by Kevin MacLeod,
 licensed under Creative Commons Attribution 4.0 International, not MIT.
 See assets/music/ATTRIBUTION.md and https://creativecommons.org/licenses/by/4.0/.
 
 Sound effect files retain their stated CC0 licenses: firearms, reload/handling,
-launcher/explosion adaptations, footsteps, pickups, human grunts, fall impacts
-and Joseph SARDIN burner recordings adapted for jetpacks.
+launcher/explosion adaptations, footsteps, pickups, Ephisus death thuds, fall impacts
+and qubodup turbine recordings adapted for jetpacks.
 See assets/sfx/ATTRIBUTION.md for every source and file mapping.

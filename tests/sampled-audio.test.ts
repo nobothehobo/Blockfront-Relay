@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import {
   SAMPLE_FILES,
   SampleBank,
@@ -26,6 +27,7 @@ test("every recorded cue maps to a valid shipped PCM file and individual source/
     const credit = manifest.find((row: any) => row.file === name + ".wav");
     assert.ok(credit?.creator && credit?.sourcePage && credit?.licenseUrl);
     assert.equal(credit.bytes, bytes.length);
+    assert.equal(credit.sha256, createHash("sha256").update(bytes).digest("hex"));
   }
   for (let weapon = 0; weapon < 4; weapon++)
     for (let variant = 0; variant < 2; variant++)
@@ -47,6 +49,20 @@ test("every recorded cue maps to a valid shipped PCM file and individual source/
   assert.equal(sampleCue("action", 3, "stone", 0), "marksman-action");
   assert.equal(footSurface(14), "snow");
   assert.equal(footSurface(4), "wood");
+});
+
+test("death uses nonvocal impact recordings without a duplicate fall trigger", async () => {
+  const manifest = JSON.parse(await readFile("assets/sfx/manifest.json", "utf8"));
+  for (const file of ["death-1.wav", "death-2.wav"]) {
+    const row = manifest.find((entry: any) => entry.file === file);
+    assert.equal(row.creator, "Ephisus");
+    assert.ok(row.sourcePage.includes("266346"));
+  }
+  const main = await readFile("client/main.ts", "utf8");
+  assert.ok(main.includes('sound.play("death", 0.8)'));
+  assert.ok(main.includes('playSpatial("death", rp, 0, 0.55, 20)'));
+  assert.ok(!main.includes('sound.play("fall", 0.55)'));
+  assert.ok(!main.includes('playSpatial("fall", rp, 0, 0.4, 20)'));
 });
 
 test("sound downloads reuse decoded buffers, contain failures, and retry only missing clips", async () => {

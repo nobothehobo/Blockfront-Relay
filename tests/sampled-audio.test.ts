@@ -6,6 +6,7 @@ import {
   SampleBank,
   sampleCue,
   footSurface,
+  decodePcmWav,
 } from "../client/sampled-audio.js";
 import { insideCharacter } from "../client/nearby-presentation.js";
 import { Sound } from "../client/audio.js";
@@ -49,16 +50,19 @@ test("every recorded cue maps to a valid shipped PCM file and individual source/
 });
 
 test("sound downloads reuse decoded buffers, contain failures, and retry only missing clips", async () => {
+  const wav = await readFile("client/public/sfx/rifle-1.wav");
   let calls = 0,
     fail = true;
   const bank = new SampleBank((async (url: string) => {
     calls++;
     if (url.includes("rifle-1") && fail)
       return new Response("missing", { status: 404 });
-    return new Response(new Uint8Array([1, 2, 3, 4]));
+    return new Response(wav);
   }) as typeof fetch);
   const context = {
-    decodeAudioData: async () => ({ length: 4 }),
+    createBuffer: (_channels: number, length: number) => ({
+      getChannelData: () => new Float32Array(length),
+    }),
   } as unknown as AudioContext;
   const pending = bank.load(context);
   assert.equal(bank.load(context), pending);
@@ -74,6 +78,32 @@ test("sound downloads reuse decoded buffers, contain failures, and retry only mi
   assert.equal(bank.status.failed, 0);
 });
 
+test("PCM reader decodes every shipped recording into audible normalized samples without a browser codec", async () => {
+  const context = {
+    createBuffer: (_channels: number, length: number, rate: number) => {
+      const samples = new Float32Array(length);
+      return { sampleRate: rate, getChannelData: () => samples };
+    },
+  } as unknown as AudioContext;
+  for (const name of SAMPLE_FILES) {
+    const bytes = await readFile(`client/public/sfx/${name}.wav`);
+    const buffer = decodePcmWav(
+      context,
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    );
+    assert.equal(buffer.sampleRate, 32000);
+    const values = buffer.getChannelData(0);
+    assert.ok(
+      values.some((value) => Math.abs(value) > 0.1),
+      name + " must not decode silently",
+    );
+    assert.ok(
+      values.every((value) => Number.isFinite(value) && Math.abs(value) <= 1),
+    );
+  }
+  assert.throws(() => decodePcmWav(context, new ArrayBuffer(48)), /WAV/);
+});
+
 test("nearby body suppression has stable entry/exit thresholds and preserves different-height players", () => {
   const feet = { x: 10, y: 10, z: 10 };
   assert.equal(insideCharacter({ x: 10.4, y: 11.6, z: 10 }, feet, false), true);
@@ -84,6 +114,35 @@ test("nearby body suppression has stable entry/exit thresholds and preserves dif
   assert.equal(insideCharacter({ x: 10.7, y: 11.6, z: 10 }, feet, true), true);
   assert.equal(insideCharacter({ x: 10.9, y: 11.6, z: 10 }, feet, true), false);
   assert.equal(insideCharacter({ x: 10, y: 14, z: 10 }, feet, true), false);
+});
+
+test("sound preview waits for its recording and reports a missing sample instead of playing fallback", async () => {
+  const sound = new Sound();
+  sound.ctx = {
+    resume: async () => {},
+    state: "running",
+  } as unknown as AudioContext;
+  let release!: () => void,
+    played = false;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const bank = (sound as any).samples;
+  bank.load = async () => {
+    await gate;
+    bank.buffers.set("rifle-1", {});
+  };
+  sound.play = () => {
+    played = true;
+  };
+  const preview = sound.preview("shot", 0);
+  await Promise.resolve();
+  assert.equal(played, false);
+  release();
+  assert.equal(await preview, "Played recording: rifle-1.");
+  assert.equal(played, true);
+  bank.load = async () => {};
+  await assert.rejects(sound.preview("death", 0), /Recording unavailable/);
 });
 
 test("live sound graph uses recorded gun/footstep/death buffers and one reused sampled jet loop", () => {
@@ -148,6 +207,17 @@ test("live sound graph uses recorded gun/footstep/death buffers and one reused s
   assert.equal(sources.find((s) => s.loop).buffer.name, "jet-loop");
   sound.stopJets();
   assert.equal(sound.diagnostics.engines, 0);
+  for (let i = 0; i < 40; i++) sound.play("shot", 0.05, 1);
+  assert.ok(sound.diagnostics.voices <= 32);
+  const beforeLocal = sources.length;
+  sound.play("shot", 1, 0);
+  assert.equal(
+    sources.length,
+    beforeLocal + 1,
+    "local shot steals a quiet remote tail at the voice limit",
+  );
+  assert.ok(sources.at(-1).buffer.name.startsWith("rifle-"));
+  assert.ok(sound.diagnostics.voices <= 32);
   const count = sources.length;
   sound.master = 0;
   sound.play("shot", 1, 0);

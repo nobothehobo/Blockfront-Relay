@@ -1,6 +1,8 @@
 # Blockfront Relay
 
-An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.19 — Night Operations.**
+An original, playable multiplayer voxel FPS. Built from scratch; no Ace of Spades code or assets are included. Temporary working title. **2.20 — Signal Check.**
+
+**2.20:** render-time camera motion between fixed simulation ticks; explicit PCM effects loading, failure/retry diagnostics, recording-only sound preview, and local audio priority during busy NPC fights. Shot/explosion echoes and expanded preview options. See [changes and device-verification limits](docs/UPDATE-220.md).
 
 **2.19:** fuller recorded gunfire, weapon-specific magazine/shell reload and pump/bolt handling, launcher and explosion effects, plus Nihilore synthwave tracks “Moonlit Skyline” and “Motion Blur” (CC BY 4.0). Settings has individual sound previews. See [release notes](docs/UPDATE-219.md) and source credits.
 

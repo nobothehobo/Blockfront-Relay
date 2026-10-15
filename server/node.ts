@@ -64,6 +64,8 @@ const app = http.createServer(async (req, res) => {
   );
   if (/^\/api\/audio\/[a-z-]+\.mp3$/.test(url.pathname))
     url.pathname = "/music/" + url.pathname.slice("/api/audio/".length);
+  if (/^\/api\/sfx\/[a-z0-9-]+\.wav$/.test(url.pathname))
+    url.pathname = "/sfx/" + url.pathname.slice("/api/sfx/".length);
   const json = (status: number, o: unknown) => {
     res.writeHead(status, { "Content-Type": "application/json" });
     res.end(JSON.stringify(o));

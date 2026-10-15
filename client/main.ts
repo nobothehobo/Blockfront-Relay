@@ -22,6 +22,7 @@ import { MenuScene } from "./menu-scene.js";
 import { Music } from "./music.js";
 import { footSurface } from "./sampled-audio.js";
 import { insideCharacter } from "./nearby-presentation.js";
+import { renderBody } from "./render-motion.js";
 import {
   World,
   Player,
@@ -931,8 +932,8 @@ function updateAudioUi() {
       : effects.loading
         ? "Loading recorded effects…"
         : effects.failed
-          ? "Some sounds could not load. Tap Retry sounds."
-          : `Recorded effects ready: ${effects.ready}/${effects.total}.`;
+          ? `Recorded effects: ${effects.ready}/${effects.total}. Failed: ${effects.errors.map(([name, error]) => `${name}: ${error}`).join("; ")}. Tap Retry sounds.`
+          : `Recorded effects ready: ${effects.ready}/${effects.total}. Played: ${sound.diagnostics.recordedStarts} recordings / ${sound.diagnostics.fallbackStarts} fallback. Last: ${sound.diagnostics.lastCue}.`;
   if ($("audio-status").textContent !== text)
     $("audio-status").textContent = text;
 }
@@ -960,10 +961,19 @@ $("music-toggle").onclick = () => {
   settingsUi();
   unlockMusic();
 };
-$("audio-test").onclick = () => {
+$("audio-test").onclick = async () => {
   unlockMusic();
   const [cue, weapon] = $<HTMLSelectElement>("audio-preview").value.split(":");
-  sound.play(cue, 0.7, Number(weapon));
+  $("audio-preview-status").textContent = "Loading selected recording…";
+  try {
+    $("audio-preview-status").textContent = await sound.preview(
+      cue,
+      Number(weapon),
+    );
+  } catch (error) {
+    $("audio-preview-status").textContent =
+      error instanceof Error ? error.message : "Sound preview failed.";
+  }
 };
 $("audio-retry").onclick = () => {
   unlockMusic();
@@ -2390,7 +2400,7 @@ $("toggle-stats").onclick = () => {
 $("copy-diagnostics").onclick = async () => {
   try {
     await navigator.clipboard.writeText(
-      `Blockfront Relay 2.19.0\n${$("connection-details").textContent}\nAudio: ${JSON.stringify(sound.diagnostics)}\nMusic: ${JSON.stringify(music.diagnostics)}`,
+      `Blockfront Relay 2.20.0\n${$("connection-details").textContent}\nAudio: ${JSON.stringify(sound.diagnostics)}\nMusic: ${JSON.stringify(music.diagnostics)}`,
     );
     $("diagnostic-status").textContent =
       "Report copied—paste it when reporting stutter or lag.";
@@ -2711,7 +2721,21 @@ function frame(now: number) {
     if (blocked && !predictionBlocked) connectionStats.predictionStops++;
     predictionBlocked = blocked;
     updateNetwork();
-    const ep = eye(local);
+    const ep = eye(
+      local.dead <= 0 && !blocked
+        ? renderBody(
+            local,
+            {
+              ...input,
+              jet:
+                input.jet ||
+                spaceThrust(held, local.ground, local.jetpack, local.dead),
+            },
+            world,
+            accumulator,
+          )
+        : local,
+    );
     renderCorrection.multiplyScalar(Math.exp(-dt * 12));
     camera.position.set(
       ep.x + renderCorrection.x,

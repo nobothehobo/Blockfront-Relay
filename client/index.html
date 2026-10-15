@@ -85,7 +85,7 @@
         </aside>
       </div>
       <footer class="menu-footer">
-        <span class="menu-version">2.19 · NIGHT OPERATIONS</span>
+        <span class="menu-version">2.20 · SIGNAL CHECK</span>
         <div class="menu-footer-actions">
           <button id="music-toggle" aria-pressed="true">MUSIC: ON</button
           ><span id="music-track" aria-live="polite"></span
@@ -432,12 +432,17 @@ https://creativecommons.org/licenses/by/3.0/</pre>
             <option value="shot:6">Launcher fire</option>
             <option value="reload-shell:6">Launcher reload</option>
             <option value="explosion:0">Explosion</option>
+            <option value="jet-start:0">Jetpack ignition</option>
+            <option value="jet-loop:0">Jetpack thrust</option>
+            <option value="death:0">Death grunt</option>
+            <option value="step:0">Footstep</option>
           </select></label
         >
         <button id="audio-test">Test sound</button
         ><button id="audio-retry">Retry sounds</button>
       </div>
       <p id="audio-status" role="status">Tap Test sound to enable audio.</p>
+      <p id="audio-preview-status" role="status"></p>
       <p>
         Preferences save on this device. The mobile preset uses light contact
         shadows; balanced and high add nearby sun shadows. High effects

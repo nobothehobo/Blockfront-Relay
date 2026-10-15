@@ -16,10 +16,15 @@ export class Sound {
   private bus: GainNode | null = null;
   private noiseBuffers = new Map<number, AudioBuffer>();
   private shots = new Set<AudioScheduledSourceNode>();
+  private sampleVolumes = new Map<AudioScheduledSourceNode, number>();
   private engines = new Map<string, Engine>();
   private starts = 0;
   private readonly samples = new SampleBank();
   private sampleVariant = 0;
+  private recordedStarts = 0;
+  private fallbackStarts = 0;
+  private lastCue = "none";
+  private echo: DelayNode | null = null;
   unlock() {
     if (!this.ctx) {
       const Context = window.AudioContext || (window as any).webkitAudioContext;
@@ -34,6 +39,12 @@ export class Sound {
       compressor.release.value = 0.12;
       this.bus.connect(compressor);
       compressor.connect(c.destination);
+      this.echo = c.createDelay(0.5);
+      const echoGain = c.createGain();
+      this.echo.delayTime.value = 0.14;
+      echoGain.gain.value = 0.13;
+      this.echo.connect(echoGain);
+      echoGain.connect(this.bus);
     }
     void this.ctx!.resume().catch(() => {});
     this.syncVolume();
@@ -162,6 +173,10 @@ export class Sound {
     this.syncVolume();
     const v = Math.max(0, Math.min(1, volume));
     if (this.playSample(kind, v, weapon, pan, muffled, surface)) return;
+    if (sampleCue(kind, weapon, surface, 0)) {
+      this.fallbackStarts++;
+      this.lastCue = `fallback: ${kind}`;
+    }
     if (kind === "shot") {
       const profiles = [
         { crack: 2600, body: 125, tail: 0.2, gain: 0.24 },
@@ -320,7 +335,16 @@ export class Sound {
     const name = sampleCue(kind, weapon, surface, this.sampleVariant++);
     const buffer = name ? this.samples.buffers.get(name) : null;
     if (!buffer || !this.ctx || !this.bus) return false;
-    if (this.shots.size >= 32) return true;
+    const priority = volume * (kind === "step" ? 0.3 : 1);
+    if (this.shots.size >= 32) {
+      // Long recorded tails can fill the budget in NPC fights. A quiet remote
+      // tail must not suppress the local weapon/reload/death sound entirely.
+      const quietest = [...this.sampleVolumes].sort((a, b) => a[1] - b[1])[0];
+      if (!quietest || quietest[1] > priority) return true;
+      this.sampleVolumes.delete(quietest[0]);
+      this.shots.delete(quietest[0]);
+      quietest[0].stop();
+    }
     const c = this.ctx,
       source = c.createBufferSource(),
       gain = c.createGain(),
@@ -354,16 +378,38 @@ export class Sound {
     } else source.connect(gain);
     gain.connect(panner);
     panner.connect(this.bus);
+    if ((kind === "shot" || kind === "explosion") && this.echo)
+      panner.connect(this.echo);
     this.shots.add(source);
+    this.sampleVolumes.set(source, priority);
     source.onended = () => {
       this.shots.delete(source);
+      this.sampleVolumes.delete(source);
       source.disconnect();
       filter?.disconnect();
       gain.disconnect();
       panner.disconnect();
     };
     source.start();
+    this.recordedStarts++;
+    this.lastCue = name!;
     return true;
+  }
+  async preview(kind: string, weapon: number) {
+    if (!this.ctx) throw Error("Audio unavailable. Tap again to unlock.");
+    await this.ctx.resume();
+    await this.samples.load(this.ctx, true);
+    const cue = sampleCue(kind, weapon, "stone", this.sampleVariant);
+    if (!cue || !this.samples.buffers.has(cue))
+      throw Error(
+        `Recording unavailable: ${cue ?? kind}. ${cue ? (this.samples.errors.get(cue) ?? "") : ""}`,
+      );
+    if (!this.master || !this.effects)
+      throw Error("Master or sound-effects volume is muted.");
+    if (this.ctx.state !== "running")
+      throw Error("Audio is suspended. Tap Test sound again.");
+    this.play(kind, 0.85, weapon);
+    return `Played recording: ${cue}.`;
   }
   reloadSamples() {
     if (this.ctx) return this.samples.load(this.ctx, true);
@@ -479,6 +525,9 @@ export class Sound {
       voices: this.shots.size,
       cachedBuffers: this.noiseBuffers.size,
       samples: this.samples.status,
+      recordedStarts: this.recordedStarts,
+      fallbackStarts: this.fallbackStarts,
+      lastCue: this.lastCue,
     };
   }
 }

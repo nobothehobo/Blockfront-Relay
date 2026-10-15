@@ -73,10 +73,13 @@ export function sampleCue(
 export class SampleBank {
   readonly buffers = new Map<string, AudioBuffer>();
   readonly failures = new Set<string>();
+  readonly errors = new Map<string, string>();
   private loading: Promise<void> | null = null;
+  private retryAt = 0;
   constructor(private readonly fetchFile: typeof fetch = fetch) {}
   load(context: AudioContext, retry = false): Promise<void> {
     if (this.loading) return this.loading;
+    retry ||= Date.now() >= this.retryAt;
     const files = SAMPLE_FILES.filter(
       (name) => !this.buffers.has(name) && (retry || !this.failures.has(name)),
     );
@@ -86,23 +89,40 @@ export class SampleBank {
         await Promise.allSettled(
           files.slice(offset, offset + 5).map(async (name) => {
             try {
-              const response = await this.fetchFile(`/sfx/${name}.wav?v=219`, {
-                signal: AbortSignal.timeout(12000),
-              });
-              if (!response.ok) throw Error("Sound asset unavailable");
-              const buffer = await context.decodeAudioData(
-                await response.arrayBuffer(),
-              );
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 12000);
+              let bytes: ArrayBuffer;
+              try {
+                const response = await this.fetchFile(
+                  `/api/sfx/${name}.wav?v=220`,
+                  {
+                    signal: controller.signal,
+                  },
+                );
+                if (!response.ok) throw Error(`HTTP ${response.status}`);
+                bytes = await response.arrayBuffer();
+              } finally {
+                clearTimeout(timeout);
+              }
+              // All shipped effects are PCM16 WAV: parse explicitly instead of
+              // depending on platform decodeAudioData codec/sample-rate behavior.
+              const buffer = decodePcmWav(context, bytes);
               this.buffers.set(name, buffer);
               this.failures.delete(name);
-            } catch {
+              this.errors.delete(name);
+            } catch (error) {
               this.failures.add(name);
+              this.errors.set(
+                name,
+                error instanceof Error ? error.message : String(error),
+              );
             }
           }),
         );
       }
     })().finally(() => {
       this.loading = null;
+      this.retryAt = Date.now() + 10000;
     });
     return this.loading;
   }
@@ -112,6 +132,54 @@ export class SampleBank {
       total: SAMPLE_FILES.length,
       failed: this.failures.size,
       loading: !!this.loading,
+      errors: [...this.errors].slice(0, 3),
     };
   }
+}
+
+export function decodePcmWav(context: AudioContext, bytes: ArrayBuffer) {
+  const view = new DataView(bytes);
+  const tag = (at: number) =>
+    String.fromCharCode(...new Uint8Array(bytes, at, 4));
+  if (bytes.byteLength < 44 || tag(0) !== "RIFF" || tag(8) !== "WAVE")
+    throw Error("Invalid WAV response");
+  let rate = 0,
+    channels = 0,
+    dataAt = -1,
+    size = 0;
+  for (let at = 12; at + 8 <= bytes.byteLength;) {
+    const length = view.getUint32(at + 4, true),
+      end = at + 8 + length;
+    if (end > bytes.byteLength) throw Error("Truncated WAV");
+    if (tag(at) === "fmt ") {
+      if (
+        length < 16 ||
+        view.getUint16(at + 8, true) !== 1 ||
+        view.getUint16(at + 22, true) !== 16
+      )
+        throw Error("Expected PCM16 WAV");
+      channels = view.getUint16(at + 10, true);
+      rate = view.getUint32(at + 12, true);
+    }
+    if (tag(at) === "data") {
+      dataAt = at + 8;
+      size = length;
+    }
+    at = end + (length % 2);
+  }
+  if (
+    channels !== 1 ||
+    rate < 8000 ||
+    rate > 96000 ||
+    dataAt < 0 ||
+    !size ||
+    size % 2 ||
+    size / 2 > rate * 10
+  )
+    throw Error("Invalid PCM sample");
+  const buffer = context.createBuffer(1, size / 2, rate),
+    output = buffer.getChannelData(0);
+  for (let i = 0; i < output.length; i++)
+    output[i] = view.getInt16(dataAt + i * 2, true) / 32768;
+  return buffer;
 }

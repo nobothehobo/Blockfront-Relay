@@ -143,13 +143,16 @@ export default {
     const url = new URL(request.url);
     if (
       !url.pathname.startsWith("/api/") ||
-      url.pathname.startsWith("/api/audio/")
+      url.pathname.startsWith("/api/audio/") ||
+      url.pathname.startsWith("/api/sfx/")
     ) {
       const assetPath = url.pathname.startsWith("/api/audio/")
         ? "/music/" + url.pathname.slice("/api/audio/".length)
-        : url.pathname === "/"
-          ? "/index.html"
-          : url.pathname;
+        : url.pathname.startsWith("/api/sfx/")
+          ? "/sfx/" + url.pathname.slice("/api/sfx/".length)
+          : url.pathname === "/"
+            ? "/index.html"
+            : url.pathname;
       const asset = assets[assetPath];
       if (!asset) return new Response("Not found", { status: 404 });
       const body = asset.binary

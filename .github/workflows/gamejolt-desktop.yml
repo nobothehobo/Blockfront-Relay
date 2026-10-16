@@ -1,0 +1,115 @@
+name: Game Jolt desktop and update releases
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/desktop-lan-crossplay-packaging
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    name: Package ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            target: win
+            arch: x64
+            label: Windows
+          - runner: ubuntu-24.04
+            target: linux
+            arch: x64
+            label: Linux-SteamDeck
+          - runner: macos-15
+            target: mac
+            arch: arm64
+            label: macOS-preview
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Confirm tagged release version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          node -e 'const p=require("./desktop/package.json"); if (process.env.TAG !== "v"+p.version) { console.error("Tag and desktop package version differ"); process.exit(1) }'
+      - name: Require Windows signing before a public auto-update release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.target == 'win'
+        shell: bash
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          if [ -z "$WIN_CSC_LINK" ] || [ -z "$WIN_CSC_KEY_PASSWORD" ]; then
+            echo "Configure WIN_CSC_LINK and WIN_CSC_KEY_PASSWORD repository secrets before making a public tagged release"
+            exit 1
+          fi
+      - name: Build original game client and server
+        run: |
+          npm ci
+          npm run build
+          node scripts/build-desktop-server.mjs
+          node scripts/smoke-desktop-server.mjs
+      - name: Install desktop dependencies
+        run: npm install --prefix desktop --no-audit --no-fund
+      - name: Build platform download and updater manifest
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: npx electron-builder --${{ matrix.target }} --${{ matrix.arch }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Blockfront-Relay-${{ matrix.label }}
+          path: artifacts/desktop/*
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-windows-linux:
+    name: Publish Windows and Linux update feed
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: desktop
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Blockfront-Relay-Windows
+          path: release
+      - uses: actions/download-artifact@v4
+        with:
+          name: Blockfront-Relay-Linux-SteamDeck
+          path: release
+      - name: Verify update metadata and release files
+        shell: bash
+        run: |
+          ls -la release
+          test -f release/latest.yml
+          test -f release/latest-linux.yml
+          find release -maxdepth 1 -name '*.exe' | grep -q .
+          find release -maxdepth 1 -name '*.AppImage' | grep -q .
+      - name: Publish on GitHub Releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" release/* \
+            --repo "$REPOSITORY" \
+            --title "Blockfront Relay $TAG" \
+            --notes "Desktop build and update feed for Windows (NSIS) and Linux/Steam Deck (AppImage). Safari remains the iOS client; signed macOS auto-updates are not enabled." \
+            --latest

@@ -41,10 +41,30 @@ for (const [id, mode, jet] of [
     }),
   );
 const origins = (process.env.ALLOWED_ORIGINS ?? "").split(",").filter(Boolean);
-const root = path.resolve("dist/client");
+// Packaged desktop releases keep the original built renderer beside the server.
+const root = path.resolve(process.env.BLOCKFRONT_ASSET_ROOT ?? "dist/client");
+const sameOriginOnly = process.env.BLOCKFRONT_SAME_ORIGIN === "true";
+function allowedLocalHost(header: string | undefined) {
+  if (!header) return false;
+  try {
+    const hostname = new URL("http://" + header).hostname.replace(/^\[|\]$/g, "");
+    return hostname === "localhost" || hostname === "::1" ||
+      hostname === "127.0.0.1" ||
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(hostname);
+  } catch { return false; }
+}
+function originAllowed(origin: string, host: string | undefined) {
+  if (sameOriginOnly) {
+    if (!allowedLocalHost(host)) return false; // Reject DNS-rebinding hostnames.
+    if (origin && origin !== "http://" + host) return false;
+  }
+  return !origins.length || !origin || origins.includes(origin);
+}
 const app = http.createServer(async (req, res) => {
   const origin = req.headers.origin ?? "";
-  if (origins.length && origin && !origins.includes(origin)) {
+  if (!originAllowed(origin, req.headers.host)) {
     res.writeHead(403);
     return res.end("Origin denied");
   }
@@ -215,7 +235,7 @@ const app = http.createServer(async (req, res) => {
 const wss = new WebSocketServer({ noServer: true, maxPayload: 8192 });
 app.on("upgrade", (req, socket, head) => {
   const origin = req.headers.origin ?? "";
-  if (origins.length && !origins.includes(origin)) {
+  if (!originAllowed(origin, req.headers.host)) {
     socket.destroy();
     return;
   }

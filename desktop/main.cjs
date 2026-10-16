@@ -16,6 +16,7 @@ let server = null;
 let lanEnabled = false;
 let switching = false;
 let quitting = false;
+let updateReadyVersion = null;
 
 const gameRoot = () => app.isPackaged
   ? path.join(process.resourcesPath, "game")
@@ -168,6 +169,7 @@ function makeMenu() {
       }) },
     ] },
     { label: "Updates", submenu: [
+      { label: updateReadyVersion ? "Version " + updateReadyVersion + " ready — installs on exit" : "Updates install when you exit", enabled: false },
       { label: "Check for updates", click: () => { void checkUpdates(); } },
       { label: "Release page", click: () => { void shell.openExternal("https://github.com/nobothehobo/Blockfront-Relay/releases"); } },
     ] },
@@ -235,13 +237,10 @@ function setupUpdater() {
   autoUpdater.on("update-available", info =>
     console.log("Downloading Blockfront version", info.version));
   autoUpdater.on("update-downloaded", info => {
-    if (win && !win.isDestroyed())
-      void dialog.showMessageBox(win, {
-        type: "info", title: "Update ready",
-        message: "Blockfront Relay " + info.version + " is downloaded.",
-        detail: "Keep playing! It will install when you exit the game normally.",
-        buttons: ["OK"],
-      });
+    updateReadyVersion = info.version;
+    console.log("Update staged for normal exit:", info.version);
+    makeMenu(); // Never steal focus from a live match with a modal update prompt.
+    if (win && !win.isDestroyed()) win.setTitle("Blockfront Relay — update ready");
   });
   autoUpdater.on("error", error => console.warn("Updater:", error));
   setTimeout(() => { void checkUpdates(); }, 12000).unref();

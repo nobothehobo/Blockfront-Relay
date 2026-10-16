@@ -1,0 +1,87 @@
+{
+  "name": "blockfront-relay-desktop",
+  "version": "2.24.0",
+  "private": true,
+  "description": "Blockfront Relay desktop with optional LAN hosting and release updates",
+  "main": "main.cjs",
+  "author": "Blockfront Relay",
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "dependencies": {
+    "electron-updater": "6.8.9"
+  },
+  "devDependencies": {
+    "electron": "44.8.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.blockfrontrelay.desktop",
+    "productName": "Blockfront Relay",
+    "asar": true,
+    "directories": {
+      "output": "../artifacts/desktop"
+    },
+    "files": [
+      "main.cjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../dist/client",
+        "to": "game/dist/client",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../dist/desktop/server.cjs",
+        "to": "game/server.cjs"
+      },
+      {
+        "from": "../LICENSE",
+        "to": "game/LICENSE"
+      },
+      {
+        "from": "../assets/music/ATTRIBUTION.md",
+        "to": "game/MUSIC-CREDITS.md"
+      },
+      {
+        "from": "../assets/sfx/ATTRIBUTION.md",
+        "to": "game/SFX-CREDITS.md"
+      }
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "nobothehobo",
+        "repo": "Blockfront-Relay",
+        "releaseType": "release"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "Blockfront-Relay-Setup-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Game",
+      "artifactName": "Blockfront-Relay-${version}-Linux-${arch}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "identity": null,
+      "artifactName": "Blockfront-Relay-${version}-macOS-${arch}.${ext}"
+    }
+  }
+}

@@ -70,6 +70,9 @@ async function startServer(lan) {
     ELECTRON_RUN_AS_NODE: "1",
     HOST: lan ? "0.0.0.0" : "127.0.0.1",
     PORT: String(PORT),
+    BLOCKFRONT_SAME_ORIGIN: "true",
+    BLOCKFRONT_ASSET_ROOT: path.join(gameRoot(), "dist", "client"),
+    ALLOWED_ORIGINS: "",
   });
   const proc = spawn(process.execPath, [gameServer()], {
     cwd: gameRoot(),
